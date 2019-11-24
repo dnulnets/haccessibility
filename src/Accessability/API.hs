@@ -93,14 +93,11 @@ resolveAllItems _ =
 dbItem :: Text->IO (Either String (Item (IORes e)))
 dbItem _ = return $ Right $ Item {  itemName =  constRes $ "NP3 Arena",
                                     itemLevel = constRes L1,
-                                    itemTest = constRes $ Geodetic {
+                                    itemPosition = constRes $ Geodetic {
                                       latitude=62.39129 *~ degree, 
                                       longitude=17.3063 *~ degree,
                                       geoAlt=0.0 *~ meter,
-                                      ellipsoid=WGS84},
-                                    itemPosition = constRes $ Coordinates {
-                                       coordinatesLatitude = constRes $ "Latitude",
-                                       coordinatesLongitude = constRes $ "Longitude"}
+                                      ellipsoid=WGS84}
                                    }
 
 --

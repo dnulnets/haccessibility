@@ -20,7 +20,7 @@
 -- This module contains the database model and the haskell representation of
 -- the data    
 --
-module Accessability.Model (Item(..)) where
+module Accessability.Model (Item(..), migrateAll) where
 
 --
 -- Import standard libs

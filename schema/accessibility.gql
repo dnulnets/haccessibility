@@ -4,11 +4,6 @@ type Query {
   allItems(): Item!
 }
 
-type Coordinates {
-     longitude: String!
-     latitude: String!
-}
-
 enum Level {
   L1
   L2
@@ -20,6 +15,5 @@ enum Level {
 type Item {
   name: String!
   level: Level!
-  test: GeodeticPosition!
-  position: Coordinates!
+  position: GeodeticPosition!
 }
