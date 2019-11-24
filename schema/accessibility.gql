@@ -1,0 +1,25 @@
+
+type Query {
+  item(name: String!): Item!
+  allItems(): Item!
+}
+
+type Coordinates {
+     longitude: String!
+     latitude: String!
+}
+
+enum Level {
+  L1
+  L2
+  L3
+  L4
+  L5
+}
+
+type Item {
+  name: String!
+  level: Level!
+  test: GeodeticPosition!
+  position: Coordinates!
+}

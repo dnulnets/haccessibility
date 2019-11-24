@@ -1,0 +1,78 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.31.2.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: b0e56251a557c7ff09ece0c59e2b8bd97f0fb8747412b8693cd0c359c473a831
+
+name:           gql
+version:        0.1.0.0
+description:    Please see the README on GitHub at <https://github.com/githubuser/gql#readme>
+homepage:       https://github.com/githubuser/gql#readme
+bug-reports:    https://github.com/githubuser/gql/issues
+author:         Author name here
+maintainer:     example@example.com
+copyright:      2019 Author name here
+license:        BSD3
+license-file:   LICENSE
+build-type:     Simple
+extra-source-files:
+    README.md
+    ChangeLog.md
+
+source-repository head
+  type: git
+  location: https://github.com/githubuser/gql
+
+library
+  exposed-modules:
+      Accessability.API
+      Accessability.Geo
+      Accessability.Model
+  other-modules:
+      Paths_gql
+  hs-source-dirs:
+      src
+  build-depends:
+      base >=4.7 && <5
+    , bytestring
+    , dimensional
+    , geodetics
+    , morpheus-graphql
+    , persistent
+    , persistent-postgresql
+    , persistent-template
+    , text
+  default-language: Haskell2010
+
+executable gql-exe
+  main-is: Main.hs
+  other-modules:
+      Paths_gql
+  hs-source-dirs:
+      app
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base >=4.7 && <5
+    , gql
+    , monad-logger
+    , mtl
+    , persistent-postgresql
+    , scotty
+    , text
+    , transformers
+  default-language: Haskell2010
+
+test-suite gql-test
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+      Paths_gql
+  hs-source-dirs:
+      test
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base >=4.7 && <5
+    , gql
+  default-language: Haskell2010
