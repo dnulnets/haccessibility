@@ -91,10 +91,12 @@ runApplicationM env (ApplicationM r) = runReaderT r env
 --
 application :: ApplicationM (ScottyT T.Text ApplicationM ())
 application = do
-    return $
-        --runDB doMigrations
-        --S.post "/api" $ raw =<< (liftIO . api =<< body)
-        S.get "/" (html "Permobil AB, graphQL prototype accessibility API, version 0.1")
+    p <- asks pool
+    liftIO (runSqlPool doMigrations p)
+    return $ do
+        S.get "/" (html "Permobil AB, graphQL prototype accessibility API, version 0.1")        
+        S.post "/api" $ raw =<< (liftIO . api =<< body)
+
 
 --
 -- The main
