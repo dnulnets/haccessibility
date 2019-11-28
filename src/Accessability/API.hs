@@ -43,7 +43,10 @@ import Data.Morpheus.Types    (GQLRootResolver (..),
                               liftEitherM,
                               constRes,
                               Res,
-                              GQLScalar(..), ScalarValue(..))
+                              GQLScalar(..),
+                              ScalarValue(..),
+                              GQLRequest(..),
+                              GQLResponse(..))
                               
 --
 -- My own imports
@@ -103,9 +106,9 @@ dbItem _ = return $ Right $ Item {  itemName =  constRes $ "NP3 Arena",
 --
 -- The exported api
 --
-api :: B.ByteString->IO B.ByteString
+api :: GQLRequest->IO GQLResponse
 api a = do
 --    putStrLn $ show a
     out <- interpreter rootResolver a
-    putStrLn $ B.unpack out
+    -- putStrLn $ B.unpack out
     return out

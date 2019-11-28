@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: b0e56251a557c7ff09ece0c59e2b8bd97f0fb8747412b8693cd0c359c473a831
+-- hash: ed1e47833a2cc6cca00c0dc9fb171d2c8b9e2f5d6e745b83a02f28d4568c2fcb
 
 name:           gql
 version:        0.1.0.0
@@ -30,6 +30,7 @@ library
       Accessability.API
       Accessability.Geo
       Accessability.Model
+      Accessability.Server
   other-modules:
       Paths_gql
   hs-source-dirs:
@@ -39,11 +40,13 @@ library
     , bytestring
     , dimensional
     , geodetics
+    , http-types
     , morpheus-graphql
     , persistent
     , persistent-postgresql
     , persistent-template
     , text
+    , yesod
   default-language: Haskell2010
 
 executable gql-exe
@@ -59,9 +62,11 @@ executable gql-exe
     , monad-logger
     , mtl
     , persistent-postgresql
+    , resourcet
     , scotty
     , text
     , transformers
+    , yesod
   default-language: Haskell2010
 
 test-suite gql-test

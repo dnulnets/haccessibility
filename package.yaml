@@ -34,6 +34,8 @@ library:
     - persistent
     - persistent-postgresql
     - persistent-template
+    - yesod
+    - http-types
     
 executables:
   gql-exe:
@@ -51,6 +53,9 @@ executables:
     - monad-logger
     - persistent-postgresql
     - text
+    - resourcet
+    - monad-logger
+    - yesod
 
 tests:
   gql-test:
