@@ -30,10 +30,7 @@ module Accessability.Geo (
 --
 -- Import standard libs
 --
---import qualified Data.ByteString.Lazy.Char8 as B
 import Data.Text (Text, pack)
-
-import GHC.Generics ( Generic )
 
 --
 -- Geodetics
@@ -59,26 +56,22 @@ import Data.Morpheus.Types    (GQLRootResolver (..),
                               Res,
                               GQLScalar(..), ScalarValue(..))
 
---
--- Our definition of GeodeticPosition
---
+-- | Definition of Geodetic position in WGS84
 type GeodeticPosition = Geodetic WGS84
 
---
--- Make them a GQLScalar
---
+-- | Make the GeodeticPosition a scalar
 instance GQLScalar GeodeticPosition where
+
   parseValue (String x) = pure $ Geodetic {
     latitude=62.39129 *~ degree, 
     longitude=17.3063 *~ degree,
     geoAlt=0.0 *~ meter,
     ellipsoid=WGS84}
   parseValue _ = Left "Geodetic position must be a string of format 62° 23' 28.64\" N, 17° 18' 22.68\" E, 0.0 m WGS84"
+  
   serialize p = String $ pack $ show  p
 
---
--- Make it a GQLType
---
+-- | Make the GeodeticPosition a type of kind scalar
 instance GQLType GeodeticPosition where
   type KIND GeodeticPosition = SCALAR
   description = const $ Just $ "A WGS84 longitude, latitude, height scalar of format 62° 23' 28.64\" N, 17° 18' 22.68\" E, 0.0 m WGS84"

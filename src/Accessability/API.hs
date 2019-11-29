@@ -58,14 +58,10 @@ import Accessability.Geo      (GeodeticPosition(..),
                               meter,
                               (*~))
 
---
--- Import the schema
---
+-- | Create the types for the graphql schema
 $(importGQLDocumentWithNamespace "schema/accessibility.gql")
 
---
--- Create the root resolver
---
+-- | The GraphQL Root resolver
 rootResolver :: GQLRootResolver IO () Query Undefined Undefined
 rootResolver =
   GQLRootResolver
@@ -75,25 +71,26 @@ rootResolver =
       subscriptionResolver = Undefined
     }
 
-resolveQuery::Query (IORes ())
+-- | The query resolver
+resolveQuery::Query (IORes ()) -- ^ The result of the query
 resolveQuery = Query {  queryItem = resolveItem,
                         queryAllItems = resolveAllItems }
 
---
--- Resolver
---
-resolveItem::QueryItemArgs->IORes e (Item (IORes e))
+-- | The query item resolver
+resolveItem::QueryItemArgs    -- ^ The arguments for the query
+   ->IORes e (Item (IORes e)) -- ^ The result of the query
 resolveItem QueryItemArgs { queryItemArgsName } =
    liftEitherM $ dbItem queryItemArgsName
 
-resolveAllItems::()->IORes e (Item (IORes e))
+-- | The query all items resolver
+resolveAllItems::()              -- ^ No arguments
+   ->IORes e (Item (IORes e))    -- ^ The result of the query
 resolveAllItems _ =
    liftEitherM $ dbItem $ ""
 
---
--- Database fetching
---
-dbItem :: Text->IO (Either String (Item (IORes e)))
+-- | Fetch the item from the database
+dbItem :: Text                            -- ^ The key
+   ->IO (Either String (Item (IORes e)))  -- ^ The result of the database search
 dbItem _ = return $ Right $ Item {  itemName =  constRes $ "NP3 Arena",
                                     itemLevel = constRes L1,
                                     itemPosition = constRes $ Geodetic {
@@ -103,12 +100,9 @@ dbItem _ = return $ Right $ Item {  itemName =  constRes $ "NP3 Arena",
                                       ellipsoid=WGS84}
                                    }
 
---
--- The exported api
---
-api :: GQLRequest->IO GQLResponse
+-- | Compose the api
+api :: GQLRequest    -- ^ The graphql request
+   ->IO GQLResponse  -- ^ The graphql response
 api a = do
---    putStrLn $ show a
     out <- interpreter rootResolver a
-    -- putStrLn $ B.unpack out
     return out
