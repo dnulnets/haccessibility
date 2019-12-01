@@ -28,15 +28,10 @@ import GHC.Generics (Generic(..))
 import Data.Morpheus.Kind     (SCALAR, OBJECT, ENUM)
 import Data.Morpheus          (interpreter)
 import Data.Morpheus.Types    (GQLRootResolver (..),
-                              IORes,
                               Res,
                               Undefined(..),
                               GQLType(..),
-                              liftEitherM,
-                              constRes,
-                              Res,
-                              GQLScalar(..),
-                              ScalarValue(..),
+                              liftEither,
                               GQLRequest(..),
                               GQLResponse(..))
                   
@@ -76,14 +71,14 @@ rootResolver =
     }
 
 -- | The query resolver
---resolveQuery::Query (Res Handler ())
+resolveQuery::Query (Res () Handler)
 resolveQuery = Query {  queryItem = resolveItem }
 
 -- | The query item resolver
 resolveItem::QueryItemArgs          -- ^ The arguments for the query
-            ->Res Handler e Item    -- ^ The result of the query
+            ->Res e Handler Item    -- ^ The result of the query
 resolveItem QueryItemArgs { queryItemArgsName = arg } =
-   liftEitherM $ dbItem arg   
+   liftEither $ dbItem arg   
                                 
 -- | Fetch the item from the database
 dbItem:: Text                           -- ^ The key

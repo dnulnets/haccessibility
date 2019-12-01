@@ -5,12 +5,12 @@
 
 packages:
 - completed:
-    hackage: morpheus-graphql-0.6.2@sha256:10f85311c04af4a67526d36e899d154ff5dd01ff619282f024b44f6dd63e0817,20460
+    hackage: morpheus-graphql-0.7.1@sha256:dc8fde135a0a73e9eeb01b6b4e07cd73d8d45def7e8fd7c9586fd24c499e7e1f,21024
     pantry-tree:
-      size: 29883
-      sha256: 459da4efe4ae4688a60ec2aa960f3f35754ab234a7d34b9f5538fc0eaa6e3970
+      size: 30418
+      sha256: 8683c157cfd928b3dbdb717a26589a0e4116f8323ddd0d50517ee16a1366cb98
   original:
-    hackage: morpheus-graphql-0.6.2
+    hackage: morpheus-graphql-0.7.1
 - completed:
     hackage: geodetics-0.1.0@sha256:699c10cd8d69222b125d054cdc8e2bcee7cb0558c78fa1b4fa06b2d3ecf29f5c,2387
     pantry-tree:
@@ -20,7 +20,7 @@ packages:
     hackage: geodetics-0.1.0
 snapshots:
 - completed:
-    size: 525662
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/14/15.yaml
-    sha256: c5e673e5723931b64ef2eb5004f6d9ea3c95b58d48388dbc4de6f66b97c81f7a
-  original: lts-14.15
+    size: 524804
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/14/16.yaml
+    sha256: 4d1519a4372d051d47a5eae2241cf3fb54e113d7475f89707ddb6ec06add2888
+  original: lts-14.16

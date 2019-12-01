@@ -58,7 +58,6 @@ import Data.Morpheus.Types    (GQLRootResolver (..),
                               IORes, 
                               Undefined(..),
                               GQLType(..),
-                              liftEitherM,
                               constRes,
                               Res,
                               GQLScalar(..), ScalarValue(..))
