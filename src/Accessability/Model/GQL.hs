@@ -17,7 +17,12 @@ module Accessability.Model.GQL (
     Query(..),
     QueryItemArgs(..),
     Item(..),
-    ItemLevel(..)) where
+    ItemLevel(..),
+    
+    Mutation(..),
+    MutationItemArgs(..)
+
+    ) where
 
 --
 -- Import standard libs
@@ -36,6 +41,16 @@ import Data.Morpheus.Types    (GQLType(..))
 --
 import Accessability.Foundation (Handler)
 import Accessability.Model.Geo (GeodeticPosition(..))
+
+-- | The graphQL Mutation type that contains all mutations
+newtype Mutation m = Mutation {
+    createItem :: MutationItemArgs -> m Item
+  } deriving (Generic, GQLType)
+
+-- | The argument for the queryitem query
+data MutationItemArgs = MutationItemArgs
+    { mutationItemArgsName      :: Text -- ^ The name of the item to create
+    } deriving (Generic)
 
 -- | The graphQL Query type that contains all queries
 data Query m = Query {

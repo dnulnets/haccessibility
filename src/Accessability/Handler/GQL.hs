@@ -28,6 +28,7 @@ import Data.Morpheus.Kind     (SCALAR, OBJECT, ENUM)
 import Data.Morpheus          (interpreter)
 import Data.Morpheus.Types    (GQLRootResolver (..),
                               Res,
+                              MutRes,
                               Undefined(..),
                               GQLType(..),
                               liftEither,
@@ -60,14 +61,24 @@ import Accessability.Foundation (Handler)
 import Accessability.Model.GQL
 
 -- | The GraphQL Root resolver
-rootResolver :: GQLRootResolver Handler () Query Undefined Undefined
+rootResolver :: GQLRootResolver Handler () Query Mutation Undefined
 rootResolver =
   GQLRootResolver
     {
       queryResolver = resolveQuery,
-      mutationResolver = Undefined,
+      mutationResolver = resolveMutation,
       subscriptionResolver = Undefined
     }
+
+-- | The mutation resolver
+resolveMutation::Mutation (MutRes () Handler)
+resolveMutation = Mutation { createItem = resolveCreateItem }
+
+-- | The query item resolver
+resolveCreateItem ::MutationItemArgs      -- ^ The arguments for the query
+                  ->MutRes e Handler Item    -- ^ The result of the query
+resolveCreateItem MutationItemArgs { mutationItemArgsName = arg } =
+   liftEither $ dbItem arg
 
 -- | The query resolver
 resolveQuery::Query (Res () Handler)
