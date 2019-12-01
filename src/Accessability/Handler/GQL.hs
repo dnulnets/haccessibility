@@ -19,18 +19,14 @@ module Accessability.Handler.GQL (postGQLR) where
 --
 -- Import standard libs
 --
-import qualified Data.ByteString.Lazy.Char8 as B
-import Data.Text              (Text)
+import Data.Text (Text)
 import GHC.Generics (Generic(..))
-import Data.Typeable (Typeable(..))
 
 --
 -- Import for morpheus
 --
-
 import Data.Morpheus.Kind     (SCALAR, OBJECT, ENUM)
 import Data.Morpheus          (interpreter)
-import Data.Morpheus.Document (importGQLDocumentWithNamespace)
 import Data.Morpheus.Types    (GQLRootResolver (..),
                               IORes,
                               Res,
@@ -45,11 +41,14 @@ import Data.Morpheus.Types    (GQLRootResolver (..),
                               GQLResponse(..))
                   
 --
---
+-- Yesod and HTTP imports
 --
 import Yesod
-import Network.HTTP.Types (
-    status200)
+import Network.HTTP.Types (status200)
+
+--
+-- Persist library
+--
 import Database.Persist
 import Database.Persist.TH
 
@@ -63,7 +62,6 @@ import Accessability.Model.Geo (
     degree,
     meter,
     (*~))
---import qualified Accessability.Model
 import Accessability.Foundation (Handler)
 import Accessability.Model.GQL
 
@@ -78,18 +76,18 @@ rootResolver =
     }
 
 -- | The query resolver
---resolveQuery::Query ((ExceptT String (HandlerFor s)) ()) -- ^ The result of the query
+--resolveQuery::Query (Res Handler ())
 resolveQuery = Query {  queryItem = resolveItem }
 
 -- | The query item resolver
---resolveItem::QueryItemArgs    -- ^ The arguments for the query
---   ->IORes e Item -- ^ The result of the query
+resolveItem::QueryItemArgs          -- ^ The arguments for the query
+            ->Res Handler e Item    -- ^ The result of the query
 resolveItem QueryItemArgs { queryItemArgsName = arg } =
    liftEitherM $ dbItem arg   
                                 
 -- | Fetch the item from the database
-dbItem :: Text                -- ^ The key
-   ->Handler (Either String Item)  -- ^ The result of the database search
+dbItem:: Text                           -- ^ The key
+        ->Handler (Either String Item)  -- ^ The result of the database search
 dbItem _ = return $ Right $ Item {  itemName =  "NP3 Arena",
                                     itemLevel = L1,
                                     itemPosition = Position Geodetic {
@@ -99,14 +97,15 @@ dbItem _ = return $ Right $ Item {  itemName =  "NP3 Arena",
                                       ellipsoid=WGS84}
                                    }
 
--- | Compose the api
-api :: GQLRequest    -- ^ The graphql request
-   ->Handler GQLResponse  -- ^ The graphql response
-api r = do
+-- | Compose the graphQL api
+gqlApi:: GQLRequest         -- ^ The graphql request
+   -> Handler GQLResponse   -- ^ The graphql response
+gqlApi r = do
     interpreter rootResolver r
 
-postGQLR::Handler Value
+-- | The GQL handler
+postGQLR::Handler Value -- ^ The graphQL response
 postGQLR = do
     request <- requireCheckJsonBody::Handler GQLRequest
-    response <- api request
+    response <- gqlApi request
     sendStatusJSON status200 response
