@@ -22,6 +22,10 @@ module Accessability.Foundation (
     resourcesServer) where
 
 --
+-- Standard libraries
+--
+import Data.Text (Text, pack)
+--
 -- Persistence libraries
 --
 import Database.Persist.Postgresql

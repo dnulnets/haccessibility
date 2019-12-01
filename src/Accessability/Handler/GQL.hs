@@ -1,5 +1,4 @@
 {-# LANGUAGE DeriveGeneric        #-}
-{-# LANGUAGE OverloadedStrings    #-}
 {-# LANGUAGE TypeFamilies         #-}
 {-# LANGUAGE DeriveAnyClass       #-}
 
@@ -19,7 +18,7 @@ module Accessability.Handler.GQL (postGQLR) where
 --
 -- Import standard libs
 --
-import Data.Text (Text)
+import Data.Text (Text, pack)
 import GHC.Generics (Generic(..))
 
 --
@@ -83,7 +82,7 @@ resolveItem QueryItemArgs { queryItemArgsName = arg } =
 -- | Fetch the item from the database
 dbItem:: Text                           -- ^ The key
         ->Handler (Either String Item)  -- ^ The result of the database search
-dbItem _ = return $ Right $ Item {  itemName =  "NP3 Arena",
+dbItem _ = return $ Right $ Item {  itemName =  pack "NP3 Arena",
                                     itemLevel = L1,
                                     itemPosition = Position Geodetic {
                                       latitude=62.39129 *~ degree, 

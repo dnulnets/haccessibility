@@ -1,5 +1,4 @@
 {-# LANGUAGE DeriveGeneric        #-}
-{-# LANGUAGE OverloadedStrings    #-}
 {-# LANGUAGE TypeFamilies         #-}
 {-# LANGUAGE DeriveAnyClass       #-}
 
@@ -23,7 +22,7 @@ module Accessability.Model.GQL (
 --
 -- Import standard libs
 --
-import Data.Text (Text)
+import Data.Text (Text, pack)
 import GHC.Generics (Generic(..))
 
 --
@@ -57,6 +56,7 @@ data ItemLevel = L1 | L2 | L3 | L4 | L5 deriving (Generic)
 -- Make ItemLevel a GQL type
 instance GQLType ItemLevel where
     type  KIND ItemLevel = ENUM
+    description = const $ Just $ pack "The level of accessability of the item, L1-L5. L5 is the highest "
 
 -- | Definition of the item
 data Item = Item {
@@ -68,3 +68,5 @@ data Item = Item {
 -- Make Item a GQL Type
 instance GQLType Item where
     type  KIND Item = OBJECT
+    description = const $ Just $ pack "The item that holds the accessability information"
+    

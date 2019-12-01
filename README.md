@@ -1,2 +1,2 @@
 # haccessability
-A graohQL interface for accessability information on geographical locations
+A graphQL and rest interface for accessability information on geographical locations.

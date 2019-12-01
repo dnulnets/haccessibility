@@ -1,5 +1,4 @@
 {-# LANGUAGE FlexibleInstances    #-}
-{-# LANGUAGE OverloadedStrings    #-}
 {-# LANGUAGE TypeFamilies         #-}
 {-# LANGUAGE TemplateHaskell            #-}
 
@@ -95,7 +94,7 @@ instance GQLScalar GeodeticPosition where
     longitude=17.3063 *~ degree,
     geoAlt=0.0 *~ meter,
     ellipsoid=WGS84}
-  parseValue _ = Left "Geodetic position must be in compressed degrees with decimals in WGS84 of format <latitude>;<longitude>"
+  parseValue _ = Left $ pack "Geodetic position must be in compressed degrees with decimals in WGS84 of format <latitude>;<longitude>"
   
   -- | Serialize the data to a graphql scalar string
   serialize p = String $ pack $ show  p
@@ -103,4 +102,4 @@ instance GQLScalar GeodeticPosition where
 -- | Make the GeodeticPosition a type of kind scalar
 instance GQLType GeodeticPosition where
   type KIND GeodeticPosition = SCALAR
-  description = const $ Just $ "This holds a geodetic position and must be in compressed degrees with decimals in WGS84 of format <latitude>;<longitude>"
+  description = const $ Just $ pack "This holds a geodetic position and must be in compressed degrees with decimals in WGS84 of format <latitude>;<longitude>"
