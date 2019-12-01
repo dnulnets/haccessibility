@@ -1,5 +1,3 @@
-{-# LANGUAGE EmptyDataDecls             #-}
-{-# LANGUAGE FlexibleContexts           #-}
 {-# LANGUAGE GADTs                      #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses      #-}
@@ -9,7 +7,7 @@
 {-# LANGUAGE TypeFamilies               #-}
 
 -- |
--- Module      : Acessability.Model
+-- Module      : Acessability.Model.Data
 -- Description : The database model
 -- Copyright   : (c) Tomas Stenlund, 2019
 -- License     : BSD-3
@@ -20,8 +18,7 @@
 -- This module contains the database model and the haskell representation of
 -- the data    
 --
-module Accessability.Model (Item(..),
-                            migrateAll) where
+module Accessability.Model.Data where
 
 --
 -- Import standard libs
@@ -32,17 +29,22 @@ import Data.Text (Text)
 -- Import for persistence
 --
 import Database.Persist
-import Database.Persist.Postgresql
 import Database.Persist.TH
-                              
+                          
 --
--- The Model
+-- Our own types
+--
+import Accessability.Model.Geo (GeodeticPosition(..))
+
+--
+-- | The database model
 --
 share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
 Item
     name Text
     description Text
     level Int
+    position GeodeticPosition
     UniqueItemName name
     deriving Show
 |]

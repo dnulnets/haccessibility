@@ -36,7 +36,9 @@ library:
     - persistent-template
     - yesod
     - http-types
-    
+    - resourcet
+    - monad-logger
+
 executables:
   gql-exe:
     main:                Main.hs
@@ -47,15 +49,6 @@ executables:
     - -with-rtsopts=-N
     dependencies:
     - gql
-    - scotty
-    - transformers
-    - mtl
-    - monad-logger
-    - persistent-postgresql
-    - text
-    - resourcet
-    - monad-logger
-    - yesod
 
 tests:
   gql-test:
