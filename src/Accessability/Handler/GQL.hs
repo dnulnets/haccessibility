@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveGeneric        #-}
 {-# LANGUAGE TypeFamilies         #-}
 {-# LANGUAGE DeriveAnyClass       #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
 
 -- |
 -- Module      : Acessability.Handler.GQL
@@ -20,6 +21,8 @@ module Accessability.Handler.GQL (postGQLR) where
 --
 import Data.Text (Text, pack)
 import GHC.Generics (Generic(..))
+import Control.Monad (void)
+import Control.Exception.Lifted (catch, SomeException(..))
 
 --
 -- Import for morpheus
@@ -39,6 +42,9 @@ import Data.Morpheus.Types    (GQLRootResolver (..),
 -- Yesod and HTTP imports
 --
 import Yesod
+--import Yesod.Core
+import Yesod.Core.Types (HandlerFor(..))
+
 import Network.HTTP.Types (status200)
 
 --
@@ -57,7 +63,7 @@ import Accessability.Model.Geo (
     degree,
     meter,
     (*~))
-import Accessability.Foundation (Handler)
+import Accessability.Foundation (Handler, Server(..))
 import Accessability.Model.GQL
 import qualified Accessability.Model.Data as DB
 
@@ -113,29 +119,40 @@ dbFetchItem name = do
       Nothing ->
          return $ Left "No such item with that name exists"
 
--- https://stackoverflow.com/questions/18287367/haskell-exception-handling-in-non-io-monads
-
 -- | Creates the item
 dbCreateItem:: Item                     -- ^ The key
         ->Handler (Either String Item)  -- ^ The result of the database search
 dbCreateItem item = do
-   key <- runDB $ insert $ DB.Item {DB.itemName = itemName item,
+   key <- runDB $ insertBy $ DB.Item {DB.itemName = itemName item,
       DB.itemDescription = itemDescription item,
       DB.itemLevel = itemLevel item,
       DB.itemSource = itemSource item,
       DB.itemState = itemState item,
       DB.itemPosition = itemPosition item}
-   pitem <- runDB $ get key
-   case pitem of
-      Just dbitem ->
-         return $ Right $ Item { itemName =  DB.itemName dbitem,
-                                             itemDescription = DB.itemDescription dbitem,
-                                             itemLevel = DB.itemLevel dbitem,
-                                             itemSource = DB.itemSource dbitem,
-                                             itemState = DB.itemState dbitem,
-                                             itemPosition = DB.itemPosition dbitem}
-      Nothing ->
-         return $ Left "Failed to retrieve the created item"   
+   case key of
+      Left (Entity _ dbitem) -> return $ Right $ Item { itemName =  DB.itemName dbitem,
+                                    itemDescription = DB.itemDescription dbitem,
+                                    itemLevel = DB.itemLevel dbitem,
+                                    itemSource = DB.itemSource dbitem,
+                                    itemState = DB.itemState dbitem,
+                                    itemPosition = DB.itemPosition dbitem}
+      Right _ -> return $ Right item
+--   return $ Right $ item
+--   case key of
+--      Just key -> do
+--         pitem <- runDB $ get key
+--         case pitem of
+--            Just dbitem ->
+--               return $ Right $ Item { itemName =  DB.itemName dbitem,
+--                                             itemDescription = DB.itemDescription dbitem,
+--                                             itemLevel = DB.itemLevel dbitem,
+--                                             itemSource = DB.itemSource dbitem,
+--                                             itemState = DB.itemState dbitem,
+--                                             itemPosition = DB.itemPosition dbitem}
+--            Nothing ->
+--               return $ Left $ "Failed to retrieve information after insert"
+--      Nothing ->
+--         return $ Left "Failed to insert item, it already exists"
 
 -- | Compose the graphQL api
 gqlApi:: GQLRequest         -- ^ The graphql request

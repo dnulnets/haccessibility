@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: abc42d85753001e208c9bab35c20bd8de01c1fd4258cde84f8670724834757c9
+-- hash: c06f57e66f8de57917a65bfa37a972256c13464107316db8ecc65f6245a3f707
 
 name:           gql
 version:        0.1.0.0
@@ -43,6 +43,7 @@ library
     , dimensional
     , geodetics
     , http-types
+    , lifted-base
     , monad-logger
     , morpheus-graphql
     , persistent
@@ -51,6 +52,7 @@ library
     , resourcet
     , text
     , yesod
+    , yesod-core
   default-language: Haskell2010
 
 executable gql-exe

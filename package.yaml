@@ -38,6 +38,8 @@ library:
     - http-types
     - resourcet
     - monad-logger
+    - lifted-base
+    - yesod-core
 
 executables:
   gql-exe:
