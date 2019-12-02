@@ -34,7 +34,7 @@ import Database.Persist.TH
 -- Our own types
 --
 import Accessability.Model.Geo (GeodeticPosition(..))
-
+import Accessability.Model.GQL (ItemLevel(..), ItemState(..), ItemSource(..))
 --
 -- | The database model
 --
@@ -42,8 +42,11 @@ share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
 Item
     name Text
     description Text
-    level Int
+    level ItemLevel
+    source ItemSource
+    state ItemState
     position GeodeticPosition
+
     UniqueItemName name
     deriving Show
 |]

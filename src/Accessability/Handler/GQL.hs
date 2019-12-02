@@ -94,7 +94,10 @@ resolveItem QueryItemArgs { queryItemArgsName = arg } =
 dbItem:: Text                           -- ^ The key
         ->Handler (Either String Item)  -- ^ The result of the database search
 dbItem _ = return $ Right $ Item {  itemName =  pack "NP3 Arena",
-                                    itemLevel = L1,
+                                    itemDescription = pack "The soccer stadium",
+                                    itemLevel = L4,
+                                    itemSource = Manual,
+                                    itemState = Online,
                                     itemPosition = Position Geodetic {
                                       latitude=62.39129 *~ degree, 
                                       longitude=17.3063 *~ degree,
