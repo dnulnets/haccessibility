@@ -59,6 +59,7 @@ import Accessability.Model.Geo (
     (*~))
 import Accessability.Foundation (Handler)
 import Accessability.Model.GQL
+import qualified Accessability.Model.Data as DB
 
 -- | The GraphQL Root resolver
 rootResolver :: GQLRootResolver Handler () Query Mutation Undefined
@@ -77,8 +78,14 @@ resolveMutation = Mutation { createItem = resolveCreateItem }
 -- | The query item resolver
 resolveCreateItem ::MutationItemArgs      -- ^ The arguments for the query
                   ->MutRes e Handler Item    -- ^ The result of the query
-resolveCreateItem MutationItemArgs { mutationItemArgsName = arg } =
-   liftEither $ dbItem arg
+resolveCreateItem arg =
+   liftEither $ dbCreateItem $ Item { itemName =  createItemName arg,
+      itemDescription = createItemDescription arg,
+      itemLevel = createItemLevel arg,
+      itemSource = createItemSource arg,
+      itemState = createItemState arg,
+      itemPosition = createItemPosition arg
+   }
 
 -- | The query resolver
 resolveQuery::Query (Res () Handler)
@@ -88,22 +95,47 @@ resolveQuery = Query {  queryItem = resolveItem }
 resolveItem::QueryItemArgs          -- ^ The arguments for the query
             ->Res e Handler Item    -- ^ The result of the query
 resolveItem QueryItemArgs { queryItemArgsName = arg } =
-   liftEither $ dbItem arg   
+   liftEither $ dbFetchItem arg   
                                 
 -- | Fetch the item from the database
-dbItem:: Text                           -- ^ The key
+dbFetchItem:: Text                           -- ^ The key
         ->Handler (Either String Item)  -- ^ The result of the database search
-dbItem _ = return $ Right $ Item {  itemName =  pack "NP3 Arena",
-                                    itemDescription = pack "The soccer stadium",
-                                    itemLevel = L4,
-                                    itemSource = Manual,
-                                    itemState = Online,
-                                    itemPosition = Position Geodetic {
-                                      latitude=62.39129 *~ degree, 
-                                      longitude=17.3063 *~ degree,
-                                      geoAlt=0.0 *~ meter,
-                                      ellipsoid=WGS84}
-                                   }
+dbFetchItem name = do
+   item <- runDB $ getBy $ DB.UniqueItemName name
+   case item of
+      Just (Entity itemId item) ->
+         return $ Right $ Item { itemName =  DB.itemName item,
+                                             itemDescription = DB.itemDescription item,
+                                             itemLevel = DB.itemLevel item,
+                                             itemSource = DB.itemSource item,
+                                             itemState = DB.itemState item,
+                                             itemPosition = DB.itemPosition item}
+      Nothing ->
+         return $ Left "No such item with that name exists"
+
+-- https://stackoverflow.com/questions/18287367/haskell-exception-handling-in-non-io-monads
+
+-- | Creates the item
+dbCreateItem:: Item                     -- ^ The key
+        ->Handler (Either String Item)  -- ^ The result of the database search
+dbCreateItem item = do
+   key <- runDB $ insert $ DB.Item {DB.itemName = itemName item,
+      DB.itemDescription = itemDescription item,
+      DB.itemLevel = itemLevel item,
+      DB.itemSource = itemSource item,
+      DB.itemState = itemState item,
+      DB.itemPosition = itemPosition item}
+   pitem <- runDB $ get key
+   case pitem of
+      Just dbitem ->
+         return $ Right $ Item { itemName =  DB.itemName dbitem,
+                                             itemDescription = DB.itemDescription dbitem,
+                                             itemLevel = DB.itemLevel dbitem,
+                                             itemSource = DB.itemSource dbitem,
+                                             itemState = DB.itemState dbitem,
+                                             itemPosition = DB.itemPosition dbitem}
+      Nothing ->
+         return $ Left "Failed to retrieve the created item"   
 
 -- | Compose the graphQL api
 gqlApi:: GQLRequest         -- ^ The graphql request

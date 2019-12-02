@@ -102,13 +102,12 @@ derivePersistField "ItemState"
 --
 
 -- | Definition of the item
-data Item = Item {
-    itemName        :: Text                 -- ^ The name of the item
-    , itemDescription :: Text               -- ^ The description of the item
-    , itemSource      :: ItemSource         -- ^ How the items online state is determined
-    , itemState       :: ItemState          -- ^ The state of the item
-    , itemLevel     :: ItemLevel            -- ^ The accessability level of the item
-    , itemPosition  :: GeodeticPosition     -- ^ The geographical position of the item
+data Item = Item { itemName::Text  -- ^ The name of the item
+    , itemDescription:: Text       -- ^ The description of the item
+    , itemSource:: ItemSource      -- ^ How the items online state is determined
+    , itemState:: ItemState        -- ^ The state of the item
+    , itemLevel:: ItemLevel        -- ^ The accessability level of the item
+    , itemPosition:: GeodeticPosition -- ^ The geographical position of the item
     } deriving (Generic)
 
 -- Make Item a GQL Type
@@ -126,8 +125,13 @@ newtype Mutation m = Mutation {
   } deriving (Generic, GQLType)
 
 -- | The argument for the queryitem query
-data MutationItemArgs = MutationItemArgs
-    { mutationItemArgsName      :: Text -- ^ The name of the item to create
+data MutationItemArgs = MutationItemArgs {
+        createItemName::Text            -- ^ The name of the item
+        , createItemDescription:: Text  -- ^ The description of the item
+        , createItemSource:: ItemSource -- ^ How the items online state is determined
+        , createItemState:: ItemState   -- ^ The state of the item
+        , createItemLevel:: ItemLevel   -- ^ The accessability level of the item
+        , createItemPosition:: GeodeticPosition -- ^ The geographical position of the item
     } deriving (Generic)
 
 --
