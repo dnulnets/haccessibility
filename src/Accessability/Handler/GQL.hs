@@ -1,7 +1,6 @@
 {-# LANGUAGE DeriveGeneric        #-}
 {-# LANGUAGE TypeFamilies         #-}
 {-# LANGUAGE DeriveAnyClass       #-}
-{-# LANGUAGE ScopedTypeVariables   #-}
 
 -- |
 -- Module      : Acessability.Handler.GQL
@@ -21,8 +20,6 @@ module Accessability.Handler.GQL (postGQLR) where
 --
 import Data.Text (Text, pack)
 import GHC.Generics (Generic(..))
-import Control.Monad (void)
-import Control.Exception.Lifted (catch, SomeException(..))
 
 --
 -- Import for morpheus
@@ -42,9 +39,6 @@ import Data.Morpheus.Types    (GQLRootResolver (..),
 -- Yesod and HTTP imports
 --
 import Yesod
---import Yesod.Core
-import Yesod.Core.Types (HandlerFor(..))
-
 import Network.HTTP.Types (status200)
 
 --
@@ -137,22 +131,6 @@ dbCreateItem item = do
                                     itemState = DB.itemState dbitem,
                                     itemPosition = DB.itemPosition dbitem}
       Right _ -> return $ Right item
---   return $ Right $ item
---   case key of
---      Just key -> do
---         pitem <- runDB $ get key
---         case pitem of
---            Just dbitem ->
---               return $ Right $ Item { itemName =  DB.itemName dbitem,
---                                             itemDescription = DB.itemDescription dbitem,
---                                             itemLevel = DB.itemLevel dbitem,
---                                             itemSource = DB.itemSource dbitem,
---                                             itemState = DB.itemState dbitem,
---                                             itemPosition = DB.itemPosition dbitem}
---            Nothing ->
---               return $ Left $ "Failed to retrieve information after insert"
---      Nothing ->
---         return $ Left "Failed to insert item, it already exists"
 
 -- | Compose the graphQL api
 gqlApi:: GQLRequest         -- ^ The graphql request
