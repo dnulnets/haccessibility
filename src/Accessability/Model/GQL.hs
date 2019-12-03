@@ -18,6 +18,7 @@
 module Accessability.Model.GQL (
     Query(..),
     QueryItemArgs(..),
+    QueryItemsArgs(..),
     Item(..),
     ItemLevel(..),
     ItemState(..),
@@ -56,7 +57,7 @@ import Accessability.Model.Geo (GeodeticPosition(..))
 -- Enumeration ItemLevel
 --
 
--- | The enmueration for the accessability level for an item
+-- | The enumeration for the accessability level for an item
 data ItemLevel = L1 | L2 | L3 | L4 | L5 deriving (Generic, Show, Read)
 
 -- Make ItemLevel a GQL type
@@ -142,11 +143,20 @@ data MutationItemArgs = MutationItemArgs {
 data Query m = Query {
 
         -- | Queries a specific item
-        queryItem:: QueryItemArgs -- ^ The arguments for the query
-                    -> m Item     -- ^ The found item
+        queryItem:: QueryItemArgs         -- ^ The arguments for the query
+                    -> m (Maybe Item)     -- ^ The found item
+
+        , queryItems:: QueryItemsArgs
+                    -> m ([Item])
     } deriving (Generic, GQLType)
 
 -- | The argument for the queryitem query
-data QueryItemArgs = QueryItemArgs
-    { queryItemArgsName      :: Text -- ^ The name of the item to search for
+data QueryItemArgs = QueryItemArgs {
+    queryItemName      :: Text -- ^ The name of the item to search for
+    } deriving (Generic)
+
+-- | The argument for the queryitems query
+data QueryItemsArgs = QueryItemsArgs {
+    queryItemsPosition:: GeodeticPosition   -- ^ The name of the item to search for
+    , queryItemsSize::Float                 -- ^ The radius of the circle
     } deriving (Generic)

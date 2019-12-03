@@ -60,6 +60,7 @@ import Accessability.Model.Geo (
 import Accessability.Foundation (Handler, Server(..))
 import Accessability.Model.GQL
 import qualified Accessability.Model.Data as DB
+import Accessability.Model.Transform (toGQLItem, toDataItem)
 
 -- | The GraphQL Root resolver
 rootResolver :: GQLRootResolver Handler () Query Mutation Undefined
@@ -75,7 +76,7 @@ rootResolver =
 resolveMutation::Mutation (MutRes () Handler)
 resolveMutation = Mutation { createItem = resolveCreateItem }
 
--- | The query item resolver
+-- | The mutation create item resolver
 resolveCreateItem ::MutationItemArgs      -- ^ The arguments for the query
                   ->MutRes e Handler Item    -- ^ The result of the query
 resolveCreateItem arg =
@@ -89,47 +90,50 @@ resolveCreateItem arg =
 
 -- | The query resolver
 resolveQuery::Query (Res () Handler)
-resolveQuery = Query {  queryItem = resolveItem }
+resolveQuery = Query {  queryItem = resolveItem,
+                        queryItems = resolveItems }
 
 -- | The query item resolver
 resolveItem::QueryItemArgs          -- ^ The arguments for the query
-            ->Res e Handler Item    -- ^ The result of the query
-resolveItem QueryItemArgs { queryItemArgsName = arg } =
+            ->Res e Handler (Maybe Item)    -- ^ The result of the query
+resolveItem QueryItemArgs { queryItemName = arg } =
    liftEither $ dbFetchItem arg   
                                 
+-- | The query item resolver
+resolveItems::QueryItemsArgs          -- ^ The arguments for the query
+            ->Res e Handler [Item]    -- ^ The result of the query
+resolveItems QueryItemsArgs { queryItemsPosition = pos,
+                              queryItemsSize = radius } =
+   liftEither $ dbFetchItems pos radius   
+
+-- | Fetch the item from the database
+dbFetchItems:: GeodeticPosition              -- ^ The position of the circle
+      ->Float                                -- ^ The radius of the circle
+      ->Handler (Either String [Item]) -- ^ The result of the database search
+dbFetchItems pos radius = do
+   item<- runDB $ selectList [] [Asc DB.ItemName]
+   return $ Right $ clean <$> item
+   where
+      clean (Entity _ dbitem) = toGQLItem dbitem
+
 -- | Fetch the item from the database
 dbFetchItem:: Text                           -- ^ The key
-        ->Handler (Either String Item)  -- ^ The result of the database search
+        ->Handler (Either String (Maybe Item))  -- ^ The result of the database search
 dbFetchItem name = do
    item <- runDB $ getBy $ DB.UniqueItemName name
    case item of
       Just (Entity itemId item) ->
-         return $ Right $ Item { itemName =  DB.itemName item,
-                                             itemDescription = DB.itemDescription item,
-                                             itemLevel = DB.itemLevel item,
-                                             itemSource = DB.itemSource item,
-                                             itemState = DB.itemState item,
-                                             itemPosition = DB.itemPosition item}
+         return $ Right $ Just $ toGQLItem item
       Nothing ->
-         return $ Left "No such item with that name exists"
+         return $ Right $ Nothing
 
 -- | Creates the item
 dbCreateItem:: Item                     -- ^ The key
         ->Handler (Either String Item)  -- ^ The result of the database search
 dbCreateItem item = do
-   key <- runDB $ insertBy $ DB.Item {DB.itemName = itemName item,
-      DB.itemDescription = itemDescription item,
-      DB.itemLevel = itemLevel item,
-      DB.itemSource = itemSource item,
-      DB.itemState = itemState item,
-      DB.itemPosition = itemPosition item}
+   key <- runDB $ insertBy $ toDataItem item
    case key of
-      Left (Entity _ dbitem) -> return $ Right $ Item { itemName =  DB.itemName dbitem,
-                                    itemDescription = DB.itemDescription dbitem,
-                                    itemLevel = DB.itemLevel dbitem,
-                                    itemSource = DB.itemSource dbitem,
-                                    itemState = DB.itemState dbitem,
-                                    itemPosition = DB.itemPosition dbitem}
+      Left (Entity _ dbitem) -> return $ Right $ toGQLItem dbitem
       Right _ -> return $ Right item
 
 -- | Compose the graphQL api
