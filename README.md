@@ -12,7 +12,18 @@ More information is supposed to be added to the location based on the type of lo
 ## graphQL support
 
 ### query
-
+```
+queryItem(
+  queryItemName:String!
+  ):Item
+  
+queryItems(
+  queryItemsLongitudeMin:Float!
+  queryItemsLatitudeMin:Float!
+  queryItemsLatitudeMin:Float!
+  queryItemsLongitudeMax:Float!
+  ):[Item!]!
+```
 #### queryItem
 
 ```
@@ -50,7 +61,32 @@ query FetchThemAll {
 ```
 
 ### mutations
-
+```
+createItem(
+  createItemName:String!
+  createItemDescription:String!
+  createItemSource:ItemSource!
+  createItemState:ItemState!
+  createItemLevel:ItemLevel!
+  createItemLongitude:Float!
+  createItemLatitude:Float!
+  ):Item!
+  
+deleteItem(
+  deleteItemName:String!
+  ):Item
+  
+updateItem(
+  updateItemID:ID!
+  updateItemName:String
+  updateItemDescription:String
+  updateItemSource:ItemSource
+  updateItemState:ItemState
+  updateItemLevel:ItemLevel
+  updateItemLongitude:Float
+  updateItemLatitude:Float
+  ):Item
+```
 #### deleteItem
 ```
 mutation DeleteItem {
