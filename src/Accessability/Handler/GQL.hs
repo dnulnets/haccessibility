@@ -18,7 +18,7 @@ module Accessability.Handler.GQL (postGQLR) where
 --
 -- Import standard libs
 --
-import Data.Text (Text, pack)
+import Data.Text (Text, pack, unpack)
 import GHC.Generics (Generic(..))
 
 --
@@ -47,6 +47,7 @@ import Network.HTTP.Types (status200)
 --
 import Database.Persist
 import Database.Persist.TH
+import Database.Persist.Sql
 
 --
 -- My own imports
@@ -76,7 +77,14 @@ rootResolver =
 -- | The mutation resolver
 resolveMutation::Mutation (MutRes () Handler)
 resolveMutation = Mutation { createItem = resolveCreateItem
-                             , deleteItem = resolveDeleteItem }
+                             , deleteItem = resolveDeleteItem
+                             , updateItem = resolveUpdateItem }
+
+-- | The mutation create item resolver
+resolveUpdateItem ::MutationUpdateItemArgs          -- ^ The arguments for the query
+                  ->MutRes e Handler (Maybe Item)   -- ^ The result of the query
+resolveUpdateItem arg =
+   liftEither $ dbUpdateItem arg
 
 -- | The mutation create item resolver
 resolveDeleteItem ::MutationDeleteItemArgs   -- ^ The arguments for the query
@@ -127,7 +135,7 @@ dbFetchItems:: Double->Double              -- ^ Min and max latitude
             -> Double->Double              -- ^ Min and max longitude
             ->Handler (Either String [Item]) -- ^ The result of the database search
 dbFetchItems minLat maxLat minLon maxLon = do
-   item<- runDB $ selectList [] [Asc DB.ItemName]
+   item <- runDB $ selectList [] [Asc DB.ItemName]
    return $ Right $ clean <$> item
    where
       clean (Entity key dbitem) = toGQLItem key dbitem
@@ -152,6 +160,33 @@ dbCreateItem item = do
       Left (Entity key dbitem) -> return $ Right $ toGQLItem key dbitem
       Right _ -> return $ Right item
 
+-- | Creates the item
+dbUpdateItem:: MutationUpdateItemArgs -- ^ The key
+        ->Handler (Either String (Maybe Item))  -- ^ The result of the database search
+dbUpdateItem item = do
+   runDB $ update (theKey $ updateItemID item) $
+      changeField DB.ItemName (updateItemName item) <>
+      changeField DB.ItemDescription (updateItemDescription item) <>
+      changeField DB.ItemLevel (updateItemLevel item) <>
+      changeField DB.ItemSource (updateItemSource item) <>
+      changeField DB.ItemState (updateItemState item) <>
+      changeField DB.ItemLongitude (realToFrac <$> updateItemLongitude item) <>
+      changeField DB.ItemLatitude (realToFrac <$> updateItemLatitude item)
+   dbitem <- runDB $ get $ theKey $ updateItemID item
+   case dbitem of
+      Just dbitem ->
+         return $ Right $ Just $ toGQLItem (theKey (updateItemID item)) dbitem
+      Nothing ->
+         return $ Right $ Nothing   
+ where
+   
+   theKey::ID -> Key DB.Item
+   theKey key = toSqlKey $ read $ unpack $ unpackID $ key
+
+   changeField::(PersistField a) => EntityField DB.Item a -> Maybe a -> [Update DB.Item]
+   changeField field (Just value) = [field =. value]
+   changeField _ Nothing  = []
+   
 -- | Creates the item
 dbDeleteItem:: Text                     -- ^ The key
             ->Handler (Either String ())  -- ^ The result of the database search

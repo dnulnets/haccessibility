@@ -26,7 +26,8 @@ module Accessability.Model.GQL (
     
     Mutation(..),
     MutationCreateItemArgs(..),
-    MutationDeleteItemArgs(..)
+    MutationDeleteItemArgs(..),
+    MutationUpdateItemArgs(..)
 
     ) where
 
@@ -129,6 +130,7 @@ instance GQLType Item where
 data Mutation m = Mutation {
     createItem :: MutationCreateItemArgs -> m Item
     , deleteItem :: MutationDeleteItemArgs -> m (Maybe Item)
+    , updateItem :: MutationUpdateItemArgs -> m (Maybe Item)
   } deriving (Generic, GQLType)
 
 -- | The argument for the queryitem query
@@ -145,6 +147,18 @@ data MutationCreateItemArgs = MutationCreateItemArgs {
 -- | The argument for the queryitem query
 data MutationDeleteItemArgs = MutationDeleteItemArgs {
         deleteItemName::Text            -- ^ The name of the item
+    } deriving (Generic)
+
+-- | The argument for the queryitem query
+data MutationUpdateItemArgs = MutationUpdateItemArgs {
+        updateItemID::ID
+        , updateItemName::Maybe Text            -- ^ The name of the item
+        , updateItemDescription:: Maybe Text  -- ^ The description of the item
+        , updateItemSource:: Maybe ItemSource -- ^ How the items online state is determined
+        , updateItemState:: Maybe ItemState   -- ^ The state of the item
+        , updateItemLevel:: Maybe ItemLevel   -- ^ The accessability level of the item
+        , updateItemLongitude:: Maybe Float  -- ^ The longitude of the location (WGS84)
+        , updateItemLatitude:: Maybe Float   -- ^ The latitude of the location (WGS84)
     } deriving (Generic)
 
 --
