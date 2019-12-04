@@ -47,7 +47,7 @@ import Database.Persist.TH
 --
 
 import Data.Morpheus.Kind     (SCALAR, OBJECT, ENUM)
-import Data.Morpheus.Types    (GQLType(..), GQLScalar(..))
+import Data.Morpheus.Types    (GQLType(..), GQLScalar(..), ID(..))
 
 --
 -- My own imports
@@ -105,7 +105,9 @@ derivePersistField "ItemState"
 --
 
 -- | Definition of the item
-data Item = Item { itemName::Text  -- ^ The name of the item
+data Item = Item { 
+    itemID::Maybe ID
+    , itemName::Text  -- ^ The name of the item
     , itemDescription:: Text       -- ^ The description of the item
     , itemSource:: ItemSource      -- ^ How the items online state is determined
     , itemState:: ItemState        -- ^ The state of the item

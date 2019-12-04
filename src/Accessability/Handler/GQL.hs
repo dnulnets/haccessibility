@@ -28,6 +28,7 @@ import Data.Morpheus.Kind     (SCALAR, OBJECT, ENUM)
 import Data.Morpheus          (interpreter)
 import Data.Morpheus.Types    (GQLRootResolver (..),
                               Res,
+                              ID(..),
                               MutRes,
                               Undefined(..),
                               GQLType(..),
@@ -88,7 +89,8 @@ resolveDeleteItem arg = do
 resolveCreateItem ::MutationCreateItemArgs   -- ^ The arguments for the query
                   ->MutRes e Handler Item    -- ^ The result of the query
 resolveCreateItem arg =
-   liftEither $ dbCreateItem $ Item { itemName =  createItemName arg,
+   liftEither $ dbCreateItem $ Item { itemID = Nothing,
+      itemName =  createItemName arg,
       itemDescription = createItemDescription arg,
       itemLevel = createItemLevel arg,
       itemSource = createItemSource arg,
@@ -128,7 +130,7 @@ dbFetchItems minLat maxLat minLon maxLon = do
    item<- runDB $ selectList [] [Asc DB.ItemName]
    return $ Right $ clean <$> item
    where
-      clean (Entity _ dbitem) = toGQLItem dbitem
+      clean (Entity key dbitem) = toGQLItem key dbitem
 
 -- | Fetch the item from the database
 dbFetchItem:: Text                           -- ^ The key
@@ -136,8 +138,8 @@ dbFetchItem:: Text                           -- ^ The key
 dbFetchItem name = do
    item <- runDB $ getBy $ DB.UniqueItemName name
    case item of
-      Just (Entity itemId item) ->
-         return $ Right $ Just $ toGQLItem item
+      Just (Entity key item) ->
+         return $ Right $ Just $ toGQLItem key item
       Nothing ->
          return $ Right $ Nothing
 
@@ -147,7 +149,7 @@ dbCreateItem:: Item                     -- ^ The key
 dbCreateItem item = do
    key <- runDB $ insertBy $ toDataItem item
    case key of
-      Left (Entity _ dbitem) -> return $ Right $ toGQLItem dbitem
+      Left (Entity key dbitem) -> return $ Right $ toGQLItem key dbitem
       Right _ -> return $ Right item
 
 -- | Creates the item

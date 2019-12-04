@@ -13,13 +13,18 @@ module Accessability.Model.Transform (
     toDataItem,
     toGQLItem) where
 
+import Data.Text (Text, pack)
+import Data.Morpheus.Types    (ID(..))
+import Database.Persist.Sql
+
 import qualified Accessability.Model.Data as DB
 import qualified Accessability.Model.GQL as GQL
 
 -- | Converts a database item to a GQL item
-toGQLItem::DB.Item  -- ^ The database item
+toGQLItem::Key DB.Item -> DB.Item  -- ^ The database item
     ->GQL.Item      -- ^ The GQL item
-toGQLItem item = GQL.Item { GQL.itemName =  DB.itemName item,
+toGQLItem key item = GQL.Item { GQL.itemID = Just $ ID {unpackID = pack $ show $ fromSqlKey key },
+    GQL.itemName =  DB.itemName item,
     GQL.itemDescription = DB.itemDescription item,
     GQL.itemLevel = DB.itemLevel item,
     GQL.itemSource = DB.itemSource item,
