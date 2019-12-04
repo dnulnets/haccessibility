@@ -11,4 +11,4 @@ More information is supposed to be added to the location based on the type of lo
 
 ## Cyber Security
 
-Currently no scyber security is built in, it will be added later but kept in mind when developing. It will be a TLS connection and an API-key type setup.
+Currently no cyber security is built in, it will be added later but kept in mind when developing. It will be a TLS connection and an API-key type setup.

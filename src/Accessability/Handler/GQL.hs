@@ -85,7 +85,8 @@ resolveCreateItem arg =
       itemLevel = createItemLevel arg,
       itemSource = createItemSource arg,
       itemState = createItemState arg,
-      itemPosition = createItemPosition arg
+      itemLongitude = createItemLongitude arg,
+      itemLatitude = createItemLatitude arg
    }
 
 -- | The query resolver
@@ -102,15 +103,20 @@ resolveItem QueryItemArgs { queryItemName = arg } =
 -- | The query item resolver
 resolveItems::QueryItemsArgs          -- ^ The arguments for the query
             ->Res e Handler [Item]    -- ^ The result of the query
-resolveItems QueryItemsArgs { queryItemsPosition = pos,
-                              queryItemsSize = radius } =
-   liftEither $ dbFetchItems pos radius   
+resolveItems QueryItemsArgs { queryItemsLatitudeMax = maxLat,
+                              queryItemsLongitudeMax = maxLon,
+                              queryItemsLongitudeMin = minLon,
+                              queryItemsLatitudeMin = minLat } =
+   liftEither $ dbFetchItems (realToFrac minLat)
+      (realToFrac maxLat)
+      (realToFrac minLon)
+      (realToFrac maxLon)
 
 -- | Fetch the item from the database
-dbFetchItems:: GeodeticPosition              -- ^ The position of the circle
-      ->Float                                -- ^ The radius of the circle
-      ->Handler (Either String [Item]) -- ^ The result of the database search
-dbFetchItems pos radius = do
+dbFetchItems:: Double->Double              -- ^ Min and max latitude
+            -> Double->Double              -- ^ Min and max longitude
+            ->Handler (Either String [Item]) -- ^ The result of the database search
+dbFetchItems minLat maxLat minLon maxLon = do
    item<- runDB $ selectList [] [Asc DB.ItemName]
    return $ Right $ clean <$> item
    where

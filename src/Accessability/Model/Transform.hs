@@ -24,7 +24,8 @@ toGQLItem item = GQL.Item { GQL.itemName =  DB.itemName item,
     GQL.itemLevel = DB.itemLevel item,
     GQL.itemSource = DB.itemSource item,
     GQL.itemState = DB.itemState item,
-    GQL.itemPosition = DB.itemPosition item}
+    GQL.itemLongitude = realToFrac $ DB.itemLongitude item,
+    GQL.itemLatitude = realToFrac $ DB.itemLatitude item}
 
 -- | Converts a GQL item to a database item
 toDataItem::GQL.Item   -- ^ The database item
@@ -34,4 +35,5 @@ toDataItem item = DB.Item { DB.itemName =  GQL.itemName item,
     DB.itemLevel = GQL.itemLevel item,
     DB.itemSource = GQL.itemSource item,
     DB.itemState = GQL.itemState item,
-    DB.itemPosition = GQL.itemPosition item}
+    DB.itemLatitude = realToFrac $ GQL.itemLatitude item,
+    DB.itemLongitude = realToFrac $ GQL.itemLongitude item}

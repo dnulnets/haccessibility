@@ -35,18 +35,22 @@ import Database.Persist.TH
 --
 import Accessability.Model.Geo (GeodeticPosition(..))
 import Accessability.Model.GQL (ItemLevel(..), ItemState(..), ItemSource(..))
---
+
 -- | The database model
 --
 share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
-Item
-    name Text
-    description Text
-    level ItemLevel
-    source ItemSource
-    state ItemState
-    position GeodeticPosition
 
-    UniqueItemName name
+-- | The item, i.e. our base location
+Item
+    name Text           -- ^ Name of the item
+    description Text    -- ^ Description of the location
+    level ItemLevel     -- ^ The level of accessability
+    source ItemSource   -- ^ The source of the state
+    state ItemState     -- ^ The state of the item
+    longitude Double    -- ^ Longitude in WGS84
+    latitude Double     -- ^ Latitude in WGS84
+
+    UniqueItemName name -- ^ The name is unique
+
     deriving Show
 |]

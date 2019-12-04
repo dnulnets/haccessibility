@@ -1,4 +1,5 @@
 client_session_key.aes
+morpheus-graphql
 dist
 dist-*
 cabal-dev

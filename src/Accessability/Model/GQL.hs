@@ -46,7 +46,8 @@ import Database.Persist.TH
 --
 
 import Data.Morpheus.Kind     (SCALAR, OBJECT, ENUM)
-import Data.Morpheus.Types    (GQLType(..))
+import Data.Morpheus.Types    (GQLType(..), GQLScalar(..))
+
 --
 -- My own imports
 --
@@ -108,7 +109,8 @@ data Item = Item { itemName::Text  -- ^ The name of the item
     , itemSource:: ItemSource      -- ^ How the items online state is determined
     , itemState:: ItemState        -- ^ The state of the item
     , itemLevel:: ItemLevel        -- ^ The accessability level of the item
-    , itemPosition:: GeodeticPosition -- ^ The geographical position of the item
+    , itemLatitude:: Float        -- ^ The latitude of the item
+    , itemLongitude:: Float       -- ^ The longitude of the item
     } deriving (Generic)
 
 -- Make Item a GQL Type
@@ -132,7 +134,8 @@ data MutationItemArgs = MutationItemArgs {
         , createItemSource:: ItemSource -- ^ How the items online state is determined
         , createItemState:: ItemState   -- ^ The state of the item
         , createItemLevel:: ItemLevel   -- ^ The accessability level of the item
-        , createItemPosition:: GeodeticPosition -- ^ The geographical position of the item
+        , createItemLongitude:: Float  -- ^ The longitude of the location (WGS84)
+        , createItemLatitude:: Float   -- ^ The latitude of the location (WGS84)
     } deriving (Generic)
 
 --
@@ -157,6 +160,9 @@ data QueryItemArgs = QueryItemArgs {
 
 -- | The argument for the queryitems query
 data QueryItemsArgs = QueryItemsArgs {
-    queryItemsPosition:: GeodeticPosition   -- ^ The name of the item to search for
-    , queryItemsSize::Float                 -- ^ The radius of the circle
+    queryItemsLongitudeMin:: Float
+    , queryItemsLongitudeMax::Float
+    , queryItemsLatitudeMin::Float
+    , queryItemsLatitudeMax::Float
     } deriving (Generic)
+
