@@ -74,10 +74,18 @@ rootResolver =
 
 -- | The mutation resolver
 resolveMutation::Mutation (MutRes () Handler)
-resolveMutation = Mutation { createItem = resolveCreateItem }
+resolveMutation = Mutation { createItem = resolveCreateItem
+                             , deleteItem = resolveDeleteItem }
 
 -- | The mutation create item resolver
-resolveCreateItem ::MutationItemArgs      -- ^ The arguments for the query
+resolveDeleteItem ::MutationDeleteItemArgs   -- ^ The arguments for the query
+                  ->MutRes e Handler (Maybe Item)    -- ^ The result of the query
+resolveDeleteItem arg = do
+   lift $ dbDeleteItem $ deleteItemName arg
+   return $ Nothing
+
+-- | The mutation create item resolver
+resolveCreateItem ::MutationCreateItemArgs   -- ^ The arguments for the query
                   ->MutRes e Handler Item    -- ^ The result of the query
 resolveCreateItem arg =
    liftEither $ dbCreateItem $ Item { itemName =  createItemName arg,
@@ -141,6 +149,13 @@ dbCreateItem item = do
    case key of
       Left (Entity _ dbitem) -> return $ Right $ toGQLItem dbitem
       Right _ -> return $ Right item
+
+-- | Creates the item
+dbDeleteItem:: Text                     -- ^ The key
+            ->Handler (Either String ())  -- ^ The result of the database search
+dbDeleteItem name = do
+   runDB $ deleteBy $ DB.UniqueItemName name
+   return $ Right ()
 
 -- | Compose the graphQL api
 gqlApi:: GQLRequest         -- ^ The graphql request
