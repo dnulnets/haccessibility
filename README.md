@@ -9,9 +9,29 @@ A basic geographical location in this prototype contains a unique name, a descri
 
 More information is supposed to be added to the location based on the type of location, such as store, restaurant, public space, etc. (**Not done yet**)
 
-## graphQL support
+## graphQL schema
+The graphQL interface is located at **/gql** and is in GarphQL format, the content type must be **application/json**.
 
-### query
+The following types are defined in the graphQL schema:
+
+```
+enum ItemSource { Manual, Automatic}
+enum ItemLevel { L0, L1, L2, L3, L4, L5}
+enum ItemState { Unknown, Online, Offline }
+
+type Item {
+  itemID:ID
+  itemName:String!
+  itemDescription:String!
+  itemSource:ItemSource!
+  itemState:ItemState!
+  itemLevel:ItemLevel!
+  itemLatitude:Float!
+  itemLongitude:Float!
+}
+```
+
+### The Query Type
 ```
 queryItem(
   queryItemName:String!
@@ -24,7 +44,7 @@ queryItems(
   queryItemsLongitudeMax:Float!
   ):[Item!]!
 ```
-#### queryItem
+#### queryItem Example
 
 ```
 query FetchThemAll { queryItem (
@@ -41,7 +61,7 @@ query FetchThemAll { queryItem (
   }
 }
 ```
-#### queryItems
+#### queryItems Example
 
 ```
 query FetchThemAll {
@@ -60,7 +80,7 @@ query FetchThemAll {
 }
 ```
 
-### mutations
+### The mutation type
 ```
 createItem(
   createItemName:String!
@@ -87,7 +107,7 @@ updateItem(
   updateItemLatitude:Float
   ):Item
 ```
-#### deleteItem
+#### deleteItem Example
 ```
 mutation DeleteItem {
   deleteItem (
@@ -95,7 +115,7 @@ mutation DeleteItem {
   )
 }
 ```
-#### createItem
+#### createItem Example
 ```
 mutation CreateANewOne { createItem ( 
   createItemName : "NP8 Arena"
@@ -117,7 +137,7 @@ mutation CreateANewOne { createItem (
   }
 }
 ```
-#### updateItem
+#### updateItem Example
 ```
 mutation UpdateAnItem { updateItem ( 
   updateItemID : "8"
@@ -134,7 +154,3 @@ mutation UpdateAnItem { updateItem (
   }
 }
 ```
-
-## Cyber Security
-
-Currently no cyber security is built in, it will be added later but kept in mind when developing. It will be a TLS connection and an API-key type setup.

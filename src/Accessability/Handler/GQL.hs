@@ -63,6 +63,11 @@ import Accessability.Foundation (Handler, Server(..))
 import Accessability.Model.GQL
 import qualified Accessability.Model.Data as DB
 import Accessability.Model.Transform (toGQLItem, toDataItem)
+import qualified Accessability.Model.Database as DBF
+
+-- | Convert from ID to database key
+theKey::ID -> Key DB.Item
+theKey key = toSqlKey $ read $ unpack $ unpackID $ key
 
 -- | The GraphQL Root resolver
 rootResolver :: GQLRootResolver Handler () Query Mutation Undefined
@@ -84,27 +89,40 @@ resolveMutation = Mutation { createItem = resolveCreateItem
 resolveUpdateItem ::MutationUpdateItemArgs          -- ^ The arguments for the query
                   ->MutRes e Handler (Maybe Item)   -- ^ The result of the query
 resolveUpdateItem arg =
-   liftEither $ dbUpdateItem arg
+   liftEither $ ((toGQLItem <$>) <$>) <$> (DBF.dbUpdateItem (theKey $ updateItemID arg) $
+         changeField DB.ItemName (updateItemName arg) <>
+         changeField DB.ItemDescription (updateItemDescription arg) <>
+         changeField DB.ItemLevel (updateItemLevel arg) <>
+         changeField DB.ItemSource (updateItemSource arg) <>
+         changeField DB.ItemState (updateItemState arg) <>
+         changeField DB.ItemLongitude (realToFrac <$> updateItemLongitude arg) <>
+         changeField DB.ItemLatitude (realToFrac <$> updateItemLatitude arg))
 
+   where
+   
+      changeField::(PersistField a) => EntityField DB.Item a -> Maybe a -> [Update DB.Item]
+      changeField field (Just value) = [field =. value]
+      changeField _ Nothing  = []
+   
 -- | The mutation create item resolver
 resolveDeleteItem ::MutationDeleteItemArgs   -- ^ The arguments for the query
                   ->MutRes e Handler (Maybe Item)    -- ^ The result of the query
 resolveDeleteItem arg = do
-   lift $ dbDeleteItem $ deleteItemName arg
+   lift $ DBF.dbDeleteItem $ toSqlKey $ read $ unpack $ unpackID $ deleteItemID arg
    return $ Nothing
 
 -- | The mutation create item resolver
 resolveCreateItem ::MutationCreateItemArgs   -- ^ The arguments for the query
                   ->MutRes e Handler Item    -- ^ The result of the query
 resolveCreateItem arg =
-   liftEither $ dbCreateItem $ Item { itemID = Nothing,
-      itemName =  createItemName arg,
-      itemDescription = createItemDescription arg,
-      itemLevel = createItemLevel arg,
-      itemSource = createItemSource arg,
-      itemState = createItemState arg,
-      itemLongitude = createItemLongitude arg,
-      itemLatitude = createItemLatitude arg
+   liftEither $ ((toGQLItem <$>) <$>) <$> DBF.dbCreateItem $ DB.Item { 
+      DB.itemName =  createItemName arg,
+      DB.itemDescription = createItemDescription arg,
+      DB.itemLevel = createItemLevel arg,
+      DB.itemSource = createItemSource arg,
+      DB.itemState = createItemState arg,
+      DB.itemLongitude = realToFrac $ createItemLongitude arg,
+      DB.itemLatitude = realToFrac $ createItemLatitude arg
    }
 
 -- | The query resolver
@@ -115,8 +133,8 @@ resolveQuery = Query {  queryItem = resolveItem,
 -- | The query item resolver
 resolveItem::QueryItemArgs          -- ^ The arguments for the query
             ->Res e Handler (Maybe Item)    -- ^ The result of the query
-resolveItem QueryItemArgs { queryItemName = arg } =
-   liftEither $ dbFetchItem arg   
+resolveItem args = do
+   liftEither $ ((toGQLItem <$>) <$>) <$> (DBF.dbFetchItem $ theKey $ queryItemID args)
                                 
 -- | The query item resolver
 resolveItems::QueryItemsArgs          -- ^ The arguments for the query
@@ -124,76 +142,12 @@ resolveItems::QueryItemsArgs          -- ^ The arguments for the query
 resolveItems QueryItemsArgs { queryItemsLatitudeMax = maxLat,
                               queryItemsLongitudeMax = maxLon,
                               queryItemsLongitudeMin = minLon,
-                              queryItemsLatitudeMin = minLat } =
-   liftEither $ dbFetchItems (realToFrac minLat)
+                              queryItemsLatitudeMin = minLat } = do   
+   liftEither $ ((toGQLItem <$>) <$>) <$> DBF.dbFetchItems (realToFrac minLat)
       (realToFrac maxLat)
       (realToFrac minLon)
       (realToFrac maxLon)
-
--- | Fetch the item from the database
-dbFetchItems:: Double->Double              -- ^ Min and max latitude
-            -> Double->Double              -- ^ Min and max longitude
-            ->Handler (Either String [Item]) -- ^ The result of the database search
-dbFetchItems minLat maxLat minLon maxLon = do
-   item <- runDB $ selectList [] [Asc DB.ItemName]
-   return $ Right $ clean <$> item
-   where
-      clean (Entity key dbitem) = toGQLItem key dbitem
-
--- | Fetch the item from the database
-dbFetchItem:: Text                           -- ^ The key
-        ->Handler (Either String (Maybe Item))  -- ^ The result of the database search
-dbFetchItem name = do
-   item <- runDB $ getBy $ DB.UniqueItemName name
-   case item of
-      Just (Entity key item) ->
-         return $ Right $ Just $ toGQLItem key item
-      Nothing ->
-         return $ Right $ Nothing
-
--- | Creates the item
-dbCreateItem:: Item                     -- ^ The key
-        ->Handler (Either String Item)  -- ^ The result of the database search
-dbCreateItem item = do
-   key <- runDB $ insertBy $ toDataItem item
-   case key of
-      Left (Entity key dbitem) -> return $ Right $ toGQLItem key dbitem
-      Right _ -> return $ Right item
-
--- | Creates the item
-dbUpdateItem:: MutationUpdateItemArgs -- ^ The key
-        ->Handler (Either String (Maybe Item))  -- ^ The result of the database search
-dbUpdateItem item = do
-   runDB $ update (theKey $ updateItemID item) $
-      changeField DB.ItemName (updateItemName item) <>
-      changeField DB.ItemDescription (updateItemDescription item) <>
-      changeField DB.ItemLevel (updateItemLevel item) <>
-      changeField DB.ItemSource (updateItemSource item) <>
-      changeField DB.ItemState (updateItemState item) <>
-      changeField DB.ItemLongitude (realToFrac <$> updateItemLongitude item) <>
-      changeField DB.ItemLatitude (realToFrac <$> updateItemLatitude item)
-   dbitem <- runDB $ get $ theKey $ updateItemID item
-   case dbitem of
-      Just dbitem ->
-         return $ Right $ Just $ toGQLItem (theKey (updateItemID item)) dbitem
-      Nothing ->
-         return $ Right $ Nothing   
- where
    
-   theKey::ID -> Key DB.Item
-   theKey key = toSqlKey $ read $ unpack $ unpackID $ key
-
-   changeField::(PersistField a) => EntityField DB.Item a -> Maybe a -> [Update DB.Item]
-   changeField field (Just value) = [field =. value]
-   changeField _ Nothing  = []
-   
--- | Creates the item
-dbDeleteItem:: Text                     -- ^ The key
-            ->Handler (Either String ())  -- ^ The result of the database search
-dbDeleteItem name = do
-   runDB $ deleteBy $ DB.UniqueItemName name
-   return $ Right ()
-
 -- | Compose the graphQL api
 gqlApi:: GQLRequest         -- ^ The graphql request
    -> Handler GQLResponse   -- ^ The graphql response

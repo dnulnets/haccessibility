@@ -146,7 +146,7 @@ data MutationCreateItemArgs = MutationCreateItemArgs {
 
 -- | The argument for the queryitem query
 data MutationDeleteItemArgs = MutationDeleteItemArgs {
-        deleteItemName::Text            -- ^ The name of the item
+        deleteItemID::ID            -- ^ The key of the item
     } deriving (Generic)
 
 -- | The argument for the queryitem query
@@ -178,7 +178,7 @@ data Query m = Query {
 
 -- | The argument for the queryitem query
 data QueryItemArgs = QueryItemArgs {
-    queryItemName      :: Text -- ^ The name of the item to search for
+    queryItemID      :: ID -- ^ The identifier
     } deriving (Generic)
 
 -- | The argument for the queryitems query
