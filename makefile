@@ -1,3 +1,7 @@
+
+build-local:
+	stack build
+
 image-db:	
 	docker build -t haccdb:1 -t haccdb:1.0 -t haccdb:latest -f deployment/Dockerfile.db .
 
