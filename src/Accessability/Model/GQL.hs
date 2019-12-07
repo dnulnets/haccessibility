@@ -172,8 +172,9 @@ data Query m = Query {
         queryItem:: QueryItemArgs         -- ^ The arguments for the query
                     -> m (Maybe Item)     -- ^ The found item
 
-        , queryItems:: QueryItemsArgs
-                    -> m ([Item])
+        , queryItems:: QueryItemsArgs   -- ^ The arguments for the query
+                    -> m ([Item])       -- ^ The list of found items
+
     } deriving (Generic, GQLType)
 
 -- | The argument for the queryitem query
@@ -183,9 +184,11 @@ data QueryItemArgs = QueryItemArgs {
 
 -- | The argument for the queryitems query
 data QueryItemsArgs = QueryItemsArgs {
-    queryItemsLongitudeMin:: Float
-    , queryItemsLongitudeMax::Float
-    , queryItemsLatitudeMin::Float
-    , queryItemsLatitudeMax::Float
+    queryItemsLongitudeMin:: Maybe Float
+    , queryItemsLongitudeMax::Maybe Float
+    , queryItemsLatitudeMin::Maybe Float
+    , queryItemsLatitudeMax::Maybe Float
+    , queryItemsLimit::Maybe Int
+    , queryItemsText::Maybe Text
     } deriving (Generic)
 

@@ -44,25 +44,25 @@ import Accessability.Foundation (Handler)
 import Accessability.Model.Data
 
 -- | Fetch the item from the database
-dbFetchItem :: Key Item                                 -- ^ The key
+dbFetchItem :: Key Item                                         -- ^ The key
             ->Handler (Either String (Maybe (Key Item, Item)))  -- ^ The result of the database search
 dbFetchItem key = do
    item <- runDB $ get key
    return $ Right $ (\i->(key,i)) <$> item
 
 -- | Fetch the item from the database
-dbFetchItems:: Double->Double              -- ^ Min and max latitude
-            -> Double->Double              -- ^ Min and max longitude
+dbFetchItems:: [Filter Item]     -- ^ The select item
+            -> Maybe Int         -- ^ Max numbr of items
             ->Handler (Either String [(Key Item, Item)]) -- ^ The result of the database search
-dbFetchItems minLat maxLat minLon maxLon = do
-   item <- runDB $ selectList [] [Asc ItemName]
+dbFetchItems filter limit = do
+   item <- runDB $ selectList filter [LimitTo $ maybe 10 id limit]
    return $ Right $ clean <$> item
    where
       clean (Entity key dbitem) = (key, dbitem)
 
 -- | Creates the item
-dbCreateItem:: Item                     -- ^ The key
-        ->Handler (Either String (Key Item, Item))  -- ^ The result of the database search
+dbCreateItem:: Item           -- ^ The key
+         -> Handler (Either String (Key Item, Item))  -- ^ The result of the database search
 dbCreateItem item = do
    key <- runDB $ insertBy $ item
    case key of
