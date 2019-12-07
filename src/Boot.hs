@@ -19,8 +19,11 @@ module Boot (serverMain) where
 --
 -- Standard libraries
 --
+import System.Environment (getArgs)
 import Control.Monad.Trans.Resource (runResourceT)
 import Control.Monad.Logger (runStderrLoggingT)
+import Data.Maybe (listToMaybe, maybe)
+import Data.ByteString.Char8 (pack)
 
 --
 -- Persistence libraries
@@ -55,7 +58,8 @@ mkYesodDispatch "Server" resourcesServer
 -- | Main starting point for the server
 serverMain :: IO ()
 serverMain = do
-    runStderrLoggingT $ withPostgresqlPool  "postgresql://heatserver:heatserver@localhost:32435/heat" 5 $ \pool -> liftIO $ do
+    database <- (maybe "haccdb:5000" id) . listToMaybe <$> getArgs
+    runStderrLoggingT $ withPostgresqlPool (pack ("postgresql://heatserver:heatserver@" <> database <> "/heat")) 5 $ \pool -> liftIO $ do
         runResourceT $ flip runSqlPool pool $ do
             runMigration migrateAll
         warp 3000 $ Server { serverConnectionPool = pool }

@@ -18,7 +18,8 @@ module Accessability.Model.Database (
     dbFetchItems,
     dbCreateItem,
     dbDeleteItem,
-    dbUpdateItem) where
+    dbUpdateItem,
+    theKey) where
 
 --
 -- Import standard libs
@@ -37,11 +38,17 @@ import Database.Persist
 import Database.Persist.TH
 import Database.Persist.Sql
 
+import Data.Morpheus.Types (ID(..))
+
 --
 -- My own imports
 --
 import Accessability.Foundation (Handler)
 import Accessability.Model.Data
+
+-- | Convert from ID to database key
+theKey::ID -> Key Item
+theKey key = toSqlKey $ read $ unpack $ unpackID $ key
 
 -- | Fetch the item from the database
 dbFetchItem :: Key Item                                         -- ^ The key
