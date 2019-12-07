@@ -1,0 +1,5 @@
+FROM fpco/stack-build:lts-14.16
+RUN mkdir /opt/build
+COPY . /opt/build
+RUN cd /opt/build && stack build --system-ghc && stack install
+

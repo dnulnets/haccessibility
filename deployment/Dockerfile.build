@@ -1,0 +1,10 @@
+FROM haccbuild:latest as build
+COPY . /opt/build
+RUN cd /opt/build && stack clean && stack build --system-ghc && stack install
+FROM ubuntu:disco
+RUN mkdir -p /opt/gql
+ARG BINARY_PATH
+WORKDIR /opt/gql
+RUN apt-get update && apt-get install -y libpq-dev
+COPY --from=build /root/.local/bin .
+CMD ["/opt/gql/gql-exe"]
