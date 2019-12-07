@@ -58,7 +58,7 @@ mkYesodDispatch "Server" resourcesServer
 -- | Main starting point for the server
 serverMain :: IO ()
 serverMain = do
-    database <- (maybe "haccdb:5000" id) . listToMaybe <$> getArgs
+    database <- (maybe "haccdb:5432" id) . listToMaybe <$> getArgs
     runStderrLoggingT $ withPostgresqlPool (pack ("postgresql://heatserver:heatserver@" <> database <> "/heat")) 5 $ \pool -> liftIO $ do
         runResourceT $ flip runSqlPool pool $ do
             runMigration migrateAll
