@@ -50,6 +50,9 @@ import Accessability.Handler.GQL (
 
 import Accessability.Handler.REST (
     getItemR,
+    putItemR,
+    deleteItemR,
+    postCreateItemR,
     postItemsR)
     
 import Accessability.Model.DB (

@@ -16,7 +16,9 @@
 -- This module contains the types for the graphQL support
 --
 module Accessability.Model.REST (
-    PostItemsBody(..)) where
+    PostItemsBody(..),
+    PostItemBody(..),
+    PutItemBody(..)) where
 
 --
 -- Import standard libs
@@ -29,6 +31,14 @@ import GHC.Generics (Generic(..))
 --
 import Data.Aeson
 import Data.Aeson.TH
+
+--
+-- Our own
+--
+import Accessability.Model.Generic (
+    ItemLevel(..),
+    ItemState(..),
+    ItemSource(..))
 
 -- | The argument for the queryitems query
 data PostItemsBody = PostItemsBody {
@@ -44,3 +54,35 @@ data PostItemsBody = PostItemsBody {
 $(deriveJSON defaultOptions {
     fieldLabelModifier = drop 9 -- Get rid of the 'postItem' in the field names
   } ''PostItemsBody)
+
+-- | The argument for the queryitems query
+data PutItemBody = PutItemBody {
+    putItemName::Maybe Text            -- ^ The name of the item
+    , putItemDescription:: Maybe Text    -- ^ The description of the item
+    , putItemSource:: Maybe ItemSource   -- ^ How the items online state is determined
+    , putItemState:: Maybe ItemState     -- ^ The state of the item
+    , putItemLevel:: Maybe ItemLevel     -- ^ The accessability level of the item
+    , putItemLatitude:: Maybe Float      -- ^ The latitude of the item
+    , putItemLongitude:: Maybe Float     -- ^ The longitude of the item
+    } deriving (Generic)
+
+-- |Automatically derive JSON but we do not want the first charatcer in the field to go out
+$(deriveJSON defaultOptions {
+    fieldLabelModifier = drop 7 -- Get rid of the 'postItem' in the field names
+  } ''PutItemBody)
+
+  -- | The argument for the queryitems query
+data PostItemBody = PostItemBody {
+    postItemName::Text            -- ^ The name of the item
+    , postItemDescription::Text    -- ^ The description of the item
+    , postItemSource:: ItemSource   -- ^ How the items online state is determined
+    , postItemState:: ItemState     -- ^ The state of the item
+    , postItemLevel:: ItemLevel     -- ^ The accessability level of the item
+    , postItemLatitude:: Float      -- ^ The latitude of the item
+    , postItemLongitude:: Float     -- ^ The longitude of the item
+    } deriving (Generic)
+
+-- |Automatically derive JSON but we do not want the first charatcer in the field to go out
+$(deriveJSON defaultOptions {
+    fieldLabelModifier = drop 8 -- Get rid of the 'postItem' in the field names
+  } ''PostItemBody)

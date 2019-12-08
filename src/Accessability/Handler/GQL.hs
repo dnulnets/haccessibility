@@ -88,19 +88,13 @@ resolveUpdateItem ::MutationUpdateItemArgs          -- ^ The arguments for the q
                   ->MutRes e Handler (Maybe Item)   -- ^ The result of the query
 resolveUpdateItem arg =
    liftEither $ ((toGQLItem <$>) <$>) <$> (DBF.dbUpdateItem (DBF.idToKey $ updateItemID arg) $
-         changeField DB.ItemName (updateItemName arg) <>
-         changeField DB.ItemDescription (updateItemDescription arg) <>
-         changeField DB.ItemLevel (updateItemLevel arg) <>
-         changeField DB.ItemSource (updateItemSource arg) <>
-         changeField DB.ItemState (updateItemState arg) <>
-         changeField DB.ItemLongitude (realToFrac <$> updateItemLongitude arg) <>
-         changeField DB.ItemLatitude (realToFrac <$> updateItemLatitude arg))
-
-   where
-   
-      changeField::(PersistField a) => EntityField DB.Item a -> Maybe a -> [Update DB.Item]
-      changeField field (Just value) = [field =. value]
-      changeField _ Nothing  = []
+         DBF.changeField DB.ItemName (updateItemName arg) <>
+         DBF.changeField DB.ItemDescription (updateItemDescription arg) <>
+         DBF.changeField DB.ItemLevel (updateItemLevel arg) <>
+         DBF.changeField DB.ItemSource (updateItemSource arg) <>
+         DBF.changeField DB.ItemState (updateItemState arg) <>
+         DBF.changeField DB.ItemLongitude (realToFrac <$> updateItemLongitude arg) <>
+         DBF.changeField DB.ItemLatitude (realToFrac <$> updateItemLatitude arg))
    
 -- | The mutation create item resolver
 resolveDeleteItem ::MutationDeleteItemArgs   -- ^ The arguments for the query

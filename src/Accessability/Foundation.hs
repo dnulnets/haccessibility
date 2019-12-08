@@ -44,7 +44,8 @@ data Server = Server {
 -- | The routes in our server
 mkYesodData "Server" [parseRoutes|
 /gql GQLR POST
-/api/item/#Text ItemR GET
+/api/item CreateItemR POST
+/api/item/#Text ItemR GET DELETE PUT
 /api/items ItemsR POST
 |]
 

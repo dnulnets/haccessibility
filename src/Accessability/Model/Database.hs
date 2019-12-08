@@ -22,6 +22,7 @@ module Accessability.Model.Database (
     idToKey,
     textToKey,
     ilike,
+    changeField,
     Accessability.Model.Database.filter) where
 
 --
@@ -71,6 +72,12 @@ filter::(PersistField a) => EntityField Item a         -- ^ The column
             -> [Filter Item]                                -- ^ The generated filter
 filter field operator (Just value) = [operator field value]
 filter _ _ Nothing  = []
+
+-- | Create an update filer and return as an array so it can be combined
+-- easier with other filters
+changeField::(PersistField a) => EntityField Item a -> Maybe a -> [Update Item]
+changeField field (Just value) = [field =. value]
+changeField _ Nothing  = []
 
 -- | Fetch the item from the database
 dbFetchItem :: Key Item                                         -- ^ The key
