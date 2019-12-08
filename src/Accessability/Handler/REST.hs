@@ -13,7 +13,7 @@
 -- 
 -- This module contains the handler for graphQL queries
 --
-module Accessability.Handler.REST (getItemR) where
+module Accessability.Handler.REST (getItemR, postItemsR) where
 
 --
 -- Import standard libs
@@ -57,6 +57,7 @@ import Database.Persist.Sql
 import Accessability.Foundation (Handler, Server(..))
 import qualified Accessability.Model.DB as DB
 import Accessability.Model.Generic
+import Accessability.Model.REST
 import qualified Accessability.Model.Database as DBF
 import Accessability.Model.Transform
 
@@ -68,3 +69,19 @@ getItemR key = do
     case result of
         Left _ -> sendStatusJSON status400 ()
         Right item -> sendStatusJSON status200 item
+
+-- | The REST get handler
+postItemsR::Handler Value    -- ^ The list of items as a JSON response
+postItemsR = do
+    queryBody <- requireCheckJsonBody::Handler PostItemsBody
+    result <- ((toGenericItem <$>) <$>) <$> DBF.dbFetchItems (
+        DBF.filter DB.ItemLatitude (<=.) (realToFrac <$> postItemsLatitudeMax queryBody) <>
+        DBF.filter DB.ItemLatitude (>=.) (realToFrac <$> postItemsLatitudeMin queryBody) <>
+        DBF.filter DB.ItemLongitude (<=.) (realToFrac <$> postItemsLongitudeMax queryBody) <>
+        DBF.filter DB.ItemLongitude (>=.) (realToFrac <$> postItemsLongitudeMin queryBody) <>
+        ( DBF.filter DB.ItemDescription (DBF.ilike) (postItemsText queryBody) ||.
+        DBF.filter DB.ItemName (DBF.ilike) (postItemsText queryBody)) )
+        (postItemsLimit queryBody)
+    case result of
+        Left _ -> sendStatusJSON status400 ()
+        Right items -> sendStatusJSON status200 items

@@ -45,6 +45,7 @@ data Server = Server {
 mkYesodData "Server" [parseRoutes|
 /gql GQLR POST
 /api/item/#Text ItemR GET
+/api/items ItemsR POST
 |]
 
 -- | Our server is a yesod instance

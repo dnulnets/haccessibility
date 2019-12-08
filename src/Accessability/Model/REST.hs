@@ -15,7 +15,8 @@
 -- 
 -- This module contains the types for the graphQL support
 --
-module Accessability.Model.REST where
+module Accessability.Model.REST (
+    PostItemsBody(..)) where
 
 --
 -- Import standard libs
@@ -29,3 +30,17 @@ import GHC.Generics (Generic(..))
 import Data.Aeson
 import Data.Aeson.TH
 
+-- | The argument for the queryitems query
+data PostItemsBody = PostItemsBody {
+    postItemsLongitudeMin:: Maybe Float
+    , postItemsLongitudeMax::Maybe Float
+    , postItemsLatitudeMin::Maybe Float
+    , postItemsLatitudeMax::Maybe Float
+    , postItemsLimit::Maybe Int
+    , postItemsText::Maybe Text
+    } deriving (Generic)
+
+-- |Automatically derive JSON but we do not want the first charatcer in the field to go out
+$(deriveJSON defaultOptions {
+    fieldLabelModifier = drop 9 -- Get rid of the 'postItem' in the field names
+  } ''PostItemsBody)

@@ -49,7 +49,8 @@ import Accessability.Handler.GQL (
     postGQLR)
 
 import Accessability.Handler.REST (
-    getItemR)
+    getItemR,
+    postItemsR)
     
 import Accessability.Model.DB (
     migrateAll)
