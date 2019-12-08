@@ -137,21 +137,14 @@ resolveItems::QueryItemsArgs          -- ^ The arguments for the query
             ->Res e Handler [Item]    -- ^ The result of the query
 resolveItems args = do   
    liftEither $ ((toGQLItem <$>) <$>) <$> DBF.dbFetchItems (
-      filterField DB.ItemLatitude (<=.) (realToFrac <$> queryItemsLatitudeMax args) <>
-      filterField DB.ItemLatitude (>=.) (realToFrac <$> queryItemsLatitudeMin args) <>
-      filterField DB.ItemLongitude (<=.) (realToFrac <$> queryItemsLongitudeMax args) <>
-      filterField DB.ItemLongitude (>=.) (realToFrac <$> queryItemsLongitudeMin args))
+      DBF.filter DB.ItemLatitude (<=.) (realToFrac <$> queryItemsLatitudeMax args) <>
+      DBF.filter DB.ItemLatitude (>=.) (realToFrac <$> queryItemsLatitudeMin args) <>
+      DBF.filter DB.ItemLongitude (<=.) (realToFrac <$> queryItemsLongitudeMax args) <>
+      DBF.filter DB.ItemLongitude (>=.) (realToFrac <$> queryItemsLongitudeMin args) <>
+      ( DBF.filter DB.ItemDescription (DBF.ilike) (queryItemsText args) ||.
+      DBF.filter DB.ItemName (DBF.ilike) (queryItemsText args)) )
       (queryItemsLimit args)
 
-   where
-
-      filterField::(PersistField a) => EntityField DB.Item a
-                  -> (EntityField DB.Item a -> a -> Filter DB.Item)
-                  -> Maybe a
-                  -> [Filter DB.Item]
-      filterField field operator (Just value) = [operator field value]
-      filterField _ _ Nothing  = []
-   
 -- | Compose the graphQL api
 gqlApi:: GQLRequest         -- ^ The graphql request
    -> Handler GQLResponse   -- ^ The graphql response

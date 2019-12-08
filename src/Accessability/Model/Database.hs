@@ -19,7 +19,9 @@ module Accessability.Model.Database (
     dbCreateItem,
     dbDeleteItem,
     dbUpdateItem,
-    theKey) where
+    theKey,
+    ilike,
+    Accessability.Model.Database.filter) where
 
 --
 -- Import standard libs
@@ -49,6 +51,21 @@ import Accessability.Model.Data
 -- | Convert from ID to database key
 theKey::ID -> Key Item
 theKey key = toSqlKey $ read $ unpack $ unpackID $ key
+
+-- | A postgresql backendfilter for ILIKE
+ilike::(EntityField Item Text -- ^ The column
+   -> Text                       -- ^ The value
+   -> Filter Item)            -- ^ The generated filter
+ilike field val = Filter field (Left val) (BackendSpecificFilter (pack "ILIKE"))
+
+-- | Create a filter and return as an array so it can be combined
+-- easier with other filters
+filter::(PersistField a) => EntityField Item a         -- ^ The column
+            -> (EntityField Item a -> a -> Filter Item)  -- ^ The operator
+            -> Maybe a                                         -- ^ The value
+            -> [Filter Item]                                -- ^ The generated filter
+filter field operator (Just value) = [operator field value]
+filter _ _ Nothing  = []
 
 -- | Fetch the item from the database
 dbFetchItem :: Key Item                                         -- ^ The key
