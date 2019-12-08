@@ -54,8 +54,10 @@ import Data.Morpheus.Types    (GQLType(..), GQLScalar(..), ID(..))
 -- My own imports
 --
 import Accessability.Foundation (Handler)
-import Accessability.Model.Geo (GeodeticPosition(..))
-import Accessability.Model.Generic
+import Accessability.Model.Generic (
+    ItemLevel(..),
+    ItemSource(..),
+    ItemState(..))
 
 --
 -- Enumeration ItemLevel

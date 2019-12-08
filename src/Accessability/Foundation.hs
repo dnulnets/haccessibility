@@ -2,6 +2,7 @@
 {-# LANGUAGE QuasiQuotes                #-}
 {-# LANGUAGE TemplateHaskell            #-}
 {-# LANGUAGE TypeFamilies               #-}
+{-# LANGUAGE ViewPatterns               #-}
 
 -- |
 -- Module      : Accessability.Foundation
@@ -43,6 +44,7 @@ data Server = Server {
 -- | The routes in our server
 mkYesodData "Server" [parseRoutes|
 /gql GQLR POST
+/api/item/#Text ItemR GET
 |]
 
 -- | Our server is a yesod instance

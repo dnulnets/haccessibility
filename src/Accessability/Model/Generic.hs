@@ -16,6 +16,7 @@
 -- This module contains the common types regardless of interface or database
 --
 module Accessability.Model.Generic (
+    Item(..),
     ItemLevel(..),
     ItemSource(..),
     ItemState(..)) where
@@ -42,10 +43,7 @@ import Database.Persist.TH
 --
 -- JSON Option
 --
-
 customOptions = defaultOptions
-                { constructorTagModifier = map $ toLower
-                }
 
 --
 -- Enumeration ItemLevel

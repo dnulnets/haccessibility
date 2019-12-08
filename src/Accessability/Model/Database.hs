@@ -19,7 +19,8 @@ module Accessability.Model.Database (
     dbCreateItem,
     dbDeleteItem,
     dbUpdateItem,
-    theKey,
+    idToKey,
+    textToKey,
     ilike,
     Accessability.Model.Database.filter) where
 
@@ -49,8 +50,12 @@ import Accessability.Foundation (Handler)
 import Accessability.Model.DB
 
 -- | Convert from ID to database key
-theKey::ID -> Key Item
-theKey key = toSqlKey $ read $ unpack $ unpackID $ key
+idToKey::ID -> Key Item
+idToKey key = toSqlKey $ read $ unpack $ unpackID $ key
+
+-- | Convert from ID to database key
+textToKey::Text -> Key Item
+textToKey key = toSqlKey $ read $ unpack $ key
 
 -- | A postgresql backendfilter for ILIKE
 ilike::(EntityField Item Text -- ^ The column

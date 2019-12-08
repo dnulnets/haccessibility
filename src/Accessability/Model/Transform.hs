@@ -11,6 +11,7 @@
 --
 module Accessability.Model.Transform (
     toDataItem,
+    toGenericItem,
     toGQLItem) where
 
 import Data.Text (Text, pack)
@@ -19,6 +20,7 @@ import Database.Persist.Sql
 
 import qualified Accessability.Model.DB as DB
 import qualified Accessability.Model.GQL as GQL
+import qualified Accessability.Model.Generic as G
 
 -- | Converts a database item to a GQL item
 toGQLItem::(Key DB.Item, DB.Item)  -- ^ The database item
@@ -31,6 +33,18 @@ toGQLItem (key, item) = GQL.Item { GQL.itemID = Just $ ID {unpackID = pack $ sho
     GQL.itemState = DB.itemState item,
     GQL.itemLongitude = realToFrac $ DB.itemLongitude item,
     GQL.itemLatitude = realToFrac $ DB.itemLatitude item}
+
+-- | Converts a database item to a generic
+toGenericItem::(Key DB.Item, DB.Item)   -- ^ The database item
+    ->G.Item                            -- ^ The Generic item
+toGenericItem (key, item) = G.Item { G.itemID = Just $ pack $ show $ fromSqlKey key,
+    G.itemName =  DB.itemName item,
+    G.itemDescription = DB.itemDescription item,
+    G.itemLevel = DB.itemLevel item,
+    G.itemSource = DB.itemSource item,
+    G.itemState = DB.itemState item,
+    G.itemLongitude = realToFrac $ DB.itemLongitude item,
+    G.itemLatitude = realToFrac $ DB.itemLatitude item}
 
 -- | Converts a GQL item to a database item
 toDataItem::GQL.Item   -- ^ The database item

@@ -87,7 +87,7 @@ resolveMutation = Mutation { createItem = resolveCreateItem
 resolveUpdateItem ::MutationUpdateItemArgs          -- ^ The arguments for the query
                   ->MutRes e Handler (Maybe Item)   -- ^ The result of the query
 resolveUpdateItem arg =
-   liftEither $ ((toGQLItem <$>) <$>) <$> (DBF.dbUpdateItem (DBF.theKey $ updateItemID arg) $
+   liftEither $ ((toGQLItem <$>) <$>) <$> (DBF.dbUpdateItem (DBF.idToKey $ updateItemID arg) $
          changeField DB.ItemName (updateItemName arg) <>
          changeField DB.ItemDescription (updateItemDescription arg) <>
          changeField DB.ItemLevel (updateItemLevel arg) <>
@@ -132,7 +132,7 @@ resolveQuery = Query {  queryItem = resolveItem,
 resolveItem::QueryItemArgs          -- ^ The arguments for the query
             ->Res e Handler (Maybe Item)    -- ^ The result of the query
 resolveItem args = do
-   liftEither $ ((toGQLItem <$>) <$>) <$> (DBF.dbFetchItem $ DBF.theKey $ queryItemID args)
+   liftEither $ ((toGQLItem <$>) <$>) <$> (DBF.dbFetchItem $ DBF.idToKey $ queryItemID args)
                                 
 -- | The query item resolver
 resolveItems::QueryItemsArgs          -- ^ The arguments for the query

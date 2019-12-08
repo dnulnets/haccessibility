@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE QuasiQuotes                #-}
 {-# LANGUAGE TemplateHaskell            #-}
+{-# LANGUAGE ViewPatterns               #-}
 
 -- |
 -- Module      : Boot
@@ -47,6 +48,9 @@ import Accessability.Foundation (
 import Accessability.Handler.GQL (
     postGQLR)
 
+import Accessability.Handler.REST (
+    getItemR)
+    
 import Accessability.Model.DB (
     migrateAll)
 
