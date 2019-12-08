@@ -13,12 +13,19 @@ More information is supposed to be added to the location based on the type of lo
 The REST interface is located at **/api** and content type is **application/json**.
 
 ### Fetch an item - GET /api/item/<item key>
+Returns with the item as JSON.
+  
 ### Update an item - PUT /api/item/<item_key>
+The PUT body contains the fields on the item that is to be updated. The item_key points to the item.
+
 ### Create an item - POST /api/item
+The POST body contains the item as JSON and the item is returned and the item_key is added.
+
 ### Fetch a list of items - POST /api/items
+The POST body contains the selection filters and a list of items is returned as JSON.
 
 ## graphQL schema and interface
-The graphQL interface is located at **/gql** and is in GarphQL format, the content type must be **application/json**.
+The graphQL interface is located at **/gql** and is in GraphQL format, the content type must be **application/json**.
 
 The following types are defined in the graphQL schema:
 
