@@ -55,51 +55,34 @@ import Data.Morpheus.Types    (GQLType(..), GQLScalar(..), ID(..))
 --
 import Accessability.Foundation (Handler)
 import Accessability.Model.Geo (GeodeticPosition(..))
+import Accessability.Model.Generic
 
 --
 -- Enumeration ItemLevel
 --
-
--- | The enumeration for the accessability level for an item
-data ItemLevel = L1 | L2 | L3 | L4 | L5 deriving (Generic, Show, Read)
 
 -- Make ItemLevel a GQL type
 instance GQLType ItemLevel where
     type  KIND ItemLevel = ENUM
     description = const $ Just $ pack "The level of accessability of the item, L1-L5. L5 is the highest "
 
--- Make it possible to store this in the database
-derivePersistField "ItemLevel"
-
 --
 -- Enumeration ItemSource
 --
-
--- | The enmueration for the source of the items state
-data ItemSource = Manual | Automatic deriving (Generic, Show, Read)
 
 -- Make ItemSource a GQL type
 instance GQLType ItemSource where
     type  KIND ItemSource = ENUM
     description = const $ Just $ pack "The source of the items state, i.e. if the items activity is manual or automatically determined"
 
--- Make it possible to store this in the database
-derivePersistField "ItemSource"
-
 --
 -- Enumeration ItemState
 --
-
--- | The enmueration for the state of the item
-data ItemState = Unknown | Online | Offline deriving (Generic, Show, Read)
 
 -- Make ItemLevel a GQL type
 instance GQLType ItemState where
     type  KIND ItemState = ENUM
     description = const $ Just $ pack "The items state, i.e. if it is Online, Offline or Unknown"
-
--- Make it possible to store this in the database
-derivePersistField "ItemState"
 
 --
 -- Object Item

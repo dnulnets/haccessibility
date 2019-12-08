@@ -17,7 +17,7 @@ import Data.Text (Text, pack)
 import Data.Morpheus.Types    (ID(..))
 import Database.Persist.Sql
 
-import qualified Accessability.Model.Data as DB
+import qualified Accessability.Model.DB as DB
 import qualified Accessability.Model.GQL as GQL
 
 -- | Converts a database item to a GQL item

@@ -47,7 +47,7 @@ import Accessability.Foundation (
 import Accessability.Handler.GQL (
     postGQLR)
 
-import Accessability.Model.Data (
+import Accessability.Model.DB (
     migrateAll)
 
 --

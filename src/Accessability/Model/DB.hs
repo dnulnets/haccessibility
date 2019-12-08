@@ -6,7 +6,7 @@
 {-# LANGUAGE TypeFamilies               #-}
 
 -- |
--- Module      : Acessability.Model.Data
+-- Module      : Acessability.Model.DB
 -- Description : The database model
 -- Copyright   : (c) Tomas Stenlund, 2019
 -- License     : BSD-3
@@ -17,7 +17,7 @@
 -- This module contains the database model and the haskell representation of
 -- the data    
 --
-module Accessability.Model.Data where
+module Accessability.Model.DB where
 
 --
 -- Import standard libs

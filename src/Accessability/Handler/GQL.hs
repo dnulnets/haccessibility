@@ -61,8 +61,10 @@ import Accessability.Model.Geo (
     (*~))
 import Accessability.Foundation (Handler, Server(..))
 import Accessability.Model.GQL
-import qualified Accessability.Model.Data as DB
-import Accessability.Model.Transform (toGQLItem, toDataItem)
+import qualified Accessability.Model.DB as DB
+import Accessability.Model.Transform (
+   toGQLItem,
+   toDataItem)
 import qualified Accessability.Model.Database as DBF
 
 -- | The GraphQL Root resolver

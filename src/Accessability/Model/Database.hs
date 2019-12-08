@@ -46,7 +46,7 @@ import Data.Morpheus.Types (ID(..))
 -- My own imports
 --
 import Accessability.Foundation (Handler)
-import Accessability.Model.Data
+import Accessability.Model.DB
 
 -- | Convert from ID to database key
 theKey::ID -> Key Item
