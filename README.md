@@ -9,7 +9,15 @@ A basic geographical location in this prototype contains a unique name, a descri
 
 More information is supposed to be added to the location based on the type of location, such as store, restaurant, public space, etc. (**Not done yet**)
 
-## graphQL schema
+## REST interface
+The REST interface is located at **/api** and content type is **application/json**.
+
+### Fetch an item - GET /api/item/<item key>
+### Update an item - PUT /api/item/<item_key>
+### Create an item - POST /api/item
+### Fetch a list of items - POST /api/items
+
+## graphQL schema and interface
 The graphQL interface is located at **/gql** and is in GarphQL format, the content type must be **application/json**.
 
 The following types are defined in the graphQL schema:
