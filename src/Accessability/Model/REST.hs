@@ -23,6 +23,7 @@ module Accessability.Model.REST (
 --
 -- Import standard libs
 --
+import Data.Char (toLower)
 import Data.Text (Text, pack)
 import GHC.Generics (Generic(..))
 
@@ -39,6 +40,7 @@ import Accessability.Model.Generic (
     ItemLevel(..),
     ItemState(..),
     ItemSource(..))
+import Accessability.Model.Extras (firstLower)
 
 -- | The argument for the queryitems query
 data PostItemsBody = PostItemsBody {
@@ -52,7 +54,7 @@ data PostItemsBody = PostItemsBody {
 
 -- |Automatically derive JSON but we do not want the first charatcer in the field to go out
 $(deriveJSON defaultOptions {
-    fieldLabelModifier = drop 9 -- Get rid of the 'postItem' in the field names
+    fieldLabelModifier = firstLower . drop 9 -- Get rid of the 'postItem' in the field names
   } ''PostItemsBody)
 
 -- | The argument for the queryitems query
@@ -68,7 +70,7 @@ data PutItemBody = PutItemBody {
 
 -- |Automatically derive JSON but we do not want the first charatcer in the field to go out
 $(deriveJSON defaultOptions {
-    fieldLabelModifier = drop 7 -- Get rid of the 'postItem' in the field names
+    fieldLabelModifier = firstLower . drop 7 -- Get rid of the 'postItem' in the field names
   } ''PutItemBody)
 
   -- | The argument for the queryitems query
@@ -84,5 +86,5 @@ data PostItemBody = PostItemBody {
 
 -- |Automatically derive JSON but we do not want the first charatcer in the field to go out
 $(deriveJSON defaultOptions {
-    fieldLabelModifier = drop 8 -- Get rid of the 'postItem' in the field names
+    fieldLabelModifier = firstLower . drop 8 -- Get rid of the 'postItem' in the field names
   } ''PostItemBody)

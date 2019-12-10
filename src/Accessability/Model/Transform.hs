@@ -14,6 +14,7 @@ module Accessability.Model.Transform (
     toGenericItem,
     toGQLItem) where
 
+import Data.Char (toLower)
 import Data.Text (Text, pack)
 import Data.Morpheus.Types    (ID(..))
 import Database.Persist.Sql

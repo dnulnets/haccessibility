@@ -41,6 +41,11 @@ import Database.Persist
 import Database.Persist.TH
 
 --
+-- Import our own stuff
+--
+import Accessability.Model.Extras (firstLower)
+
+--
 -- JSON Option
 --
 customOptions = defaultOptions
@@ -111,5 +116,5 @@ data Item = Item {
 
 -- |Automatically derive JSON but we do not want the first charatcer in the field to go out
 $(deriveJSON defaultOptions {
-    fieldLabelModifier = drop 4 -- Get rid of the 'item' in the field names
+    fieldLabelModifier = firstLower . drop 4 -- Get rid of the 'item' in the field names
   } ''Item)

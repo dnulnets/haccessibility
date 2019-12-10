@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 62d6b97ed48d807f9c73f2836e3d8b712708be970fb842f1c956e1a76cc10ec5
+-- hash: 1e876a6aa3bfd18886569a97e171e21a59bf465045841873e27f6e25bc6b21f4
 
 name:           gql
 version:        0.1.0.0
@@ -32,6 +32,7 @@ library
       Accessability.Handler.REST
       Accessability.Model.Database
       Accessability.Model.DB
+      Accessability.Model.Extras
       Accessability.Model.Generic
       Accessability.Model.Geo
       Accessability.Model.GQL
