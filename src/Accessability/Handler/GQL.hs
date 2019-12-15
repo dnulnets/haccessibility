@@ -24,7 +24,6 @@ import GHC.Generics (Generic(..))
 --
 -- Import for morpheus
 --
-import Data.Morpheus.Kind     (SCALAR, OBJECT, ENUM)
 import Data.Morpheus          (interpreter)
 import Data.Morpheus.Types    (GQLRootResolver (..),
                               Res,

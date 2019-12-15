@@ -42,7 +42,7 @@ packages:
 #  - morpheus-graphql-0.7.1
 #
 extra-deps:
- - morpheus-graphql-0.7.1
+ - morpheus-graphql-0.8.0
  - geodetics-0.1.0
 
 # Override default flag values for local packages and extra-deps

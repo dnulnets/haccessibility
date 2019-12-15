@@ -47,7 +47,7 @@ import Database.Persist.TH
 -- Import for morpheus
 --
 
-import Data.Morpheus.Kind     (SCALAR, OBJECT, ENUM)
+import Data.Morpheus.Kind     (SCALAR, ENUM)
 import Data.Morpheus.Types    (GQLType(..), GQLScalar(..), ID(..))
 
 --
@@ -104,7 +104,6 @@ data Item = Item {
 
 -- Make Item a GQL Type
 instance GQLType Item where
-    type  KIND Item = OBJECT
     description = const $ Just $ pack "The item that holds the accessability information"
     
 --
