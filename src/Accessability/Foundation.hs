@@ -32,14 +32,20 @@ import Data.Text (Text, pack)
 import Database.Persist.Postgresql
 
 --
+-- Our own stuff
+--
+import Accessability.Settings (AppSettings)
+
+--
 -- The HTTP server and network libraries
 --
 import Yesod
 
 -- | Our server and settings
 data Server = Server {
-    serverConnectionPool :: ConnectionPool -- ^ The pool of database connections
-    }
+    appSettings :: AppSettings             -- ^ Settings for the server
+    , serverConnectionPool :: ConnectionPool -- ^ The pool of database connections
+}
 
 -- | The routes in our server
 mkYesodData "Server" [parseRoutes|
@@ -47,6 +53,7 @@ mkYesodData "Server" [parseRoutes|
 /api/item CreateItemR POST
 /api/item/#Text ItemR GET DELETE PUT
 /api/items ItemsR POST
+/api/authenticate AuthenticateR POST
 |]
 
 -- | Our server is a yesod instance

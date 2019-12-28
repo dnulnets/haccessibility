@@ -41,6 +41,11 @@ library:
     - lifted-base
     - yesod-core
     - aeson
+    - cryptonite
+    - containers
+    - time
+    - jwt
+    - hexstring
 
 executables:
   gql-exe:

@@ -53,5 +53,11 @@ Item
     UniqueItemName name -- ^ The name is unique
 
     deriving Show
-|]
 
+User
+    username Text
+    password Text
+    email Text
+    UniqueUserUsername username    
+    deriving Show
+|]

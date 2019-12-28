@@ -54,9 +54,14 @@ import Accessability.Handler.REST (
     deleteItemR,
     postCreateItemR,
     postItemsR)
-    
+
+import Accessability.Handler.Authenticate (
+    postAuthenticateR)
+
 import Accessability.Model.DB (
     migrateAll)
+
+import Accessability.Settings (defaultSettings)
 
 --
 -- The dispatcher
@@ -70,4 +75,4 @@ serverMain = do
     runStderrLoggingT $ withPostgresqlPool (pack ("postgresql://heatserver:heatserver@" <> database <> "/heat")) 5 $ \pool -> liftIO $ do
         runResourceT $ flip runSqlPool pool $ do
             runMigration migrateAll
-        warp 3000 $ Server { serverConnectionPool = pool }
+        warp 3000 $ Server { appSettings = defaultSettings, serverConnectionPool = pool }
