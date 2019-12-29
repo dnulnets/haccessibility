@@ -46,6 +46,9 @@ library:
     - time
     - jwt
     - hexstring
+    - wai-cors
+    - wai
+    - warp
 
 executables:
   gql-exe:

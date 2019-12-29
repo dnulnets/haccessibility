@@ -27,6 +27,8 @@ import Data.Time.Clock.System (getSystemTime,
 
 import Network.HTTP.Types.Status (status401)
 
+import Database.Persist.Sql
+
 --
 -- Internal imports
 --
@@ -37,7 +39,7 @@ import Accessability.Model.DB
 --
 import Accessability.Foundation (Server(..), Handler)
 import Accessability.Utils.JWT (jsonToToken)
-import Accessability.Data.Conversions (keyToHex)
+-- import Accessability.Data.Conversions (keyToHex, hexToKey)
 import Accessability.Utils.Password (authHashPassword, authValidatePassword)
 import Accessability.Interface.Authenticate (Authenticate(..), UserInfo (..))
 import Accessability.Settings (AppSettings(..))
@@ -55,6 +57,6 @@ postAuthenticateR = do
     in case dbuser of
          Just (Entity userId user) | authValidatePassword (userPassword user) (password auth) -> do
                                        token <- return $ jsonToToken secret seconds length $ toJSON userId
-                                       returnJson $ UserInfo (keyToHex userId) token (userUsername user) (userEmail user)
+                                       returnJson $ UserInfo (fromSqlKey userId) token (userUsername user) (userEmail user)
          _ -> do
            sendResponseStatus status401 Null

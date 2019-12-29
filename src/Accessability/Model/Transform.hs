@@ -21,7 +21,7 @@ import Database.Persist.Sql
 
 import qualified Accessability.Model.DB as DB
 import qualified Accessability.Model.GQL as GQL
-import qualified Accessability.Model.Generic as G
+import qualified Accessability.Model as G
 
 -- | Converts a database item to a GQL item
 toGQLItem::(Key DB.Item, DB.Item)  -- ^ The database item

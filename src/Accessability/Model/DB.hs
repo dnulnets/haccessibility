@@ -49,15 +49,13 @@ Item
     state ItemState     -- ^ The state of the item
     longitude Double    -- ^ Longitude in WGS84
     latitude Double     -- ^ Latitude in WGS84
-
     UniqueItemName name -- ^ The name is unique
-
     deriving Show
 
 User
-    username Text
-    password Text
-    email Text
-    UniqueUserUsername username    
+    username Text       -- ^ The user name
+    password Text       -- ^ The password, bcrypted
+    email Text          -- ^ The users email
+    UniqueUserUsername username -- ^ The username is unique
     deriving Show
 |]

@@ -11,7 +11,8 @@
 -- Stability   : experimental
 -- Portability : POSIX
 -- 
--- This module contains the functions for handling database queries
+-- This module contains the functions for handling database queries and conversions to and
+-- from database keys.
 --
 module Accessability.Model.Database (
     dbFetchItem,
@@ -20,7 +21,7 @@ module Accessability.Model.Database (
     dbDeleteItem,
     dbUpdateItem,
     idToKey,
-    textToKey,
+    --textToKey,
     ilike,
     changeField,
     Accessability.Model.Database.filter) where
@@ -41,6 +42,8 @@ import Yesod
 import Database.Persist
 import Database.Persist.TH
 import Database.Persist.Sql
+import Data.Text.Encoding (encodeUtf8)
+import Data.HexString (toBinary, hexString)
 
 import Data.Morpheus.Types (ID(..))
 
@@ -54,9 +57,12 @@ import Accessability.Model.DB
 idToKey::ID -> Key Item
 idToKey key = toSqlKey $ read $ unpack $ unpackID $ key
 
+keyToID::Key Item -> ID
+keyToID key = ID { unpackID = pack $ show $ fromSqlKey key }
+
 -- | Convert from ID to database key
-textToKey::Text -> Key Item
-textToKey key = toSqlKey $ read $ unpack $ key
+--textToKey::Text -> Key Item
+--textToKey key = toSqlKey $ toBinary $ hexString $ encodeUtf8 $ key
 
 -- | A postgresql backendfilter for ILIKE
 ilike::(EntityField Item Text -- ^ The column

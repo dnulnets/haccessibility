@@ -26,6 +26,8 @@ module Accessability.Foundation (
 -- Standard libraries
 --
 import Data.Text (Text, pack)
+import Data.Int (Int64)
+
 --
 -- Persistence libraries
 --
@@ -51,7 +53,7 @@ data Server = Server {
 mkYesodData "Server" [parseRoutes|
 /gql GQLR POST
 /api/item CreateItemR POST
-/api/item/#Text ItemR GET DELETE PUT
+/api/item/#Int64 ItemR GET DELETE PUT
 /api/items ItemsR POST
 /api/authenticate AuthenticateR POST
 |]

@@ -36,11 +36,11 @@ import Data.Aeson.TH
 --
 -- Our own
 --
-import Accessability.Model.Generic (
+import Accessability.Model (
     ItemLevel(..),
     ItemState(..),
     ItemSource(..))
-import Accessability.Model.Extras (firstLower)
+import Accessability.Utils.JSON (firstLower)
 
 -- | The argument for the queryitems query
 data PostItemsBody = PostItemsBody {

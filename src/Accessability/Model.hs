@@ -15,7 +15,7 @@
 -- 
 -- This module contains the common types regardless of interface or database
 --
-module Accessability.Model.Generic (
+module Accessability.Model (
     Item(..),
     ItemLevel(..),
     ItemSource(..),
@@ -43,7 +43,7 @@ import Database.Persist.TH
 --
 -- Import our own stuff
 --
-import Accessability.Model.Extras (firstLower)
+import Accessability.Utils.JSON (firstLower)
 
 --
 -- JSON Option

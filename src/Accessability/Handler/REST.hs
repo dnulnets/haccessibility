@@ -24,8 +24,9 @@ module Accessability.Handler.REST (
 -- Import standard libs
 --
 import Data.Text (Text, pack, unpack)
+import Data.HexString (HexString(..))
 import GHC.Generics (Generic(..))
-
+import Data.Int (Int64)
 --
 -- Import for morpheus
 --
@@ -61,36 +62,36 @@ import Database.Persist.Sql
 --
 import Accessability.Foundation (Handler, Server(..))
 import qualified Accessability.Model.DB as DB
-import Accessability.Model.Generic
+import Accessability.Model
 import Accessability.Model.REST
 import qualified Accessability.Model.Database as DBF
 import Accessability.Model.Transform
 
 -- | The REST get handler, i.e. return with the data of an item based on the items
 -- key.
-getItemR::Text      -- ^ The item key
+getItemR::Int64      -- ^ The item key
     ->Handler Value -- ^ The item as a JSON response
 getItemR key = do
-    result <- ((toGenericItem <$>) <$>) <$> (DBF.dbFetchItem $ DBF.textToKey key)
+    result <- ((toGenericItem <$>) <$>) <$> (DBF.dbFetchItem $ toSqlKey key)
     case result of
         Left _ -> sendStatusJSON status400 ()
         Right item -> sendStatusJSON status200 item
 
 -- | The REST delete handler, i.e. return with the data of an item based on the items
 -- key and delete the item.
-deleteItemR::Text      -- ^ The item key
+deleteItemR::Int64      -- ^ The item key
     ->Handler () -- ^ The item as a JSON response
 deleteItemR key = do
-    DBF.dbDeleteItem $ DBF.textToKey key
+    DBF.dbDeleteItem $ toSqlKey key
     sendResponseStatus status200 ()
 
 -- | The REST put handler, i.e. return with the updated data of the changed item based
 -- on the specified key
-putItemR::Text      -- ^ The item key
+putItemR::Int64      -- ^ The item key
     ->Handler Value -- ^ The item as a JSON response
 putItemR key = do
     queryBody <- requireCheckJsonBody::Handler PutItemBody
-    result <- ((toGenericItem <$>) <$>) <$> (DBF.dbUpdateItem (DBF.textToKey key) $
+    result <- ((toGenericItem <$>) <$>) <$> (DBF.dbUpdateItem (toSqlKey key) $
         DBF.changeField DB.ItemName (putItemName queryBody) <>
         DBF.changeField DB.ItemDescription (putItemDescription queryBody) <>
         DBF.changeField DB.ItemLevel (putItemLevel queryBody) <>

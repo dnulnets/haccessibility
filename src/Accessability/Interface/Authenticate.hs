@@ -24,11 +24,11 @@ import Data.Text (Text)
 import Data.Aeson
 import Data.Aeson.TH
 import Data.HexString
+import Data.Int (Int64)
 
 --
 -- Heat imports
 --
-import Accessability.Data.Conversions
 import Accessability.Model.DB
 
 -- |Authenticate body description, comes with the POST
@@ -41,7 +41,7 @@ instance FromJSON Authenticate
 
 -- |The JSON Web token returned after authentication, response to the POST
 data UserInfo = UserInfo
-             { iuserid :: HexString   -- ^Unique user identity
+             { iuserid :: Int64   -- ^Unique user identity
              , itoken :: Text         -- ^The JSON Web token
              , iusername :: Text      -- ^The username
              , iemail :: Text         -- ^Email address to the user

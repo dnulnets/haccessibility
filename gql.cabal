@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 58105c719a61c49a7645e34603527f67352026f2147efeaead0b8e6328b9dc16
+-- hash: ab90dc370a8a3e4529e7bc3836c5199887f8bf8935e78f5c676d7171de830665
 
 name:           gql
 version:        0.1.0.0
@@ -27,21 +27,21 @@ source-repository head
 
 library
   exposed-modules:
-      Accessability.Data.Conversions
       Accessability.Foundation
       Accessability.Handler.Authenticate
       Accessability.Handler.GQL
       Accessability.Handler.REST
       Accessability.Interface.Authenticate
+      Accessability.Middleware
+      Accessability.Model
       Accessability.Model.Database
       Accessability.Model.DB
-      Accessability.Model.Extras
-      Accessability.Model.Generic
       Accessability.Model.Geo
       Accessability.Model.GQL
       Accessability.Model.REST
       Accessability.Model.Transform
       Accessability.Settings
+      Accessability.Utils.JSON
       Accessability.Utils.JWT
       Accessability.Utils.Password
       Boot
@@ -69,6 +69,9 @@ library
     , resourcet
     , text
     , time
+    , wai
+    , wai-cors
+    , warp
     , yesod
     , yesod-core
   default-language: Haskell2010

@@ -9,7 +9,7 @@
 -- 
 -- This module contains functions that transform from database to gql primitives
 --
-module Accessability.Model.Extras (
+module Accessability.Utils.JSON (
     firstLower) where
 
 --

@@ -35,6 +35,7 @@ import Database.Persist.Postgresql
 -- The HTTP server and network libraries
 --
 import Yesod
+import Network.Wai.Handler.Warp (run)
 
 --
 -- Get our own items
@@ -63,6 +64,8 @@ import Accessability.Model.DB (
 
 import Accessability.Settings (defaultSettings)
 
+import Accessability.Middleware (corsified)
+
 --
 -- The dispatcher
 --
@@ -75,4 +78,5 @@ serverMain = do
     runStderrLoggingT $ withPostgresqlPool (pack ("postgresql://heatserver:heatserver@" <> database <> "/heat")) 5 $ \pool -> liftIO $ do
         runResourceT $ flip runSqlPool pool $ do
             runMigration migrateAll
-        warp 3000 $ Server { appSettings = defaultSettings, serverConnectionPool = pool }
+        application <- toWaiApp $ Server { appSettings = defaultSettings, serverConnectionPool = pool }
+        run 3000 $ corsified application
