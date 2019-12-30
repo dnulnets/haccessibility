@@ -35,6 +35,7 @@ library:
     - persistent-postgresql
     - persistent-template
     - yesod
+    - yesod-auth
     - http-types
     - resourcet
     - monad-logger
@@ -49,6 +50,15 @@ library:
     - wai-cors
     - wai
     - warp
+    - time
+    - hashable
+    - path-pieces
+    - nonce
+    - base64-bytestring
+    - unordered-containers
+    - cereal
+    - data-default
+    - cookie
 
 executables:
   gql-exe:

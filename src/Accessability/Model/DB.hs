@@ -29,16 +29,19 @@ import Data.Text (Text)
 --
 import Database.Persist
 import Database.Persist.TH
-                          
+
 --
 -- Our own types
 --
 import Accessability.Model.Geo (GeodeticPosition(..))
 import Accessability.Model.GQL (ItemLevel(..), ItemState(..), ItemSource(..))
 
+-- Create migration function using both our entities and
+-- serversession-backend-persistent ones.
+
 -- | The database model
 --
-share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
+share [mkPersist sqlSettings, mkSave "entityDefs"] [persistLowerCase|
 
 -- | The item, i.e. our base location
 Item

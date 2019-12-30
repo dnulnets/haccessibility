@@ -31,6 +31,9 @@ import Data.ByteString.Char8 (pack)
 --
 import Database.Persist.Postgresql
 
+import qualified Data.Proxy as P
+import qualified Web.ServerSession.Core as SS
+import qualified Web.ServerSession.Backend.Persistent as SS
 --
 -- The HTTP server and network libraries
 --
@@ -59,17 +62,18 @@ import Accessability.Handler.REST (
 import Accessability.Handler.Authenticate (
     postAuthenticateR)
 
-import Accessability.Model.DB (
-    migrateAll)
-
 import Accessability.Settings (defaultSettings)
 
 import Accessability.Middleware (corsified)
+
+import Accessability.Model.DB (entityDefs)
 
 --
 -- The dispatcher
 --
 mkYesodDispatch "Server" resourcesServer
+
+mkMigrate "migrateAll" (SS.serverSessionDefs (P.Proxy :: P.Proxy SS.SessionMap) ++ entityDefs)
 
 -- | Main starting point for the server
 serverMain :: IO ()

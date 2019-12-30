@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: ab90dc370a8a3e4529e7bc3836c5199887f8bf8935e78f5c676d7171de830665
+-- hash: 29cafd497ae330bd6f14edcad0f024bd2e648f64402d41a7baf4f2b18bdb7dff
 
 name:           gql
 version:        0.1.0.0
@@ -45,6 +45,14 @@ library
       Accessability.Utils.JWT
       Accessability.Utils.Password
       Boot
+      Web.ServerSession.Backend.Persistent
+      Web.ServerSession.Backend.Persistent.Internal.Impl
+      Web.ServerSession.Backend.Persistent.Internal.Types
+      Web.ServerSession.Core
+      Web.ServerSession.Core.Internal
+      Web.ServerSession.Core.StorageTests
+      Web.ServerSession.Frontend.Yesod
+      Web.ServerSession.Frontend.Yesod.Internal
   other-modules:
       Paths_gql
   hs-source-dirs:
@@ -52,27 +60,36 @@ library
   build-depends:
       aeson
     , base >=4.7 && <5
+    , base64-bytestring
     , bytestring
+    , cereal
     , containers
+    , cookie
     , cryptonite
+    , data-default
     , dimensional
     , geodetics
+    , hashable
     , hexstring
     , http-types
     , jwt
     , lifted-base
     , monad-logger
     , morpheus-graphql
+    , nonce
+    , path-pieces
     , persistent
     , persistent-postgresql
     , persistent-template
     , resourcet
     , text
     , time
+    , unordered-containers
     , wai
     , wai-cors
     , warp
     , yesod
+    , yesod-auth
     , yesod-core
   default-language: Haskell2010
 
