@@ -64,7 +64,7 @@ data Server = Server {
 mkYesodData "Server" [parseRoutes|
 /gql GQLR POST
 /api/item CreateItemR POST
-/api/item/#Int64 ItemR GET DELETE PUT
+/api/item/#Text ItemR GET DELETE PUT
 /api/items ItemsR POST
 /api/authenticate AuthenticateR POST
 |]
@@ -107,7 +107,7 @@ instance YesodPersist Server where
 instance YesodAuth Server where
 
     -- |Our authentication id
-    type AuthId Server = Int64
+    type AuthId Server = Text
   
     -- We are only publishing a REST JSON API, this is not needed but required
     -- by the Yesod API, implemented as error or empty

@@ -69,29 +69,29 @@ import Accessability.Model.Transform
 
 -- | The REST get handler, i.e. return with the data of an item based on the items
 -- key.
-getItemR::Int64      -- ^ The item key
+getItemR::Text      -- ^ The item key
     ->Handler Value -- ^ The item as a JSON response
 getItemR key = do
-    result <- ((toGenericItem <$>) <$>) <$> (DBF.dbFetchItem $ toSqlKey key)
+    result <- ((toGenericItem <$>) <$>) <$> (DBF.dbFetchItem $ DBF.textToKey key)
     case result of
         Left _ -> sendStatusJSON status400 ()
         Right item -> sendStatusJSON status200 item
 
 -- | The REST delete handler, i.e. return with the data of an item based on the items
 -- key and delete the item.
-deleteItemR::Int64      -- ^ The item key
+deleteItemR::Text      -- ^ The item key
     ->Handler () -- ^ The item as a JSON response
 deleteItemR key = do
-    DBF.dbDeleteItem $ toSqlKey key
+    DBF.dbDeleteItem $ DBF.textToKey key
     sendResponseStatus status200 ()
 
 -- | The REST put handler, i.e. return with the updated data of the changed item based
 -- on the specified key
-putItemR::Int64      -- ^ The item key
+putItemR::Text      -- ^ The item key
     ->Handler Value -- ^ The item as a JSON response
 putItemR key = do
     queryBody <- requireCheckJsonBody::Handler PutItemBody
-    result <- ((toGenericItem <$>) <$>) <$> (DBF.dbUpdateItem (toSqlKey key) $
+    result <- ((toGenericItem <$>) <$>) <$> (DBF.dbUpdateItem (DBF.textToKey key) $
         DBF.changeField DB.ItemName (putItemName queryBody) <>
         DBF.changeField DB.ItemDescription (putItemDescription queryBody) <>
         DBF.changeField DB.ItemLevel (putItemLevel queryBody) <>

@@ -58,7 +58,7 @@ postAuthenticateR = do
       length = tokenExpiration appset
     in case dbuser of
          Just (Entity userId user) | authValidatePassword (userPassword user) (password auth) -> do
-                                       token <- return $ jsonToToken secret seconds length $ toJSON userId
+                                       token <- return $ jsonToToken secret seconds length $ toJSON $ keyToText userId
                                        returnJson $ UserInfo (keyToText userId) token (userUsername user) (userEmail user)
          _ -> do
            sendResponseStatus status401 Null
