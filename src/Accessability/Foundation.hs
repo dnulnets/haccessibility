@@ -48,8 +48,11 @@ import Accessability.Utils.JWT (tokenToJson)
 --
 import Yesod
 import Yesod.Auth
-import Web.ServerSession.Backend.Persistent
-import Web.ServerSession.Frontend.Yesod
+--
+-- Server session cookies
+--
+--import Web.ServerSession.Backend.Persistent
+--import Web.ServerSession.Frontend.Yesod
 
 -- | Our server and settings
 data Server = Server {
@@ -70,13 +73,21 @@ mkYesodData "Server" [parseRoutes|
 sessionCookieName :: Text
 sessionCookieName = "IoTHub"
 
--- | Our server is a yesod instance
+-- | Our server is a yesod instance, no session handling needed
 instance Yesod Server where
 
-    makeSessionBackend = simpleBackend opts . SqlStorage . serverConnectionPool
-      where opts = setIdleTimeout     (Just $  5 * 60) -- 5  minutes
-                 . setAbsoluteTimeout (Just $ 20 * 60) -- 20 minutes
-                 . setCookieName      sessionCookieName
+  makeSessionBackend _ = return Nothing
+
+--
+-- Server session cookies
+--
+--instance Yesod Server where
+--
+--    makeSessionBackend = simpleBackend opts . SqlStorage . serverConnectionPool
+--      where opts = setIdleTimeout     (Just $  5 * 60) -- 5  minutes
+--                 . setAbsoluteTimeout (Just $ 20 * 60) -- 20 minutes
+--                 . setCookieName      sessionCookieName
+--
 
 -- | The persistence instance for the server
 instance YesodPersist Server where

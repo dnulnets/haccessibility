@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveGeneric        #-}
 {-# LANGUAGE TypeFamilies         #-}
 {-# LANGUAGE DeriveAnyClass       #-}
+{-# LANGUAGE FlexibleContexts     #-}
 
 -- |
 -- Module      : Acessability.Model.Database
@@ -21,7 +22,9 @@ module Accessability.Model.Database (
     dbDeleteItem,
     dbUpdateItem,
     idToKey,
-    --textToKey,
+    keyToID,
+    textToKey,
+    keyToText,
     ilike,
     changeField,
     Accessability.Model.Database.filter) where
@@ -42,8 +45,9 @@ import Yesod
 import Database.Persist
 import Database.Persist.TH
 import Database.Persist.Sql
+import Database.Persist.Class (ToBackendKey)
 import Data.Text.Encoding (encodeUtf8)
-import Data.HexString (toBinary, hexString)
+import Data.HexString (toBinary, hexString, fromBinary, toText)
 
 import Data.Morpheus.Types (ID(..))
 
@@ -54,15 +58,20 @@ import Accessability.Foundation (Handler)
 import Accessability.Model.DB
 
 -- | Convert from ID to database key
-idToKey::ID -> Key Item
+idToKey:: ToBackendKey SqlBackend record => ID -> Key record
 idToKey key = toSqlKey $ read $ unpack $ unpackID $ key
 
-keyToID::Key Item -> ID
+keyToID::ToBackendKey SqlBackend record => Key record -> ID
 keyToID key = ID { unpackID = pack $ show $ fromSqlKey key }
 
--- | Convert from ID to database key
---textToKey::Text -> Key Item
---textToKey key = toSqlKey $ toBinary $ hexString $ encodeUtf8 $ key
+-- | Convert from Text to database key
+textToKey::ToBackendKey SqlBackend record => Text -> Key record
+textToKey key = toSqlKey $ toBinary $ hexString $ encodeUtf8 $ key
+
+-- | Convert from Text to database key
+keyToText::ToBackendKey SqlBackend record => Key record -> Text
+keyToText key = toText $ fromBinary $ fromSqlKey key
+
 
 -- | A postgresql backendfilter for ILIKE
 ilike::(EntityField Item Text -- ^ The column

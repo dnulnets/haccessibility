@@ -73,6 +73,9 @@ import Accessability.Model.DB (entityDefs)
 --
 mkYesodDispatch "Server" resourcesServer
 
+--
+-- The database migration function
+--
 mkMigrate "migrateAll" (SS.serverSessionDefs (P.Proxy :: P.Proxy SS.SessionMap) ++ entityDefs)
 
 -- | Main starting point for the server

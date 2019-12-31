@@ -34,6 +34,8 @@ import Database.Persist.Sql
 --
 import Yesod
 import Accessability.Model.DB
+import Accessability.Model.Database (keyToText)
+
 --
 -- Heat imports
 --
@@ -57,6 +59,6 @@ postAuthenticateR = do
     in case dbuser of
          Just (Entity userId user) | authValidatePassword (userPassword user) (password auth) -> do
                                        token <- return $ jsonToToken secret seconds length $ toJSON userId
-                                       returnJson $ UserInfo (fromSqlKey userId) token (userUsername user) (userEmail user)
+                                       returnJson $ UserInfo (keyToText userId) token (userUsername user) (userEmail user)
          _ -> do
            sendResponseStatus status401 Null

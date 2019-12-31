@@ -24,7 +24,6 @@ import Data.Text (Text)
 import Data.Aeson
 import Data.Aeson.TH
 import Data.HexString
-import Data.Int (Int64)
 
 --
 -- Heat imports
@@ -41,10 +40,10 @@ instance FromJSON Authenticate
 
 -- |The JSON Web token returned after authentication, response to the POST
 data UserInfo = UserInfo
-             { iuserid :: Int64   -- ^Unique user identity
-             , itoken :: Text         -- ^The JSON Web token
-             , iusername :: Text      -- ^The username
-             , iemail :: Text         -- ^Email address to the user
+             { iuserid :: Text   -- ^Unique user identity
+             , itoken :: Text     -- ^The JSON Web token
+             , iusername :: Text  -- ^The username
+             , iemail :: Text     -- ^Email address to the user
              } deriving (Generic, Show)
 
 -- |Automatically derive JSON code, but drop the first character of the fieldname, we do not want every one to begin with 'i'
