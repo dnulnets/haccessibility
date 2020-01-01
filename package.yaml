@@ -59,6 +59,7 @@ library:
     - cereal
     - data-default
     - cookie
+    - unliftio
 
 executables:
   gql-exe:

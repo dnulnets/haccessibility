@@ -63,7 +63,9 @@ import Accessability.Model.GQL
 import qualified Accessability.Model.DB as DB
 import Accessability.Model.Transform (
    toGQLItem,
-   toDataItem)
+   toDataItem,
+   idToKey,
+   keyToID)
 import qualified Accessability.Model.Database as DBF
 
 -- | The GraphQL Root resolver
@@ -86,7 +88,7 @@ resolveMutation = Mutation { createItem = resolveCreateItem
 resolveUpdateItem ::MutationUpdateItemArgs          -- ^ The arguments for the query
                   ->MutRes e Handler (Maybe Item)   -- ^ The result of the query
 resolveUpdateItem arg =
-   liftEither $ ((toGQLItem <$>) <$>) <$> (DBF.dbUpdateItem (DBF.idToKey $ updateItemID arg) $
+   liftEither $ ((toGQLItem <$>) <$>) <$> (DBF.dbUpdateItem (idToKey $ updateItemID arg) $
          DBF.changeField DB.ItemName (updateItemName arg) <>
          DBF.changeField DB.ItemDescription (updateItemDescription arg) <>
          DBF.changeField DB.ItemLevel (updateItemLevel arg) <>
@@ -125,7 +127,7 @@ resolveQuery = Query {  queryItem = resolveItem,
 resolveItem::QueryItemArgs          -- ^ The arguments for the query
             ->Res e Handler (Maybe Item)    -- ^ The result of the query
 resolveItem args = do
-   liftEither $ ((toGQLItem <$>) <$>) <$> (DBF.dbFetchItem $ DBF.idToKey $ queryItemID args)
+   liftEither $ ((toGQLItem <$>) <$>) <$> (DBF.dbFetchItem $ idToKey $ queryItemID args)
                                 
 -- | The query item resolver
 resolveItems::QueryItemsArgs          -- ^ The arguments for the query

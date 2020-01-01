@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveGeneric        #-}
 {-# LANGUAGE TypeFamilies         #-}
 {-# LANGUAGE DeriveAnyClass       #-}
+{-# LANGUAGE ScopedTypeVariables  #-}
 
 -- |
 -- Module      : Acessability.Handler.GQL
@@ -26,22 +27,8 @@ module Accessability.Handler.REST (
 import Data.Text (Text, pack, unpack)
 import Data.HexString (HexString(..))
 import GHC.Generics (Generic(..))
-import Data.Int (Int64)
---
--- Import for morpheus
---
-import Data.Morpheus.Kind     (SCALAR, OBJECT, ENUM)
-import Data.Morpheus          (interpreter)
-import Data.Morpheus.Types    (GQLRootResolver (..),
-                              Res,
-                              ID(..),
-                              MutRes,
-                              Undefined(..),
-                              GQLType(..),
-                              liftEither,
-                              GQLRequest(..),
-                              GQLResponse(..))
-                  
+import Control.Exception (catch, SomeException)  
+
 --
 -- Yesod and HTTP imports
 --
@@ -60,29 +47,37 @@ import Database.Persist.Sql
 --
 -- My own imports
 --
-import Accessability.Foundation (Handler, Server(..))
+import Accessability.Foundation (Handler, Server(..), getUserKey)
 import qualified Accessability.Model.DB as DB
 import Accessability.Model
 import Accessability.Model.REST
 import qualified Accessability.Model.Database as DBF
 import Accessability.Model.Transform
 
+import qualified UnliftIO.Exception as UIOE
+
 -- | The REST get handler, i.e. return with the data of an item based on the items
 -- key.
 getItemR::Text      -- ^ The item key
     ->Handler Value -- ^ The item as a JSON response
 getItemR key = do
-    result <- ((toGenericItem <$>) <$>) <$> (DBF.dbFetchItem $ DBF.textToKey key)
+    userId <- getUserKey
+    liftIO $ case userId of
+        Nothing -> print "Nothing"
+        Just k -> print $ "Got the user key = " <> unpack k
+    result <- UIOE.catchAny (((toGenericItem <$>) <$>) <$> (DBF.dbFetchItem (textToKey key))) (\e-> pure $ Left $ show e)
     case result of
-        Left _ -> sendStatusJSON status400 ()
+        Left e -> sendStatusJSON status400 e
         Right item -> sendStatusJSON status200 item
+
+-- result <- catch ((toGenericItem <$>) <$>) <$> (DBF.dbFetchItem $ textToKey key)) (\(e :: SomeException) -> pure Nothing)
 
 -- | The REST delete handler, i.e. return with the data of an item based on the items
 -- key and delete the item.
 deleteItemR::Text      -- ^ The item key
     ->Handler () -- ^ The item as a JSON response
 deleteItemR key = do
-    DBF.dbDeleteItem $ DBF.textToKey key
+    DBF.dbDeleteItem $ textToKey key
     sendResponseStatus status200 ()
 
 -- | The REST put handler, i.e. return with the updated data of the changed item based
@@ -91,7 +86,7 @@ putItemR::Text      -- ^ The item key
     ->Handler Value -- ^ The item as a JSON response
 putItemR key = do
     queryBody <- requireCheckJsonBody::Handler PutItemBody
-    result <- ((toGenericItem <$>) <$>) <$> (DBF.dbUpdateItem (DBF.textToKey key) $
+    result <- ((toGenericItem <$>) <$>) <$> (DBF.dbUpdateItem (textToKey key) $
         DBF.changeField DB.ItemName (putItemName queryBody) <>
         DBF.changeField DB.ItemDescription (putItemDescription queryBody) <>
         DBF.changeField DB.ItemLevel (putItemLevel queryBody) <>

@@ -34,7 +34,7 @@ import Database.Persist.Sql
 --
 import Yesod
 import Accessability.Model.DB
-import Accessability.Model.Database (keyToText)
+import Accessability.Model.Transform (keyToText)
 
 --
 -- Heat imports

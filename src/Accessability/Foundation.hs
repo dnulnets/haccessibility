@@ -4,6 +4,7 @@
 {-# LANGUAGE TypeFamilies               #-}
 {-# LANGUAGE ViewPatterns               #-}
 {-# LANGUAGE MultiParamTypeClasses      #-}
+{-# LANGUAGE FlexibleContexts           #-}
 
 -- |
 -- Module      : Accessability.Foundation
@@ -21,7 +22,8 @@ module Accessability.Foundation (
     Server(..),
     Handler,
     Route (..),
-    resourcesServer) where
+    resourcesServer,
+    getUserKey) where
 
 --
 -- Standard libraries
@@ -42,6 +44,7 @@ import Database.Persist.Postgresql
 --
 import Accessability.Settings (AppSettings(..))
 import Accessability.Utils.JWT (tokenToJson)
+import Accessability.Model.Transform (textToKey)
 
 --
 -- The HTTP server and network libraries
@@ -73,10 +76,19 @@ mkYesodData "Server" [parseRoutes|
 sessionCookieName :: Text
 sessionCookieName = "IoTHub"
 
--- | Our server is a yesod instance, no session handling needed
+-- | Our server is a yesod instance, no session handling needed since
+-- this is an API and we use JWT.
 instance Yesod Server where
 
   makeSessionBackend _ = return Nothing
+
+--  isAuthorized AuthenticateR _ = return Authorized
+--  isAuthorized _ True = do
+--    mid <- maybeAuthId
+--    return $ case mid of
+--        Nothing -> AuthenticationRequired
+--        Just _ -> Authorized
+-- isAuthorized _ _ = return AuthenticationRequired
 
 --
 -- Server session cookies
@@ -100,40 +112,57 @@ instance YesodPersist Server where
         server <- getYesod
         runSqlPool action $ serverConnectionPool server
 
-        --
+--
 -- Authorization interface
 --
+
+getUserKey ::Handler (Maybe Text)
+getUserKey = do
+  bearer <- lookupBearerAuth
+  liftIO $ print bearer
+  seconds <- liftIO $ fromIntegral . systemSeconds <$> getSystemTime    
+  secret <- tokenSecret . appSettings <$> getYesod
+  return $ case bearer of
+    Nothing -> Nothing
+    Just token ->
+      case tokenToJson secret seconds token of
+        Nothing -> Nothing
+        Just info ->
+          case fromJSON info of
+            Error _ -> Nothing
+            Success uid -> Just $ uid
+
 -- |Our application is a YesodAuth application
-instance YesodAuth Server where
+--instance YesodAuth Server where
 
     -- |Our authentication id
-    type AuthId Server = Text
+--    type AuthId Server = Text
   
     -- We are only publishing a REST JSON API, this is not needed but required
     -- by the Yesod API, implemented as error or empty
-    loginDest _ = error ""
-    logoutDest _ = error ""
-    authPlugins _ = []
-    authenticate _ = error ""
-  
+--    loginDest _ = error "This is an API, read the API documentation on authentication"
+--    logoutDest _ = error "This is an API, read the API documentation on authentication"
+--    authPlugins _ = []
+--    authenticate _ = error "This is an API, read the API documentation on authentication"
+
     -- |Check the JSON Web token and return with the user identity if it is valid
-    maybeAuthId = do
-      bearer <- lookupBearerAuth
-      liftIO $ print bearer
-      seconds <- liftIO $ fromIntegral . systemSeconds <$> getSystemTime    
-      secret <- tokenSecret . appSettings <$> getYesod
-      return $ case bearer of
-        Nothing -> Nothing
-        Just token ->
-          case tokenToJson secret seconds token of
-            Nothing -> Nothing
-            Just info ->
-              case fromJSON info of
-                Error _ -> Nothing
-                Success uid -> Just $ uid
+--    maybeAuthId = do
+--      bearer <- lookupBearerAuth
+--      liftIO $ print bearer
+--      seconds <- liftIO $ fromIntegral . systemSeconds <$> getSystemTime    
+--      secret <- tokenSecret . appSettings <$> getYesod
+--      return $ case bearer of
+--        Nothing -> Nothing
+--        Just token ->
+--          case tokenToJson secret seconds token of
+--            Nothing -> Nothing
+--            Just info ->
+--              case fromJSON info of
+--                Error _ -> Nothing
+--                Success uid -> Just $ uid
 
 --
 -- The rendermessage interface, needed by YesodAuth
 --
-instance RenderMessage Server FormMessage where
-    renderMessage _ _ = defaultFormMessage
+--instance RenderMessage Server FormMessage where
+--    renderMessage _ _ = defaultFormMessage

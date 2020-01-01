@@ -104,7 +104,7 @@ derivePersistField "ItemState"
 
 -- | Definition of the item
 data Item = Item {
-    itemID::Maybe Text          -- ^ Item key
+    itemId::Maybe Text          -- ^ Item key
     , itemName::Text            -- ^ The name of the item
     , itemDescription:: Text    -- ^ The description of the item
     , itemSource:: ItemSource   -- ^ How the items online state is determined

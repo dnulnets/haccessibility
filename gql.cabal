@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 29cafd497ae330bd6f14edcad0f024bd2e648f64402d41a7baf4f2b18bdb7dff
+-- hash: c12810417280eb23a6cbfa80e09fec9b118425b0f5f1eecb141579cb791b929b
 
 name:           gql
 version:        0.1.0.0
@@ -84,6 +84,7 @@ library
     , resourcet
     , text
     , time
+    , unliftio
     , unordered-containers
     , wai
     , wai-cors

@@ -1,3 +1,5 @@
+{-# LANGUAGE FlexibleContexts     #-}
+
 -- |
 -- Module      : Acessability.Model.Transform
 -- Description : The database model
@@ -12,21 +14,43 @@
 module Accessability.Model.Transform (
     toDataItem,
     toGenericItem,
-    toGQLItem) where
+    toGQLItem,
+    textToKey,
+    keyToText,
+    idToKey,
+    keyToID) where
 
 import Data.Char (toLower)
-import Data.Text (Text, pack)
-import Data.Morpheus.Types    (ID(..))
+import Data.Text.Encoding (encodeUtf8)
+import Data.Text (Text, pack, unpack)
+import Data.Morpheus.Types    (ID(..), unpackID)
+import Data.HexString (toBinary, hexString, fromBinary, toText)
+
 import Database.Persist.Sql
 
 import qualified Accessability.Model.DB as DB
 import qualified Accessability.Model.GQL as GQL
 import qualified Accessability.Model as G
 
+-- | Convert from ID to database key
+idToKey:: ToBackendKey SqlBackend record => ID -> Key record
+idToKey key = toSqlKey $ toBinary $ hexString $ encodeUtf8 $ unpackID $ key
+
+keyToID::ToBackendKey SqlBackend record => Key record -> ID
+keyToID key = ID { unpackID = toText $ fromBinary $ fromSqlKey key }
+
+-- | Convert from Text to database key
+textToKey::ToBackendKey SqlBackend record => Text -> Key record
+textToKey key = toSqlKey $ toBinary $ hexString $ encodeUtf8 $ key
+
+-- | Convert from Text to database key
+keyToText::ToBackendKey SqlBackend record => Key record -> Text
+keyToText key = toText $ fromBinary $ fromSqlKey key
+
 -- | Converts a database item to a GQL item
 toGQLItem::(Key DB.Item, DB.Item)  -- ^ The database item
     ->GQL.Item      -- ^ The GQL item
-toGQLItem (key, item) = GQL.Item { GQL.itemID = Just $ ID {unpackID = pack $ show $ fromSqlKey key },
+toGQLItem (key, item) = GQL.Item { GQL.itemID = Just $ keyToID key,
     GQL.itemName =  DB.itemName item,
     GQL.itemDescription = DB.itemDescription item,
     GQL.itemLevel = DB.itemLevel item,
@@ -38,7 +62,7 @@ toGQLItem (key, item) = GQL.Item { GQL.itemID = Just $ ID {unpackID = pack $ sho
 -- | Converts a database item to a generic
 toGenericItem::(Key DB.Item, DB.Item)   -- ^ The database item
     ->G.Item                            -- ^ The Generic item
-toGenericItem (key, item) = G.Item { G.itemID = Just $ pack $ show $ fromSqlKey key,
+toGenericItem (key, item) = G.Item { G.itemId = Just $ keyToText key,
     G.itemName =  DB.itemName item,
     G.itemDescription = DB.itemDescription item,
     G.itemLevel = DB.itemLevel item,

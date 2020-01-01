@@ -21,10 +21,6 @@ module Accessability.Model.Database (
     dbCreateItem,
     dbDeleteItem,
     dbUpdateItem,
-    idToKey,
-    keyToID,
-    textToKey,
-    keyToText,
     ilike,
     changeField,
     Accessability.Model.Database.filter) where
@@ -56,22 +52,7 @@ import Data.Morpheus.Types (ID(..))
 --
 import Accessability.Foundation (Handler)
 import Accessability.Model.DB
-
--- | Convert from ID to database key
-idToKey:: ToBackendKey SqlBackend record => ID -> Key record
-idToKey key = toSqlKey $ read $ unpack $ unpackID $ key
-
-keyToID::ToBackendKey SqlBackend record => Key record -> ID
-keyToID key = ID { unpackID = pack $ show $ fromSqlKey key }
-
--- | Convert from Text to database key
-textToKey::ToBackendKey SqlBackend record => Text -> Key record
-textToKey key = toSqlKey $ toBinary $ hexString $ encodeUtf8 $ key
-
--- | Convert from Text to database key
-keyToText::ToBackendKey SqlBackend record => Key record -> Text
-keyToText key = toText $ fromBinary $ fromSqlKey key
-
+import Accessability.Model.Transform (textToKey, keyToText, keyToID, idToKey)
 
 -- | A postgresql backendfilter for ILIKE
 ilike::(EntityField Item Text -- ^ The column
