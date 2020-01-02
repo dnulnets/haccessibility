@@ -23,7 +23,8 @@ module Accessability.Foundation (
     Handler,
     Route (..),
     resourcesServer,
-    getUserKey) where
+    getAuthenticatedUser,
+    requireAuthentication) where
 
 --
 -- Standard libraries
@@ -51,6 +52,8 @@ import Accessability.Model.Transform (textToKey)
 --
 import Yesod
 import Yesod.Auth
+--import Yesod.Handler (permissionDenied)
+
 --
 -- Server session cookies
 --
@@ -82,24 +85,7 @@ instance Yesod Server where
 
   makeSessionBackend _ = return Nothing
 
---  isAuthorized AuthenticateR _ = return Authorized
---  isAuthorized _ True = do
---    mid <- maybeAuthId
---    return $ case mid of
---        Nothing -> AuthenticationRequired
---        Just _ -> Authorized
--- isAuthorized _ _ = return AuthenticationRequired
-
---
--- Server session cookies
---
---instance Yesod Server where
---
---    makeSessionBackend = simpleBackend opts . SqlStorage . serverConnectionPool
---      where opts = setIdleTimeout     (Just $  5 * 60) -- 5  minutes
---                 . setAbsoluteTimeout (Just $ 20 * 60) -- 20 minutes
---                 . setCookieName      sessionCookieName
---
+  errorHandler r = respond "text/plain" $ show r
 
 -- | The persistence instance for the server
 instance YesodPersist Server where
@@ -115,9 +101,28 @@ instance YesodPersist Server where
 --
 -- Authorization interface
 --
+requireAuthentication :: Handler ()
+requireAuthentication = do
+  bearer <- lookupBearerAuth
+  liftIO $ print bearer
+  seconds <- liftIO $ fromIntegral . systemSeconds <$> getSystemTime    
+  secret <- tokenSecret . appSettings <$> getYesod
+  case bearer of
+    Nothing -> do
+      liftIO $ print "Not authenticated"
+      permissionDenied "You are not authenticated"
+    Just token -> do
+      liftIO $ print "Testing the token"
+      case tokenToJson secret seconds token of
+        Nothing -> do
+          liftIO $ print "Not a valid token"
+          permissionDenied "You are not authenticated"
+        Just _ -> do
+          liftIO $ print "Valid token, authenticated!"
+          pure ()
 
-getUserKey ::Handler (Maybe Text)
-getUserKey = do
+getAuthenticatedUser ::Handler (Maybe Text)
+getAuthenticatedUser = do
   bearer <- lookupBearerAuth
   liftIO $ print bearer
   seconds <- liftIO $ fromIntegral . systemSeconds <$> getSystemTime    

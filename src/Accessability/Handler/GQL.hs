@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveGeneric        #-}
 {-# LANGUAGE TypeFamilies         #-}
 {-# LANGUAGE DeriveAnyClass       #-}
+{-# LANGUAGE OverloadedStrings    #-}
 
 -- |
 -- Module      : Acessability.Handler.GQL
@@ -18,8 +19,10 @@ module Accessability.Handler.GQL (postGQLR) where
 --
 -- Import standard libs
 --
-import Data.Text (Text, pack, unpack)
+import Data.Text (Text, pack, unpack, splitOn)
 import GHC.Generics (Generic(..))
+import Control.Exception (SomeException)  
+import qualified UnliftIO.Exception as UIOE
 
 --
 -- Import for morpheus
@@ -58,7 +61,7 @@ import Accessability.Model.Geo (
     degree,
     meter,
     (*~))
-import Accessability.Foundation (Handler, Server(..))
+import Accessability.Foundation (Handler, Server(..), requireAuthentication)
 import Accessability.Model.GQL
 import qualified Accessability.Model.DB as DB
 import Accessability.Model.Transform (
@@ -151,6 +154,9 @@ gqlApi r = do
 -- | The GQL handler
 postGQLR::Handler Value -- ^ The graphQL response
 postGQLR = do
-    request <- requireCheckJsonBody::Handler GQLRequest
-    response <- gqlApi request
-    sendStatusJSON status200 response
+   requireAuthentication
+   request <- requireCheckJsonBody::Handler GQLRequest   
+   response <- UIOE.catchAny (Right <$> gqlApi request) (\e->pure $ Left $ show e)
+   case response of
+      Left e -> invalidArgs $ ["Unable to find any items in the database"] <> (splitOn "\n" $ pack e)
+      Right response -> sendStatusJSON status200 response
