@@ -50,7 +50,7 @@ keyToText key = toText $ fromBinary $ fromSqlKey key
 -- | Converts a database item to a GQL item
 toGQLItem::(Key DB.Item, DB.Item)  -- ^ The database item
     ->GQL.Item      -- ^ The GQL item
-toGQLItem (key, item) = GQL.Item { GQL.itemID = Just $ keyToID key,
+toGQLItem (key, item) = GQL.Item { GQL.itemId = Just $ keyToID key,
     GQL.itemName =  DB.itemName item,
     GQL.itemDescription = DB.itemDescription item,
     GQL.itemLevel = DB.itemLevel item,

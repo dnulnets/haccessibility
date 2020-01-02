@@ -91,7 +91,7 @@ instance GQLType ItemState where
 
 -- | Definition of the item
 data Item = Item { 
-    itemID::Maybe ID
+    itemId::Maybe ID
     , itemName::Text  -- ^ The name of the item
     , itemDescription:: Text       -- ^ The description of the item
     , itemSource:: ItemSource      -- ^ How the items online state is determined
@@ -129,12 +129,12 @@ data MutationCreateItemArgs = MutationCreateItemArgs {
 
 -- | The argument for the queryitem query
 data MutationDeleteItemArgs = MutationDeleteItemArgs {
-        deleteItemID::ID            -- ^ The key of the item
+        deleteItemId::ID            -- ^ The key of the item
     } deriving (Generic)
 
 -- | The argument for the queryitem query
 data MutationUpdateItemArgs = MutationUpdateItemArgs {
-        updateItemID::ID
+        updateItemId::ID
         , updateItemName::Maybe Text            -- ^ The name of the item
         , updateItemDescription:: Maybe Text  -- ^ The description of the item
         , updateItemSource:: Maybe ItemSource -- ^ How the items online state is determined
@@ -162,7 +162,7 @@ data Query m = Query {
 
 -- | The argument for the queryitem query
 data QueryItemArgs = QueryItemArgs {
-    queryItemID      :: ID -- ^ The identifier
+    queryItemId      :: ID -- ^ The identifier
     } deriving (Generic)
 
 -- | The argument for the queryitems query

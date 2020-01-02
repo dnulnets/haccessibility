@@ -11,9 +11,11 @@
 --
 -- This module contains the possible settings for the application and also
 -- a default setting.
-module Accessability.Settings (AppSettings(..),
-                      defaultSettings) where
-
+--
+module Accessability.Settings (
+  AppSettings(..),
+  defaultSettings) where
+    
 --
 -- External imports
 --

@@ -10,7 +10,8 @@
 -- Stability   : experimental
 -- Portability : POSIX
 -- 
--- This module contains the authenticate route for the application
+-- This module contains the authenticate route for the application.
+--
 module Accessability.Handler.Authenticate (postAuthenticateR) where
 
 --
@@ -29,26 +30,23 @@ import Network.HTTP.Types.Status (status401)
 
 import Database.Persist.Sql
 
+import Yesod
+
 --
 -- Internal imports
 --
-import Yesod
 import Accessability.Model.DB
 import Accessability.Model.Transform (keyToText)
 
---
--- Heat imports
---
 import Accessability.Foundation (Server(..), Handler)
 import Accessability.Utils.JWT (jsonToToken)
--- import Accessability.Data.Conversions (keyToHex, hexToKey)
 import Accessability.Utils.Password (authHashPassword, authValidatePassword)
 import Accessability.Interface.Authenticate (Authenticate(..), UserInfo (..))
 import Accessability.Settings (AppSettings(..))
 
 -- |Authenticate the user and create a JSON Web Token that is returned so it can be used
 -- for following calls
-postAuthenticateR :: Handler Value
+postAuthenticateR :: Handler Value -- ^ The logged in user and the token
 postAuthenticateR = do
   auth <- requireCheckJsonBody :: Handler Authenticate
   dbuser <- runDB $ getBy $ UniqueUserUsername $ username auth

@@ -31,8 +31,9 @@ module Accessability.Foundation (
 --
 import Data.Text (Text, pack)
 import Data.Int (Int64)
-import Data.Aeson (fromJSON,
-                   Result(..))
+import Data.Aeson (
+  fromJSON,
+  Result(..))
 import Data.Time.Clock.System
 
 --
@@ -83,8 +84,10 @@ sessionCookieName = "IoTHub"
 -- this is an API and we use JWT.
 instance Yesod Server where
 
+  -- We need no backend for this API-server
   makeSessionBackend _ = return Nothing
 
+  -- We return with a simple text/plain error description
   errorHandler r = respond "text/plain" $ show r
 
 -- | The persistence instance for the server
@@ -99,32 +102,33 @@ instance YesodPersist Server where
         runSqlPool action $ serverConnectionPool server
 
 --
--- Authorization interface
+-- Authorization interface. We do not use yesod standard interface since it is too much
+-- focused on serving webpages and I could not really wrap my head around it for pure API
+-- serving.
 --
-requireAuthentication :: Handler ()
+
+-- | Requires that the user is authenticated. if not it will short circuit the Handler and
+-- return with a Permission Denied to the REST caller.
+requireAuthentication :: Handler () -- ^ The Handler
 requireAuthentication = do
   bearer <- lookupBearerAuth
-  liftIO $ print bearer
   seconds <- liftIO $ fromIntegral . systemSeconds <$> getSystemTime    
   secret <- tokenSecret . appSettings <$> getYesod
   case bearer of
     Nothing -> do
-      liftIO $ print "Not authenticated"
       permissionDenied "You are not authenticated"
     Just token -> do
-      liftIO $ print "Testing the token"
       case tokenToJson secret seconds token of
         Nothing -> do
-          liftIO $ print "Not a valid token"
           permissionDenied "You are not authenticated"
         Just _ -> do
-          liftIO $ print "Valid token, authenticated!"
           pure ()
 
-getAuthenticatedUser ::Handler (Maybe Text)
+-- | Checks to see if the caller is authenticated, if so it returns with the user identity
+-- that was part of the JWT the caller sent with the request.
+getAuthenticatedUser ::Handler (Maybe Text) -- ^ The user identity
 getAuthenticatedUser = do
   bearer <- lookupBearerAuth
-  liftIO $ print bearer
   seconds <- liftIO $ fromIntegral . systemSeconds <$> getSystemTime    
   secret <- tokenSecret . appSettings <$> getYesod
   return $ case bearer of
@@ -136,38 +140,3 @@ getAuthenticatedUser = do
           case fromJSON info of
             Error _ -> Nothing
             Success uid -> Just $ uid
-
--- |Our application is a YesodAuth application
---instance YesodAuth Server where
-
-    -- |Our authentication id
---    type AuthId Server = Text
-  
-    -- We are only publishing a REST JSON API, this is not needed but required
-    -- by the Yesod API, implemented as error or empty
---    loginDest _ = error "This is an API, read the API documentation on authentication"
---    logoutDest _ = error "This is an API, read the API documentation on authentication"
---    authPlugins _ = []
---    authenticate _ = error "This is an API, read the API documentation on authentication"
-
-    -- |Check the JSON Web token and return with the user identity if it is valid
---    maybeAuthId = do
---      bearer <- lookupBearerAuth
---      liftIO $ print bearer
---      seconds <- liftIO $ fromIntegral . systemSeconds <$> getSystemTime    
---      secret <- tokenSecret . appSettings <$> getYesod
---      return $ case bearer of
---        Nothing -> Nothing
---        Just token ->
---          case tokenToJson secret seconds token of
---            Nothing -> Nothing
---            Just info ->
---              case fromJSON info of
---                Error _ -> Nothing
---                Success uid -> Just $ uid
-
---
--- The rendermessage interface, needed by YesodAuth
---
---instance RenderMessage Server FormMessage where
---    renderMessage _ _ = defaultFormMessage
