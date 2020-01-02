@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: c12810417280eb23a6cbfa80e09fec9b118425b0f5f1eecb141579cb791b929b
+-- hash: 733b2bcc92568ff2bfee2f227ac1b46017640a210efa8dc479b27049ca7dc374
 
 name:           gql
 version:        0.1.0.0
@@ -45,14 +45,6 @@ library
       Accessability.Utils.JWT
       Accessability.Utils.Password
       Boot
-      Web.ServerSession.Backend.Persistent
-      Web.ServerSession.Backend.Persistent.Internal.Impl
-      Web.ServerSession.Backend.Persistent.Internal.Types
-      Web.ServerSession.Core
-      Web.ServerSession.Core.Internal
-      Web.ServerSession.Core.StorageTests
-      Web.ServerSession.Frontend.Yesod
-      Web.ServerSession.Frontend.Yesod.Internal
   other-modules:
       Paths_gql
   hs-source-dirs:

@@ -31,9 +31,6 @@ import Data.ByteString.Char8 (pack)
 --
 import Database.Persist.Postgresql
 
-import qualified Data.Proxy as P
-import qualified Web.ServerSession.Core as SS
-import qualified Web.ServerSession.Backend.Persistent as SS
 --
 -- The HTTP server and network libraries
 --
@@ -76,7 +73,7 @@ mkYesodDispatch "Server" resourcesServer
 --
 -- The database migration function
 --
-mkMigrate "migrateAll" (SS.serverSessionDefs (P.Proxy :: P.Proxy SS.SessionMap) ++ entityDefs)
+mkMigrate "migrateAll" entityDefs
 
 -- | Main starting point for the server
 serverMain :: IO ()
