@@ -35,7 +35,7 @@ import Database.Persist.Postgresql
 -- The HTTP server and network libraries
 --
 import Yesod
-import Network.Wai.Handler.Warp (run)
+import qualified Network.Wai.Handler.Warp as WAI
 
 --
 -- Get our own items
@@ -83,4 +83,4 @@ serverMain = do
         runResourceT $ flip runSqlPool pool $ do
             runMigration migrateAll
         application <- toWaiApp $ Server { appSettings = defaultSettings, serverConnectionPool = pool }
-        run 3000 $ corsified application
+        WAI.runSettings (WAI.setServerName "Accessability Server - IoTHub Sweden" (WAI.setHost "*" WAI.defaultSettings)) $ corsified application

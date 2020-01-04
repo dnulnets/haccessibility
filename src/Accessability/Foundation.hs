@@ -90,6 +90,9 @@ instance Yesod Server where
   -- We return with a simple text/plain error description
   errorHandler r = respond "text/plain" $ show r
 
+  -- No middleware
+  yesodMiddleware = id
+
 -- | The persistence instance for the server
 instance YesodPersist Server where
 
