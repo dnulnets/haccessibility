@@ -42,7 +42,10 @@ import Accessability.Interface.Authenticate (UserInfo(..),
                                     login)
 
 -- | Slot type for the Login component
-type Slot p = ∀ q . H.Slot q Void p
+type Slot p = ∀ q . H.Slot q Message p
+
+-- | Messages possible to send out from the login component
+data Message = SetUserMessage (Maybe UserInfo)   -- | A login or logout event             
 
 -- | State for the component
 type State = {  alert::Maybe String,   -- ^ The alert text
@@ -63,11 +66,11 @@ data Action = Submit Event        -- ^ Submit of the user
             | Input (State→State) -- ^ The text boxes has a value
 
 -- | The component definition
-component ∷ ∀ r q i o m . MonadAff m
+component ∷ ∀ r q i m . MonadAff m
             ⇒ ManageAuthentication m
             ⇒ ManageNavigation m
             ⇒ MonadAsk { geo ∷ Maybe NavigatorGeolocation | r } m
-            ⇒ H.Component HH.HTML q i o m
+            ⇒ H.Component HH.HTML q i Message m
 component =
   H.mkComponent
     { initialState
@@ -111,12 +114,12 @@ render state = HH.div
                   ]
 
 -- | Handles all actions for the login component
-handleAction ∷ ∀ r o m . MonadAff m
+handleAction ∷ ∀ r m . MonadAff m
             ⇒ ManageAuthentication m
             ⇒ ManageNavigation m
             => MonadAsk { geo ∷ Maybe NavigatorGeolocation | r } m
   ⇒ Action -- ^ The action to handle
-  → H.HalogenM State Action () o m Unit -- ^ The handled action
+  → H.HalogenM State Action () Message m Unit -- ^ The handled action
 
 -- | Submit => Whenever the Login button is pressed, it will generate a submit message
 handleAction (Submit event) = do
@@ -128,20 +131,21 @@ handleAction (Submit event) = do
   case userInfo of
     Nothing -> do
       H.put state {alert = Just "Wrong credentials"}
-      H.liftEffect $ log "Not authenticated"
-    Just (UserInfo val) -> do
+      H.raise (SetUserMessage Nothing)
+    Just ui@(UserInfo val) -> do
+      H.liftEffect $ log $ "Logged in user " <> val.username
       H.put state {alert = Nothing}
-      H.liftEffect $ log $ val.token
-  new <- H.get
-  H.liftEffect $ log $ show new
-  loc <- asks _.geo
-  case loc of
-    Just x -> do
-      pos <- H.liftAff $ getCurrentPosition defaultOptions x
-      H.modify_ (\st -> st { position = Just pos})
-      H.liftEffect $ log $ "Position: " <> show pos
-    Nothing -> do
-      H.liftEffect $ log $ "No Position"
+      H.raise (SetUserMessage $ Just ui)
+--  new <- H.get
+--  H.liftEffect $ log $ show new
+--  loc <- asks _.geo
+--  case loc of
+--    Just x -> do
+--      pos <- H.liftAff $ getCurrentPosition defaultOptions x
+--      H.modify_ (\st -> st { position = Just pos})
+--      H.liftEffect $ log $ "Position: " <> show pos
+--    Nothing -> do
+--     H.liftEffect $ log $ "No Position"
       
 -- | Submit => Whenever the Login button is pressed, it will generate a submit message
 -- handleAction (Submit event) = do

@@ -33,7 +33,8 @@ data AppSettings = AppSettings {
 -- |A default setting for our application
 defaultSettings = AppSettings {
   
-  tokenSecret = "mandelmassa"     -- ^The default token secret
-  ,tokenExpiration = 60*60         -- ^The default token is only valid for 1 hour  
-  ,passwordCost = 10 -- ^The default password hashing cost
+  tokenSecret = "mandelmassa"   -- ^The default token secret
+  ,tokenExpiration = 60*60      -- ^The default token is only valid for 1 hour  
+  ,passwordCost = 10            -- ^The default password hashing cost
+  
   }

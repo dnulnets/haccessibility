@@ -7,7 +7,7 @@ module Accessability.Root (component) where
 
 import Prelude
 
-import Data.Maybe (Maybe)
+import Data.Maybe (Maybe(..), maybe)
 import Data.Symbol (SProxy(..))
 
 import Control.Monad.Reader.Trans (class MonadAsk)
@@ -31,12 +31,13 @@ import Accessability.Component.HTML.Utils (css,
                                   
 import Accessability.Component.Login as Login
 import Accessability.Interface.Navigate (class ManageNavigation)
-import Accessability.Interface.Authenticate (class ManageAuthentication)
+import Accessability.Interface.Authenticate (class ManageAuthentication, UserInfo (..))
 
-type State = { enabled :: Boolean }
+type State = { userInfo :: Maybe UserInfo }
 
-data Action = Toggle
-
+-- | The actions supported by the root page
+data Action = SetUserAction  (Maybe UserInfo)   -- ^Sets the user
+            
 -- | The set of slots for the root container
 type ChildSlots = ( login ∷ Login.Slot Unit )
 
@@ -55,7 +56,7 @@ component =
     }
 
 initialState ∷ ∀ i. i → State
-initialState _ = { enabled: false }
+initialState _ = { userInfo: Nothing }
 
 -- |The navigation bar for the page
 navbar∷forall p i . Array (HH.HTML p i) -> HH.HTML p i
@@ -88,7 +89,7 @@ navbarLeft state = HH.div [css "collapse navbar-collapse", HP.id_ "navbarCollaps
 -- |The right navigation bar
 navbarRight∷forall p . State -> HH.HTML p Action
 navbarRight state = HH.a [css "navbar-text", href Home]
-                      [HH.text "Not logged in"]
+                      [HH.text $ maybe "Not logged in" (\(UserInfo v)->v.username) state.userInfo]
 
 render ∷ ∀ r m . MonadAff m
   => ManageAuthentication m
@@ -97,11 +98,15 @@ render ∷ ∀ r m . MonadAff m
   => State → H.ComponentHTML Action ChildSlots m
 render state = HH.div [] [
   HH.header [] [navbar $ (navbarHeader "Accessability portal") <> [navbarLeft state, navbarRight state]],
-  HH.main [css "container", HPA.role "main"][HH.slot _login unit Login.component unit absurd]]
+  HH.main [css "container", HPA.role "main"][HH.slot _login unit Login.component unit (Just <<< loginMessageConv)]]
+
+-- |Converts login messages to root actions
+loginMessageConv::Login.Message->Action
+loginMessageConv (Login.SetUserMessage ui) = SetUserAction ui
 
 handleAction ∷ ∀ r o m . MonadAff m 
   => MonadAsk { geo ∷ Maybe NavigatorGeolocation | r } m
   => Action → H.HalogenM State Action ChildSlots o m Unit
 handleAction = case _ of
-  Toggle →
-    H.modify_ \st → st { enabled = not st.enabled }
+  SetUserAction ui →
+    H.modify_ \st → st { userInfo = ui }
