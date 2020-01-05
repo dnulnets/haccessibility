@@ -1,0 +1,6 @@
+FROM node:12.4
+RUN mkdir /opt/build
+COPY . /opt/build
+RUN cd /opt/build && npm install purescript && npm install spago && npm install parcel && cd portal && spago build && spago bundle-app && parcel build index.html
+
+

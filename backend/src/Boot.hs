@@ -35,8 +35,9 @@ import Database.Persist.Postgresql
 -- The HTTP server and network libraries
 --
 import Yesod
+import Yesod.Static
 import qualified Network.Wai.Handler.Warp as WAI
-
+import qualified Network.Wai.Handler.WarpTLS as WAIT
 --
 -- Get our own items
 --
@@ -79,8 +80,13 @@ mkMigrate "migrateAll" entityDefs
 serverMain :: IO ()
 serverMain = do
     database <- (maybe "haccdb:5432" id) . listToMaybe <$> getArgs
+    static@(Static settings) <- static "static"
     runStderrLoggingT $ withPostgresqlPool (pack ("postgresql://heatserver:heatserver@" <> database <> "/heat")) 5 $ \pool -> liftIO $ do
         runResourceT $ flip runSqlPool pool $ do
             runMigration migrateAll
-        application <- toWaiApp $ Server { appSettings = defaultSettings, serverConnectionPool = pool }
-        WAI.runSettings (WAI.setServerName "Accessability Server - IoTHub Sweden" (WAI.setHost "*" WAI.defaultSettings)) $ corsified application
+        application <- toWaiApp $ Server { getStatic = static, 
+            appSettings = defaultSettings,
+            serverConnectionPool = pool }
+        WAIT.runTLS (WAIT.tlsSettings "../deployment/tls.pem" "../deployment/tls.key") 
+            (WAI.setServerName "Accessability Server - IoTHub Sweden" 
+            (WAI.setHost "*" WAI.defaultSettings)) $ corsified application

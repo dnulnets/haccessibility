@@ -52,8 +52,8 @@ import Accessability.Model.Transform (textToKey)
 -- The HTTP server and network libraries
 --
 import Yesod
+import Yesod.Static
 import Yesod.Auth
---import Yesod.Handler (permissionDenied)
 
 --
 -- Server session cookies
@@ -63,9 +63,13 @@ import Yesod.Auth
 
 -- | Our server and settings
 data Server = Server {
+    getStatic :: Static,                   -- ^ All static files
     appSettings :: AppSettings             -- ^ Settings for the server
     , serverConnectionPool :: ConnectionPool -- ^ The pool of database connections
 }
+
+-- | Our static files
+staticFiles "static"
 
 -- | The routes in our server
 mkYesodData "Server" [parseRoutes|
@@ -74,6 +78,7 @@ mkYesodData "Server" [parseRoutes|
 /api/item/#Text ItemR GET DELETE PUT
 /api/items ItemsR POST
 /api/authenticate AuthenticateR POST
+!/ StaticR Static getStatic
 |]
 
 -- | Cookie name used for the sessions of this example app.

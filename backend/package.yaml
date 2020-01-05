@@ -60,6 +60,8 @@ library:
     - data-default
     - cookie
     - unliftio
+    - warp-tls
+    - yesod-static
 
 executables:
   gql-exe:

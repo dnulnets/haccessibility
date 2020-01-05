@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 733b2bcc92568ff2bfee2f227ac1b46017640a210efa8dc479b27049ca7dc374
+-- hash: d579f5e9ac5ac49fdc8d2a67a65ea317d26f0b4f230917a144e6012cec413b6b
 
 name:           gql
 version:        0.1.0.0
@@ -81,9 +81,11 @@ library
     , wai
     , wai-cors
     , warp
+    , warp-tls
     , yesod
     , yesod-auth
     , yesod-core
+    , yesod-static
   default-language: Haskell2010
 
 executable gql-exe
