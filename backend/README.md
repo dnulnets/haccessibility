@@ -3,8 +3,23 @@ A graphQL- and REST-based interface for accessability information on geographica
 
 It is written in Haskell and uses the morpheus graphQL resolver and the Yesod web framework together with Persistent to handle a PostgreSQL database.
 
-## Setup
+## Build
+To be able to build the portal you need the following (version is just indicative):
 
+1. stack 2.1.3
+
+Install stack according to its [Homepage](https://docs.haskellstack.org/en/stable/README/).
+
+After this you can build the backend either using the makefile in the root of the git repository or just write stack build in the backend directory. I would recommend using the makefile when building to be able to run the backend. Otherwise while programming just use stack build in the directory to verify your code.
+
+```
+stack build
+```
+or
+
+```
+make build-backend
+```
 
 ## Geographical location
 
