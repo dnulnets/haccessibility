@@ -4,7 +4,7 @@ build-portal:
 	cd portal;spago bundle-app
 	-rm -fR backend/static
 	cd portal;parcel build -d ../backend/static index.html
-
+	
 build-backend:
 	cd backend;stack build
 

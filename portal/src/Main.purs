@@ -47,6 +47,6 @@ main = do
     let
       env ∷ Environment
       env = { geo : toMaybe location
-        , baseURL : BaseURL "https://haccsrv:3000"
+        , baseURL : BaseURL "https://192.168.1.211:3000"
         , userInfo : currentUserInfo}
     runUI (rootComponent env) unit body
