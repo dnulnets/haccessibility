@@ -1,5 +1,5 @@
-# Accessability Portal
-An accessability portal for mobile and PC browsers that allows you to enter accessability information on geographical positions. This is a prototype for the Swedish IoT Hub for Accessability.
+# Accessibility Portal
+An accessibility portal for mobile and PC browsers that allows you to enter accessibility information on geographical positions. This is a prototype for the Swedish IoT Hub for Accessibility.
 
 It is written in Purescript and the declarative, type-safe UI library Halogen. It uses the backend to store and retrieve information through its REST-interface. The backend also serves as the provider of the single page application to the browser.
 

@@ -1,5 +1,5 @@
-# Accessability database and portal
-This is a prototype for the Swedish IoT Hub for Accessability that allows you to manually or automatically through IoT accessability enabled devices enter information, such as availability, on geographical positions.
+# Accessibility database and portal
+This is a prototype for the Swedish IoT Hub for Accessibility that allows you to manually or automatically through IoT accessibility enabled devices enter information, such as availability, on geographical positions.
 
 ## Technology stack
 The backend is developed in Haskell and uses the Persistence, Yesod webframework and Morpheus graphQL library. The database is PostreSQL.
