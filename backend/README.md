@@ -1,5 +1,5 @@
 # Accessability API
-A graphQL- and REST-based interface for accessability information on geographical locations. This is a simple prototype for the Swedish IoT Hub for Accessability.
+A graphQL- and REST-based interface for accessability information on geographical locations. This is a simple prototype for the Swedish IoT Hub for Accessability. It also serves the single page portal.
 
 It is written in Haskell and uses the morpheus graphQL resolver and the Yesod web framework together with Persistent to handle a postgreSQL database. When finished it will contain docker images and kubernetes setup of the system.
 
@@ -7,7 +7,7 @@ It is written in Haskell and uses the morpheus graphQL resolver and the Yesod we
 
 A basic geographical location in this prototype contains a unique name, a description, its geodetic position (in WGS84), the level of accessability (1-5), what source (Manual, Automatic) that sets the state of the location (Unknown, Online, Offline).
 
-More information is supposed to be added to the location based on the type of location, such as store, restaurant, public space, etc. (**Not done yet**)
+More information is supposed to be added to the location based on the type of location, such as store, restaurant, public space, etc.
 
 ## REST interface
 The REST interface is located at **/api** and content type is **application/json**.
