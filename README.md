@@ -1,5 +1,7 @@
 # Accessibility database and portal
-This is a prototype for the Swedish IoT Hub for Accessibility that allows you to manually or automatically through IoT accessibility enabled devices enter information, such as availability, on geographical positions.
+This is a prototype, among many other prototypes and solutions, for the Swedish IoT Hub for Accessibility. This prototype allows you to manually or automatically through IoT accessibility enabled devices enter information, such as availability, on geographical positions.
+
+The github location of the Swedish IoT Hub Source code is [here](https://github.com/orgs/iot-for-tillgenglighet/dashboard).
 
 ## Purpose and goal
 
