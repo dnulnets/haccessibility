@@ -33,7 +33,7 @@ import Database.Persist.TH
 --
 -- Our own types
 --
-import Accessability.Model.Geo (GeodeticPosition(..))
+import Accessability.Data.Geo (Geo(..))
 import Accessability.Model.GQL (ItemLevel(..), ItemState(..), ItemSource(..))
 
 -- Create migration function using both our entities and
@@ -60,5 +60,11 @@ User
     password Text       -- ^ The password, bcrypted
     email Text          -- ^ The users email
     UniqueUserUsername username -- ^ The username is unique
+    deriving Show
+
+TestItem
+    name Text
+    pos Geo
+    UniqueTestItemName name
     deriving Show
 |]

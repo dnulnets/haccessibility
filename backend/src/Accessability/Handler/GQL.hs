@@ -54,13 +54,6 @@ import Database.Persist.Sql
 --
 -- My own imports
 --
-import Accessability.Model.Geo (
-    GeodeticPosition(..),
-    Geodetic(..),
-    WGS84 (..),
-    degree,
-    meter,
-    (*~))
 import Accessability.Foundation (Handler, Server(..), requireAuthentication)
 import Accessability.Model.GQL
 import qualified Accessability.Model.DB as DB

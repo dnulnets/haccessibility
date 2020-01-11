@@ -1,7 +1,7 @@
-{-# LANGUAGE OverloadedStrings          #-}
-{-# LANGUAGE QuasiQuotes                #-}
-{-# LANGUAGE TemplateHaskell            #-}
-{-# LANGUAGE ViewPatterns               #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes       #-}
+{-# LANGUAGE TemplateHaskell   #-}
+{-# LANGUAGE ViewPatterns      #-}
 
 -- |
 -- Module      : Boot
@@ -11,7 +11,7 @@
 -- Maintainer  : tomas.stenlund@permobil.com
 -- Stability   : experimental
 -- Portability : POSIX
--- 
+--
 -- This module contains the initialization and setup of the server that serves both
 -- HTTP graphql and rest calls.
 --
@@ -20,51 +20,44 @@ module Boot (serverMain) where
 --
 -- Standard libraries
 --
-import System.Environment (getArgs)
-import Control.Monad.Trans.Resource (runResourceT)
-import Control.Monad.Logger (runStderrLoggingT)
-import Data.Maybe (listToMaybe, maybe)
-import Data.ByteString.Char8 (pack)
+import           Control.Monad.Logger               (runStderrLoggingT)
+import           Control.Monad.Trans.Resource       (runResourceT)
+import           Data.ByteString.Char8              (pack)
+import           Data.Maybe                         (listToMaybe, maybe)
+import           System.Environment                 (getArgs)
 
 --
 -- Persistence libraries
 --
-import Database.Persist.Postgresql
+import           Database.Persist.Postgresql
 
 --
 -- The HTTP server and network libraries
 --
-import Yesod
-import Yesod.Static
-import qualified Network.Wai.Handler.Warp as WAI
-import qualified Network.Wai.Handler.WarpTLS as WAIT
+import qualified Network.Wai.Handler.Warp           as WAI
+import qualified Network.Wai.Handler.WarpTLS        as WAIT
+import           Yesod
+import           Yesod.Static
 --
 -- Get our own items
 --
-import Accessability.Foundation (
-    Handler,
-    Server(..),
-    Route(..),
-    resourcesServer)
+import           Accessability.Foundation           (Handler, Route (..),
+                                                     Server (..),
+                                                     resourcesServer)
 
-import Accessability.Handler.GQL (
-    postGQLR)
+import           Accessability.Handler.GQL          (postGQLR)
 
-import Accessability.Handler.REST (
-    getItemR,
-    putItemR,
-    deleteItemR,
-    postCreateItemR,
-    postItemsR)
+import           Accessability.Handler.REST         (deleteItemR, getItemR,
+                                                     postCreateItemR,
+                                                     postItemsR, putItemR)
 
-import Accessability.Handler.Authenticate (
-    postAuthenticateR)
+import           Accessability.Handler.Authenticate (postAuthenticateR)
 
-import Accessability.Settings (defaultSettings)
+import           Accessability.Settings             (defaultSettings)
 
-import Accessability.Middleware (corsified)
+import           Accessability.Middleware           (corsified)
 
-import Accessability.Model.DB (entityDefs)
+import           Accessability.Model.DB             (entityDefs)
 
 --
 -- The dispatcher
@@ -84,9 +77,9 @@ serverMain = do
     runStderrLoggingT $ withPostgresqlPool (pack ("postgresql://heatserver:heatserver@" <> database <> "/heat")) 5 $ \pool -> liftIO $ do
         runResourceT $ flip runSqlPool pool $ do
             runMigration migrateAll
-        application <- toWaiApp $ Server { getStatic = static, 
+        application <- toWaiApp $ Server { getStatic = static,
             appSettings = defaultSettings,
             serverConnectionPool = pool }
-        WAIT.runTLS (WAIT.tlsSettings "../deployment/tls.pem" "../deployment/tls.key") 
-            (WAI.setServerName "Accessability Server - IoTHub Sweden" 
+        WAIT.runTLS (WAIT.tlsSettings "../deployment/tls.pem" "../deployment/tls.key")
+            (WAI.setServerName "Accessability Server - IoTHub Sweden"
             (WAI.setHost "*" WAI.defaultSettings)) $ corsified application
