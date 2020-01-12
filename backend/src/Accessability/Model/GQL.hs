@@ -58,38 +58,6 @@ import Accessability.Model (
     ItemSource(..),
     ItemState(..))
 
-import Accessability.Data.Position (Geodetic(..),
-    Position(..),
-    show,
-    readsPrec,
-    WGS84 (..),
-    degree, meter,
-    (*~))
-
-
---
--- Make Position a GQL type
---
-
--- | Make the Position a scalar
-instance GQLScalar Position where
-
-  -- | Parse the value for a graphql string to scalar
-  parseValue (String x) = pure $ Position Geodetic {
-    latitude=62.39129 *~ degree, 
-    longitude=17.3063 *~ degree,
-    geoAlt=0.0 *~ meter,
-    ellipsoid=WGS84}
-  parseValue _ = Left $ pack "Geodetic position must be in compressed degrees with decimals in WGS84 of format <latitude>;<longitude>"
-  
-  -- | Serialize the data to a graphql scalar string
-  serialize p = String $ pack $ show  p
-
--- | Make the GeodeticPosition a type of kind scalar
-instance GQLType Position where
-  type KIND Position = SCALAR
-  description = const $ Just $ pack "This holds a geodetic position and must be in compressed degrees with decimals in WGS84 of format <latitude>;<longitude>"
-
 --
 -- Enumeration ItemLevel
 --

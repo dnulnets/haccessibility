@@ -15,38 +15,44 @@
 -- This module creates the persist field and sql definition for the geo type in postgresql
 --
 module Accessability.Data.Geo (
-    Geo(..), 
-    toPoint) where
+    Geo(..)) where
 
 --
 -- Import standard libs
 --
 import Data.ByteString (ByteString, concat)
-import Data.ByteString.Char8 (pack)
+import Data.ByteString.Lazy (toStrict)
+import Data.Text (Text(..), pack)
 
 --
--- To be bale to generate the persist field
+-- To be able to generate the persist field
 --
 import Database.Persist
 import Database.Persist.TH
 import Database.Persist.Class
 import Database.Persist.Sql
 
+import Data.Geospatial
+import Data.Hex
+import Data.Internal.Ewkb.Geometry
+import Data.Internal.Wkb.Endian
+import Data.Ewkb
+
 -- |
 --
 
-data Geo = Geo ByteString
+data Geo = Geo GeospatialGeometry
     deriving (Show)
 
-instance PersistField Geo where
-  toPersistValue (Geo t) = PersistDbSpecific t
+joho::Either String a -> Either Text a
+joho (Left s) = Left $ pack s
+joho (Right r) = Right r
 
-  fromPersistValue (PersistDbSpecific t) = Right $ Geo $ Data.ByteString.concat ["'", t, "'"]
+instance PersistField Geo where
+  toPersistValue (Geo t) = PersistDbSpecific $ toStrict $ toByteString LittleEndian (Srid 3226) t
+
+  fromPersistValue (PersistDbSpecific t) = joho $ Geo <$> (parseHexByteString $ Hex t)
   fromPersistValue _ = Left "Geo values must be converted from PersistDbSpecific"
 
 instance PersistFieldSql Geo where
   sqlType _ = SqlOther "GEOGRAPHY(POINT,4326)"
-
-toPoint :: Double -> Double -> Geo
-toPoint lat lon = Geo $ Data.ByteString.concat ["'POINT(", ps $ lon, " ", ps $ lat, ")'"]
-  where ps = pack . show

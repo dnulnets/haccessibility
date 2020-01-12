@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 98c05ab297573369769acce1134a39c425dda330bf6801fe8a71adeed2059dd6
+-- hash: 67e03fab36e36adc4fef4f592d520e468061fe894f92dc01d929309e3736dad5
 
 name:           gql
 version:        0.1.0.0
@@ -28,7 +28,6 @@ source-repository head
 library
   exposed-modules:
       Accessability.Data.Geo
-      Accessability.Data.Position
       Accessability.Foundation
       Accessability.Handler.Authenticate
       Accessability.Handler.GQL
@@ -60,8 +59,7 @@ library
     , cookie
     , cryptonite
     , data-default
-    , dimensional
-    , geodetics
+    , geojson
     , hashable
     , hexstring
     , http-types
@@ -83,6 +81,7 @@ library
     , wai-cors
     , warp
     , warp-tls
+    , wkt-geom
     , yesod
     , yesod-auth
     , yesod-core

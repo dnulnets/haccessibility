@@ -29,8 +29,6 @@ library:
     - bytestring
     - morpheus-graphql
     - text
-    - geodetics
-    - dimensional
     - persistent
     - persistent-postgresql
     - persistent-template
@@ -62,6 +60,8 @@ library:
     - unliftio
     - warp-tls
     - yesod-static
+    - wkt-geom
+    - geojson
 
 executables:
   gql-exe:
