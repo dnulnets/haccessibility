@@ -23,36 +23,8 @@ module Accessability.Data.Geo (
 import Data.ByteString (ByteString, concat)
 import Data.ByteString.Lazy (toStrict)
 import Data.Text (Text(..), pack)
+import Data.Geospatial (GeospatialGeometry)
 
---
--- To be able to generate the persist field
---
-import Database.Persist
-import Database.Persist.TH
-import Database.Persist.Class
-import Database.Persist.Sql
-
-import Data.Geospatial
-import Data.Hex
-import Data.Internal.Ewkb.Geometry
-import Data.Internal.Wkb.Endian
-import Data.Ewkb
-
--- |
---
-
+-- | The geography type
 data Geo = Geo GeospatialGeometry
     deriving (Show)
-
-joho::Either String a -> Either Text a
-joho (Left s) = Left $ pack s
-joho (Right r) = Right r
-
-instance PersistField Geo where
-  toPersistValue (Geo t) = PersistDbSpecific $ toStrict $ toByteString LittleEndian (Srid 3226) t
-
-  fromPersistValue (PersistDbSpecific t) = joho $ Geo <$> (parseHexByteString $ Hex t)
-  fromPersistValue _ = Left "Geo values must be converted from PersistDbSpecific"
-
-instance PersistFieldSql Geo where
-  sqlType _ = SqlOther "GEOGRAPHY(POINT,4326)"

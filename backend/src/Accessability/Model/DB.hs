@@ -35,6 +35,7 @@ import Database.Persist.TH
 --
 import Accessability.Data.Geo (Geo(..))
 import Accessability.Model.GQL (ItemLevel(..), ItemState(..), ItemSource(..))
+import Accessability.Data.Persist.Geo
 
 -- Create migration function using both our entities and
 -- serversession-backend-persistent ones.
