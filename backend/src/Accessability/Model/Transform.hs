@@ -28,9 +28,9 @@ import Data.HexString (toBinary, hexString, fromBinary, toText)
 
 import Database.Persist.Sql
 
-import qualified Accessability.Model.DB as DB
+import qualified Accessability.Model.Database as DB
 import qualified Accessability.Model.GQL as GQL
-import qualified Accessability.Model as G
+import qualified Accessability.Data.Item as G
 
 -- | Convert from ID to database key
 idToKey:: ToBackendKey SqlBackend record => ID -> Key record

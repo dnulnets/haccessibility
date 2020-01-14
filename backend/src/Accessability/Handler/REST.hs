@@ -54,10 +54,10 @@ import Accessability.Foundation (
     Server(..),
     getAuthenticatedUser,
     requireAuthentication)
-import qualified Accessability.Model.DB as DB
-import Accessability.Model
+import qualified Accessability.Model.Database as DB
+import Accessability.Data.Item
 import Accessability.Model.REST
-import qualified Accessability.Model.Database as DBF
+import qualified Accessability.Handler.Database as DBF
 import Accessability.Model.Transform
 
 -- | The REST GET handler for an item, i.e. return with the data of an item based on the items

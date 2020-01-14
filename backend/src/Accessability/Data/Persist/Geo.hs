@@ -46,10 +46,6 @@ instance PersistField Geo where
   toPersistValue (Geo t) = PersistDbSpecific $ toStrict $ toByteString LittleEndian (Srid 3226) t
 
   fromPersistValue (PersistDbSpecific t) = either (Left . pack) Right $ Geo <$> (parseHexByteString $ Hex t)
---    where
---        textEither (Left s) = Left $ pack s
---        textEither (Right r) = Right r
-
   fromPersistValue _ = Left "Geo values must be converted from PersistDbSpecific"
 
 instance PersistFieldSql Geo where

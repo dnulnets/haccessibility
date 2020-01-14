@@ -28,7 +28,7 @@ import Data.HexString
 --
 -- Heat imports
 --
-import Accessability.Model.DB
+import Accessability.Model.Database
 
 -- |Authenticate body description, comes with the POST
 data Authenticate = Authenticate

@@ -56,13 +56,13 @@ import Database.Persist.Sql
 --
 import Accessability.Foundation (Handler, Server(..), requireAuthentication)
 import Accessability.Model.GQL
-import qualified Accessability.Model.DB as DB
+import qualified Accessability.Model.Database as DB
 import Accessability.Model.Transform (
    toGQLItem,
    toDataItem,
    idToKey,
    keyToID)
-import qualified Accessability.Model.Database as DBF
+import qualified Accessability.Handler.Database as DBF
 
 -- | The GraphQL Root resolver
 rootResolver :: GQLRootResolver Handler () Query Mutation Undefined

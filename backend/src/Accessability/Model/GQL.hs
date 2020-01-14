@@ -53,7 +53,7 @@ import Data.Morpheus.Types    (GQLType(..), GQLScalar(..), ID(..), ScalarValue(.
 --
 -- My own imports
 --
-import Accessability.Model (
+import Accessability.Data.Item (
     ItemLevel(..),
     ItemSource(..),
     ItemState(..))

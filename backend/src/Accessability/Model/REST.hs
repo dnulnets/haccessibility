@@ -36,10 +36,11 @@ import Data.Aeson.TH
 --
 -- Our own
 --
-import Accessability.Model (
+import Accessability.Data.Item (
     ItemLevel(..),
     ItemState(..),
     ItemSource(..))
+import Accessability.Data.Json.Item
 import Accessability.Utils.JSON (firstLower)
 
 -- | The argument for the queryitems query

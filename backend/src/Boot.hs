@@ -57,7 +57,7 @@ import           Accessability.Settings             (defaultSettings)
 
 import           Accessability.Middleware           (corsified)
 
-import           Accessability.Model.DB             (entityDefs)
+import           Accessability.Model.Database       (entityDefs)
 
 --
 -- The dispatcher

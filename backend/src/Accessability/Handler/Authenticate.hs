@@ -35,7 +35,7 @@ import Yesod
 --
 -- Internal imports
 --
-import Accessability.Model.DB
+import Accessability.Model.Database
 import Accessability.Model.Transform (keyToText)
 
 import Accessability.Foundation (Server(..), Handler)
