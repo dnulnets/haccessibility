@@ -62,6 +62,18 @@ import Accessability.Model.Transform (
    keyToID)
 import qualified Accessability.Handler.Database as DBF
 
+-- Here comes an ugly section of nested fmaps, need to rethink this if there is a better way
+
+-- | We are drilling three layers down into a functor, should perhaps be written
+-- a bit differently to avoid the need for this, but here we are
+fffmap::(Functor e) => (Functor f) => (Functor g) => (a->b) -> e (f (g a)) -> e (f (g b))
+fffmap = fmap . fmap . fmap
+
+-- | We are drilling two layers down into a functor, should perhaps be written
+-- a bit differently to avoid the need for this, but here we are
+ffmap::(Functor f) => (Functor g) => (a->b) -> f (g a) -> f (g b)
+ffmap = fmap . fmap
+
 -- | The GraphQL Root resolver
 rootResolver :: GQLRootResolver Handler () Query Mutation Undefined
 rootResolver =
@@ -82,27 +94,27 @@ resolveMutation = Mutation { createItem = resolveCreateItem
 resolveUpdateItem ::MutationUpdateItemArgs          -- ^ The arguments for the query
                   ->MutRes e Handler (Maybe Item)   -- ^ The result of the query
 resolveUpdateItem arg =
-   liftEither $ ((toGQLItem <$>) <$>) <$> (DBF.dbUpdateItem (idToKey $ updateItemId arg) $
+   fffmap toGQLItem liftEither $ DBF.dbUpdateItem (idToKey $ updateItemId arg) $
          DBF.changeField DB.ItemName (updateItemName arg) <>
          DBF.changeField DB.ItemDescription (updateItemDescription arg) <>
          DBF.changeField DB.ItemLevel (updateItemLevel arg) <>
          DBF.changeField DB.ItemSource (updateItemSource arg) <>
          DBF.changeField DB.ItemState (updateItemState arg) <>
          DBF.changeField DB.ItemLongitude (realToFrac <$> updateItemLongitude arg) <>
-         DBF.changeField DB.ItemLatitude (realToFrac <$> updateItemLatitude arg))
+         DBF.changeField DB.ItemLatitude (realToFrac <$> updateItemLatitude arg)
 
 -- | The mutation create item resolver
 resolveDeleteItem ::MutationDeleteItemArgs   -- ^ The arguments for the query
                   ->MutRes e Handler (Maybe Item)    -- ^ The result of the query
 resolveDeleteItem arg = do
    lift $ DBF.dbDeleteItem $ toSqlKey $ read $ unpack $ unpackID $ deleteItemId arg
-   return $ Nothing
+   return Nothing
 
 -- | The mutation create item resolver
 resolveCreateItem ::MutationCreateItemArgs   -- ^ The arguments for the query
                   ->MutRes e Handler Item    -- ^ The result of the query
 resolveCreateItem arg =
-   liftEither $ ((toGQLItem <$>) <$>) <$> DBF.dbCreateItem $ DB.Item {
+   ffmap toGQLItem liftEither $ DBF.dbCreateItem $ DB.Item {
       DB.itemName =  createItemName arg,
       DB.itemDescription = createItemDescription arg,
       DB.itemLevel = createItemLevel arg,
@@ -121,13 +133,13 @@ resolveQuery = Query {  queryItem = resolveItem,
 resolveItem::QueryItemArgs          -- ^ The arguments for the query
             ->Res e Handler (Maybe Item)    -- ^ The result of the query
 resolveItem args =
-   liftEither $ ((toGQLItem <$>) <$>) <$> DBF.dbFetchItem (idToKey $ queryItemId args)
+   fffmap toGQLItem liftEither $ DBF.dbFetchItem (idToKey $ queryItemId args)
 
 -- | The query item resolver
 resolveItems::QueryItemsArgs          -- ^ The arguments for the query
             ->Res e Handler [Item]    -- ^ The result of the query
 resolveItems args =
-   liftEither $ ((toGQLItem <$>) <$>) <$> DBF.dbFetchItems (
+   fffmap toGQLItem liftEither $ DBF.dbFetchItems (
       DBF.filter DB.ItemLatitude (<=.) (realToFrac <$> queryItemsLatitudeMax args) <>
       DBF.filter DB.ItemLatitude (>=.) (realToFrac <$> queryItemsLatitudeMin args) <>
       DBF.filter DB.ItemLongitude (<=.) (realToFrac <$> queryItemsLongitudeMax args) <>
@@ -146,7 +158,7 @@ postGQLR::Handler Value -- ^ The graphQL response
 postGQLR = do
    requireAuthentication
    request <- requireCheckJsonBody::Handler GQLRequest
-   response <- UIOE.catchAny (Right <$> gqlApi request) (\e->pure $ Left $ show e)
+   response <- UIOE.catchAny (Right <$> gqlApi request) (pure . Left . show)
    case response of
-      Left e -> invalidArgs $ ["Unable to find any items in the database"] <> (splitOn "\n" $ pack e)
+      Left e -> invalidArgs $ ["Unable to find any items in the database"] <> splitOn "\n" (pack e)
       Right response -> sendStatusJSON status200 response
