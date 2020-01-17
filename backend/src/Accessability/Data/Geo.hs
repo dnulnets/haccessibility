@@ -10,7 +10,7 @@
 -- Stability   : experimental
 -- Portability : POSIX
 -- 
--- This module creates the persist field and sql definition for the geo type in postgresql
+-- This module creates a new geography type
 --
 module Accessability.Data.Geo (
     Geo(..)) where
@@ -24,5 +24,5 @@ import Data.Text (Text(..), pack)
 import Data.Geospatial (GeospatialGeometry)
 
 -- | The geography type
-data Geo = Geo GeospatialGeometry
+newtype Geo = Geo GeospatialGeometry
     deriving (Show)

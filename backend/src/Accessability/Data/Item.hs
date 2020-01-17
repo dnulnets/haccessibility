@@ -4,14 +4,14 @@
 
 -- |
 -- Module      : Acessability.Data.Item
--- Description : The types that are generic for all interfaces
+-- Description : The item type that are used by the application
 -- Copyright   : (c) Tomas Stenlund, 2019
 -- License     : BSD-3
 -- Maintainer  : tomas.stenlund@permobil.com
 -- Stability   : experimental
 -- Portability : POSIX
 -- 
--- This module contains the common types regardless of interface or database
+-- This module contains the common item type regardless of interface or database
 -- that is associated with geographical items.
 --
 module Accessability.Data.Item (

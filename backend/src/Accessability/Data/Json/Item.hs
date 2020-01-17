@@ -5,16 +5,15 @@
 {-# LANGUAGE TemplateHaskell      #-}
 
 -- |
--- Module      : Acessability.Data.Item
--- Description : The types that are generic for all interfaces
+-- Module      : Acessability.Data.Json.Item
+-- Description : The JSON implementation of the Item data type
 -- Copyright   : (c) Tomas Stenlund, 2019
 -- License     : BSD-3
 -- Maintainer  : tomas.stenlund@permobil.com
 -- Stability   : experimental
 -- Portability : POSIX
 -- 
--- This module contains the common types regardless of interface or database
--- that is associated with geographical items.
+-- This module contains the JSON implementation of the Item data type.
 --
 module Accessability.Data.Json.Item where
 
@@ -23,7 +22,6 @@ module Accessability.Data.Json.Item where
 --
 import Data.Char (toLower)
 import Data.Text (Text, pack)
-import GHC.Generics (Generic(..))
 
 --
 -- JSON library
@@ -32,16 +30,10 @@ import Data.Aeson
 import Data.Aeson.TH
 
 --
--- Import for persistence
---
-import Database.Persist
-import Database.Persist.TH
-
---
 -- Import our own stuff
 --
-import Accessability.Utils.JSON (firstLower)
 import Accessability.Data.Item
+import Accessability.Utils.JSON (firstLower)
 
 --
 -- JSON Option
@@ -49,7 +41,7 @@ import Accessability.Data.Item
 customOptions = defaultOptions
 
 --
--- Enumeration ItemLevel
+-- JSON for Enumeration ItemLevel
 --
 
 instance ToJSON ItemLevel where
@@ -60,7 +52,7 @@ instance FromJSON ItemLevel where
     parseJSON = genericParseJSON customOptions
     
 --
--- Enumeration ItemSource
+-- JSON for Enumeration ItemSource
 --
 
 instance ToJSON ItemSource where
@@ -71,7 +63,7 @@ instance FromJSON ItemSource where
     parseJSON = genericParseJSON customOptions
 
 --
--- Enumeration ItemState
+-- JSON for Enumeration ItemState
 --
 
 instance ToJSON ItemState where
@@ -82,7 +74,7 @@ instance FromJSON ItemState where
     parseJSON = genericParseJSON customOptions
 
 --
--- Item
+-- JSON for Item
 --
 
 -- |Automatically derive JSON but we do not want the first charatcer in the field to go out

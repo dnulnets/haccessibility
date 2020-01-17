@@ -6,7 +6,7 @@
 
 -- |
 -- Module      : Acessability.Model.GQL
--- Description : The graphQL API entrypoint
+-- Description : The graphQL API model
 -- Copyright   : (c) Tomas Stenlund, 2019
 -- License     : BSD-3
 -- Maintainer  : tomas.stenlund@permobil.com

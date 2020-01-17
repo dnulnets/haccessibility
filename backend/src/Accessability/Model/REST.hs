@@ -13,7 +13,7 @@
 -- Stability   : experimental
 -- Portability : POSIX
 -- 
--- This module contains the types for the graphQL support
+-- This module contains the types for the REST API
 --
 module Accessability.Model.REST (
     PostItemsBody(..),

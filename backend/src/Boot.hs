@@ -20,10 +20,10 @@ module Boot (serverMain) where
 --
 -- Standard libraries
 --
-import           Control.Monad.Logger               (runStderrLoggingT)
-import           Control.Monad.Trans.Resource       (runResourceT)
 import           Data.ByteString.Char8              (pack)
 import           Data.Maybe                         (listToMaybe, fromMaybe, maybe)
+import           Control.Monad.Logger               (runStderrLoggingT)
+import           Control.Monad.Trans.Resource       (runResourceT)
 import           System.Environment                 (getArgs)
 
 --
@@ -72,7 +72,7 @@ mkMigrate "migrateAll" entityDefs
 -- | Main starting point for the server
 serverMain :: IO ()
 serverMain = do
-    database <- (fromMaybe "haccdb:5432") . listToMaybe <$> getArgs
+    database <- fromMaybe "haccdb:5432" . listToMaybe <$> getArgs
     static@(Static settings) <- static "static"
     runStderrLoggingT $ withPostgresqlPool (pack ("postgresql://heatserver:heatserver@" <> database <> "/heat")) 5 $ \pool -> liftIO $ do
         runResourceT $ flip runSqlPool pool $

@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 -- |
--- Module      : Heat.Settings
+-- Module      : Accessibility.Settings
 -- Description : The application settings
 -- Copyright   : (c) Tomas Stenlund, 2019
 -- License     : BSD-3

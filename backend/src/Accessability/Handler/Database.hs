@@ -1,11 +1,10 @@
-{-# LANGUAGE DeriveGeneric        #-}
 {-# LANGUAGE TypeFamilies         #-}
-{-# LANGUAGE DeriveAnyClass       #-}
 {-# LANGUAGE FlexibleContexts     #-}
+{-# LANGUAGE TupleSections #-}
 
 -- |
 -- Module      : Acessability.Handler.Database
--- Description : The database functions
+-- Description : The database functions run within the Handler monad
 -- Copyright   : (c) Tomas Stenlund, 2019
 -- License     : BSD-3
 -- Maintainer  : tomas.stenlund@permobil.com
@@ -29,7 +28,8 @@ module Accessability.Handler.Database (
 -- Import standard libs
 --
 import Data.Text (Text, pack, unpack)
-                  
+import Data.Maybe (fromMaybe)
+
 --
 -- Yesod and HTTP imports
 --
@@ -42,10 +42,6 @@ import Database.Persist
 import Database.Persist.TH
 import Database.Persist.Sql
 import Database.Persist.Class (ToBackendKey)
-import Data.Text.Encoding (encodeUtf8)
-import Data.HexString (toBinary, hexString, fromBinary, toText)
-
-import Data.Morpheus.Types (ID(..))
 
 --
 -- My own imports
@@ -80,14 +76,14 @@ dbFetchItem :: Key Item                                         -- ^ The key
             ->Handler (Either String (Maybe (Key Item, Item)))  -- ^ The result of the database search
 dbFetchItem key = do
    item <- runDB $ get key
-   return $ Right $ (\i->(key,i)) <$> item
+   return $ Right $ (key,) <$> item
 
 -- | Fetch the item from the database
 dbFetchItems:: [Filter Item]     -- ^ The select item
             -> Maybe Int         -- ^ Max numbr of items
             ->Handler (Either String [(Key Item, Item)]) -- ^ The result of the database search
 dbFetchItems filter limit = do
-   item <- runDB $ selectList filter [LimitTo $ maybe 10 id limit]
+   item <- runDB $ selectList filter [LimitTo $ fromMaybe 10 limit]
    return $ Right $ clean <$> item
    where
       clean (Entity key dbitem) = (key, dbitem)
@@ -96,9 +92,9 @@ dbFetchItems filter limit = do
 dbCreateItem:: Item           -- ^ The key
          -> Handler (Either String (Key Item, Item))  -- ^ The result of the database search
 dbCreateItem item = do
-   key <- runDB $ insertBy $ item
+   key <- runDB $ insertBy item
    case key of
-      Left (Entity key dbitem) -> return $ Right $ (key, dbitem)
+      Left (Entity key dbitem) -> return $ Right (key, dbitem)
       Right key -> return $ Right (key, item)
 
 -- | Delete the item
@@ -117,6 +113,6 @@ dbUpdateItem key items = do
    dbitem <- runDB $ get key
    case dbitem of
       Just dbitem ->
-         return $ Right $ Just $ (key, dbitem)
+         return $ Right $ Just (key, dbitem)
       Nothing ->
-         return $ Right $ Nothing
+         return $ Right Nothing

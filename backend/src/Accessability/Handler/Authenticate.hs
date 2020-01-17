@@ -1,9 +1,6 @@
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE DeriveGeneric #-}
-
 -- |
--- Module      : Heat.Authenticate
--- Description : The authenticate route
+-- Module      : Heat.Handler.Authenticate
+-- Description : The handler for the authenticate route
 -- Copyright   : (c) Tomas Stenlund, 2019
 -- License     : BSD-3
 -- Maintainer  : tomas.stenlund@telia.com
@@ -17,14 +14,13 @@ module Accessability.Handler.Authenticate (postAuthenticateR) where
 --
 -- External imports
 --
-import GHC.Generics (Generic)
-
 import Data.Text (Text)
 import Data.Text.Encoding (encodeUtf8, decodeUtf8)
 import Data.HexString (HexString)
 import Data.ByteString (ByteString)
-import Data.Time.Clock.System (getSystemTime,
-                               SystemTime(..))
+import Data.Time.Clock.System (
+  getSystemTime,
+  SystemTime(..))
 
 import Network.HTTP.Types.Status (status401)
 
@@ -37,7 +33,6 @@ import Yesod
 --
 import Accessability.Model.Database
 import Accessability.Model.Transform (keyToText)
-
 import Accessability.Foundation (Server(..), Handler)
 import Accessability.Utils.JWT (jsonToToken)
 import Accessability.Utils.Password (authHashPassword, authValidatePassword)
@@ -58,5 +53,4 @@ postAuthenticateR = do
          Just (Entity userId user) | authValidatePassword (userPassword user) (password auth) -> do
                                        token <- return $ jsonToToken secret seconds length $ toJSON $ keyToText userId
                                        returnJson $ UserInfo (keyToText userId) token (userUsername user) (userEmail user)
-         _ -> do
-           sendResponseStatus status401 Null
+         _ -> sendResponseStatus status401 Null

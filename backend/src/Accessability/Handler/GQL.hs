@@ -10,7 +10,7 @@
 -- Stability   : experimental
 -- Portability : POSIX
 -- 
--- This module contains the handler for graphQL queries
+-- This module contains the handler for graphQL queries route
 --
 module Accessability.Handler.GQL (postGQLR) where
 
@@ -52,6 +52,7 @@ import Database.Persist.Sql
 --
 -- My own imports
 --
+import Accessability.Data.Functor
 import Accessability.Foundation (Handler, Server(..), requireAuthentication)
 import Accessability.Model.GQL
 import qualified Accessability.Model.Database as DB
@@ -61,18 +62,6 @@ import Accessability.Model.Transform (
    idToKey,
    keyToID)
 import qualified Accessability.Handler.Database as DBF
-
--- Here comes an ugly section of nested fmaps, need to rethink this if there is a better way
-
--- | We are drilling three layers down into a functor, should perhaps be written
--- a bit differently to avoid the need for this, but here we are
-fffmap::(Functor e) => (Functor f) => (Functor g) => (a->b) -> e (f (g a)) -> e (f (g b))
-fffmap = fmap . fmap . fmap
-
--- | We are drilling two layers down into a functor, should perhaps be written
--- a bit differently to avoid the need for this, but here we are
-ffmap::(Functor f) => (Functor g) => (a->b) -> f (g a) -> f (g b)
-ffmap = fmap . fmap
 
 -- | The GraphQL Root resolver
 rootResolver :: GQLRootResolver Handler () Query Mutation Undefined

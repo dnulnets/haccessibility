@@ -20,14 +20,23 @@ module Accessability.Model.Transform (
     idToKey,
     keyToID) where
 
+--
+-- Standard imports
+--
 import Data.Char (toLower)
 import Data.Text.Encoding (encodeUtf8)
 import Data.Text (Text, pack, unpack)
 import Data.Morpheus.Types    (ID(..), unpackID)
 import Data.HexString (toBinary, hexString, fromBinary, toText)
 
+--
+-- Persistence imports
+--
 import Database.Persist.Sql
 
+--
+-- Our own imports
+--
 import qualified Accessability.Model.Database as DB
 import qualified Accessability.Model.GQL as GQL
 import qualified Accessability.Data.Item as G

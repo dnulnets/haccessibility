@@ -32,7 +32,7 @@ key = "info"
 jsonToToken :: Text  -- ^ The secret used for signing
             -> NominalDiffTime -- ^ The time when the token was created from the epoch
             -> Integer -- ^ Number of sceonds the token is validity from creation time
-            -> Value -- ^ The JSON value to use as an unregistered claim
+            -> Value -- ^ The JSON value to use as an unregistered claim, the userid in this case
             -> Text  -- ^ The token
 jsonToToken jwtSecret ndt len userId =
   encodeSigned (JWT.hmacSecret jwtSecret)
@@ -45,7 +45,7 @@ jsonToToken jwtSecret ndt len userId =
 tokenToJson :: Text            -- ^ The secret to verify the signature with
             -> NominalDiffTime -- ^ The time compared with the expiration time for the token. Typically it is the current time.
             -> Text            -- ^ The token
-            -> Maybe Value     -- ^ The JSON value
+            -> Maybe Value     -- ^ The JSON value, the userid in this case
 tokenToJson jwtSecret now token = do
   jwt <- JWT.decodeAndVerifySignature (JWT.hmacSecret jwtSecret) token
   case hasDateExpired (JWT.exp (JWT.claims jwt)) (numericDate now) of

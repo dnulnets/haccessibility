@@ -1,7 +1,5 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 -- |
--- Module      : Heat.Utils.Password
+-- Module      : Accessibility.Utils.Password
 -- Description : Password handling
 -- Copyright   : (c) Tomas Stenlund, 2019
 -- License     : BSD-3
@@ -10,6 +8,7 @@
 -- Portability : POSIX
 -- 
 -- This module contains functionality to generate and verify bcrypted passwords.
+--
 module Accessability.Utils.Password (authHashPassword, authValidatePassword) where
 
 --
@@ -30,9 +29,7 @@ authValidatePassword hpwd upwd = validatePassword (encodeUtf8 upwd) (encodeUtf8 
 authHashPassword :: Integer       -- ^The cost of the hashing work
                  -> Text          -- ^The user supplied password in clear text
                  ->IO ByteString  -- ^The hashed password
-authHashPassword cost pwd = do
-  result <- hashPassword (fromIntegral cost) (encodeUtf8 pwd) :: IO ByteString
-  return result
+authHashPassword cost pwd = hashPassword (fromIntegral cost) (encodeUtf8 pwd)
 
   -- "$2b$10$jRs4Mriaz0BMBljpRc1NyO3/DSQP4J6Fco6izBU2dfbREaLcM6Vwy"
   

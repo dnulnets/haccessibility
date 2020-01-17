@@ -1,11 +1,10 @@
 {-# LANGUAGE FlexibleInstances    #-}
 {-# LANGUAGE TypeFamilies         #-}
-{-# LANGUAGE TemplateHaskell      #-}
 {-# LANGUAGE OverloadedStrings    #-}
 
 -- |
--- Module      : Accessability.Data.Geo
--- Description : The geodetic data type
+-- Module      : Accessability.Data.Persist.Geo
+-- Description : The implementation of persistent for the geodetic data type
 -- Copyright   : (c) Tomas Stenlund, 2019
 -- License     : BSD-3
 -- Maintainer  : tomas.stenlund@permobil.com
@@ -42,11 +41,13 @@ import Data.Ewkb
 
 import Accessability.Data.Geo
 
+-- |Marshalling to and from the SQL data type and the Geo data type
 instance PersistField Geo where
   toPersistValue (Geo t) = PersistDbSpecific $ toStrict $ toByteString LittleEndian (Srid 3226) t
 
-  fromPersistValue (PersistDbSpecific t) = either (Left . pack) Right $ Geo <$> (parseHexByteString $ Hex t)
+  fromPersistValue (PersistDbSpecific t) = either (Left . pack) Right $ Geo <$> parseHexByteString (Hex t)
   fromPersistValue _ = Left "Geo values must be converted from PersistDbSpecific"
 
+-- |Set the SQL data type for the geography point
 instance PersistFieldSql Geo where
   sqlType _ = SqlOther "GEOGRAPHY(POINT,4326)"

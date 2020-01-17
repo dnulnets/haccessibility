@@ -31,22 +31,25 @@ import GHC.Generics (Generic(..))
 import Database.Persist
 import Database.Persist.TH
 
+--
+-- Import of our own data type
+--
 import Accessability.Data.Item
 
 --
--- Enumeration ItemLevel
+-- Persistence for Enumeration ItemLevel
 --
 
 derivePersistField "ItemLevel"
 
 --
--- Enumeration ItemSource
+-- Persistence for Enumeration ItemSource
 --
     
 derivePersistField "ItemSource"
 
 --
--- Enumeration ItemState
+-- Persistence for Enumeration ItemState
 --
     
 derivePersistField "ItemState"

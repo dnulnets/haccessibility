@@ -123,14 +123,10 @@ requireAuthentication = do
   seconds <- liftIO $ fromIntegral . systemSeconds <$> getSystemTime    
   secret <- tokenSecret . appSettings <$> getYesod
   case bearer of
-    Nothing -> do
-      permissionDenied "You are not authenticated"
-    Just token -> do
-      case tokenToJson secret seconds token of
-        Nothing -> do
-          permissionDenied "You are not authenticated"
-        Just _ -> do
-          pure ()
+    Nothing -> permissionDenied "You are not authenticated"
+    Just token -> case tokenToJson secret seconds token of
+        Nothing -> permissionDenied "You are not authenticated"
+        Just _ -> pure ()
 
 -- | Checks to see if the caller is authenticated, if so it returns with the user identity
 -- that was part of the JWT the caller sent with the request.
@@ -147,4 +143,4 @@ getAuthenticatedUser = do
         Just info ->
           case fromJSON info of
             Error _ -> Nothing
-            Success uid -> Just $ uid
+            Success uid -> Just uid

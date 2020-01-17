@@ -12,6 +12,8 @@
 -- Portability : POSIX
 -- 
 -- This module contains the interfaces for the user handler API
+--
+
 module Accessability.Interface.Authenticate (Authenticate(..),
                                     UserInfo(..)) where
 
@@ -23,7 +25,6 @@ import GHC.Generics (Generic)
 import Data.Text (Text)
 import Data.Aeson
 import Data.Aeson.TH
-import Data.HexString
 
 --
 -- Heat imports
