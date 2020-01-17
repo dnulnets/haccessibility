@@ -1,8 +1,6 @@
 {-# LANGUAGE DeriveGeneric        #-}
 {-# LANGUAGE TypeFamilies         #-}
-{-# LANGUAGE DeriveAnyClass       #-}
 {-# LANGUAGE FlexibleInstances    #-}
-{-# LANGUAGE TemplateHaskell      #-}
 
 -- |
 -- Module      : Acessability.Data.Item

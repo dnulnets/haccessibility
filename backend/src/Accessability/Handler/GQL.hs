@@ -1,6 +1,4 @@
-{-# LANGUAGE DeriveGeneric        #-}
 {-# LANGUAGE TypeFamilies         #-}
-{-# LANGUAGE DeriveAnyClass       #-}
 {-# LANGUAGE OverloadedStrings    #-}
 
 -- |
@@ -21,7 +19,7 @@ module Accessability.Handler.GQL (postGQLR) where
 --
 import Data.Text (Text, pack, unpack, splitOn)
 import GHC.Generics (Generic(..))
-import Control.Exception (SomeException)  
+import Control.Exception (SomeException)
 import qualified UnliftIO.Exception as UIOE
 
 --
@@ -37,7 +35,7 @@ import Data.Morpheus.Types    (GQLRootResolver (..),
                               liftEither,
                               GQLRequest(..),
                               GQLResponse(..))
-                  
+
 --
 -- Yesod and HTTP imports
 --
@@ -92,7 +90,7 @@ resolveUpdateItem arg =
          DBF.changeField DB.ItemState (updateItemState arg) <>
          DBF.changeField DB.ItemLongitude (realToFrac <$> updateItemLongitude arg) <>
          DBF.changeField DB.ItemLatitude (realToFrac <$> updateItemLatitude arg))
-   
+
 -- | The mutation create item resolver
 resolveDeleteItem ::MutationDeleteItemArgs   -- ^ The arguments for the query
                   ->MutRes e Handler (Maybe Item)    -- ^ The result of the query
@@ -104,7 +102,7 @@ resolveDeleteItem arg = do
 resolveCreateItem ::MutationCreateItemArgs   -- ^ The arguments for the query
                   ->MutRes e Handler Item    -- ^ The result of the query
 resolveCreateItem arg =
-   liftEither $ ((toGQLItem <$>) <$>) <$> DBF.dbCreateItem $ DB.Item { 
+   liftEither $ ((toGQLItem <$>) <$>) <$> DBF.dbCreateItem $ DB.Item {
       DB.itemName =  createItemName arg,
       DB.itemDescription = createItemDescription arg,
       DB.itemLevel = createItemLevel arg,
@@ -122,33 +120,32 @@ resolveQuery = Query {  queryItem = resolveItem,
 -- | The query item resolver
 resolveItem::QueryItemArgs          -- ^ The arguments for the query
             ->Res e Handler (Maybe Item)    -- ^ The result of the query
-resolveItem args = do
-   liftEither $ ((toGQLItem <$>) <$>) <$> (DBF.dbFetchItem $ idToKey $ queryItemId args)
-                                
+resolveItem args =
+   liftEither $ ((toGQLItem <$>) <$>) <$> DBF.dbFetchItem (idToKey $ queryItemId args)
+
 -- | The query item resolver
 resolveItems::QueryItemsArgs          -- ^ The arguments for the query
             ->Res e Handler [Item]    -- ^ The result of the query
-resolveItems args = do   
+resolveItems args =
    liftEither $ ((toGQLItem <$>) <$>) <$> DBF.dbFetchItems (
       DBF.filter DB.ItemLatitude (<=.) (realToFrac <$> queryItemsLatitudeMax args) <>
       DBF.filter DB.ItemLatitude (>=.) (realToFrac <$> queryItemsLatitudeMin args) <>
       DBF.filter DB.ItemLongitude (<=.) (realToFrac <$> queryItemsLongitudeMax args) <>
       DBF.filter DB.ItemLongitude (>=.) (realToFrac <$> queryItemsLongitudeMin args) <>
-      ( DBF.filter DB.ItemDescription (DBF.ilike) (queryItemsText args) ||.
-      DBF.filter DB.ItemName (DBF.ilike) (queryItemsText args)) )
+      ( DBF.filter DB.ItemDescription DBF.ilike (queryItemsText args) ||.
+      DBF.filter DB.ItemName DBF.ilike (queryItemsText args)) )
       (queryItemsLimit args)
 
 -- | Compose the graphQL api
 gqlApi:: GQLRequest         -- ^ The graphql request
    -> Handler GQLResponse   -- ^ The graphql response
-gqlApi r = do
-    interpreter rootResolver r
+gqlApi = interpreter rootResolver
 
 -- | The GQL handler
 postGQLR::Handler Value -- ^ The graphQL response
 postGQLR = do
    requireAuthentication
-   request <- requireCheckJsonBody::Handler GQLRequest   
+   request <- requireCheckJsonBody::Handler GQLRequest
    response <- UIOE.catchAny (Right <$> gqlApi request) (\e->pure $ Left $ show e)
    case response of
       Left e -> invalidArgs $ ["Unable to find any items in the database"] <> (splitOn "\n" $ pack e)

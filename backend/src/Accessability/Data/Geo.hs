@@ -1,7 +1,5 @@
 {-# LANGUAGE FlexibleInstances    #-}
 {-# LANGUAGE TypeFamilies         #-}
-{-# LANGUAGE TemplateHaskell      #-}
-{-# LANGUAGE OverloadedStrings    #-}
 
 -- |
 -- Module      : Accessability.Data.Geo
