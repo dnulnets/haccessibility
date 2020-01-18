@@ -5,6 +5,7 @@
 {-# LANGUAGE ViewPatterns               #-}
 {-# LANGUAGE MultiParamTypeClasses      #-}
 {-# LANGUAGE FlexibleContexts           #-}
+{-# OPTIONS_GHC -Wwarn=unused-top-binds #-}
 
 -- |
 -- Module      : Accessability.Foundation

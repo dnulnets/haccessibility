@@ -2,6 +2,7 @@
 {-# LANGUAGE QuasiQuotes       #-}
 {-# LANGUAGE TemplateHaskell   #-}
 {-# LANGUAGE ViewPatterns      #-}
+{-# OPTIONS_GHC -Wwarn=orphans #-}
 
 -- |
 -- Module      : Boot
