@@ -23,9 +23,8 @@ module Accessability.Model.Transform (
 --
 -- Standard imports
 --
-import Data.Char (toLower)
 import Data.Text.Encoding (encodeUtf8)
-import Data.Text (Text, pack, unpack)
+import Data.Text (Text)
 import Data.Morpheus.Types    (ID(..), unpackID)
 import Data.HexString (toBinary, hexString, fromBinary, toText)
 
@@ -43,14 +42,14 @@ import qualified Accessability.Data.Item as G
 
 -- | Convert from ID to database key
 idToKey:: ToBackendKey SqlBackend record => ID -> Key record
-idToKey key = toSqlKey $ toBinary $ hexString $ encodeUtf8 $ unpackID $ key
+idToKey key = toSqlKey $ toBinary $ hexString $ encodeUtf8 $ unpackID key
 
 keyToID::ToBackendKey SqlBackend record => Key record -> ID
 keyToID key = ID { unpackID = toText $ fromBinary $ fromSqlKey key }
 
 -- | Convert from Text to database key
 textToKey::ToBackendKey SqlBackend record => Text -> Key record
-textToKey key = toSqlKey $ toBinary $ hexString $ encodeUtf8 $ key
+textToKey key = toSqlKey $ toBinary $ hexString $ encodeUtf8 key
 
 -- | Convert from Text to database key
 keyToText::ToBackendKey SqlBackend record => Key record -> Text

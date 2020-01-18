@@ -31,6 +31,7 @@ data AppSettings = AppSettings {
   }
 
 -- |A default setting for our application
+defaultSettings::AppSettings
 defaultSettings = AppSettings {
   
   tokenSecret = "mandelmassa"   -- ^The default token secret

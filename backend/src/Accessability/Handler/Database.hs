@@ -27,7 +27,7 @@ module Accessability.Handler.Database (
 --
 -- Import standard libs
 --
-import Data.Text (Text, pack, unpack)
+import Data.Text (Text, pack)
 import Data.Maybe (fromMaybe)
 
 --
@@ -36,19 +36,10 @@ import Data.Maybe (fromMaybe)
 import Yesod
 
 --
--- Persist library
---
-import Database.Persist
-import Database.Persist.TH
-import Database.Persist.Sql
-import Database.Persist.Class (ToBackendKey)
-
---
 -- My own imports
 --
 import Accessability.Foundation (Handler)
 import Accessability.Model.Database
-import Accessability.Model.Transform (textToKey, keyToText, keyToID, idToKey)
 
 -- | A postgresql backendfilter for ILIKE
 ilike::(EntityField Item Text -- ^ The column
@@ -82,8 +73,8 @@ dbFetchItem key = do
 dbFetchItems:: [Filter Item]     -- ^ The select item
             -> Maybe Int         -- ^ Max numbr of items
             ->Handler (Either String [(Key Item, Item)]) -- ^ The result of the database search
-dbFetchItems filter limit = do
-   item <- runDB $ selectList filter [LimitTo $ fromMaybe 10 limit]
+dbFetchItems f limit = do
+   item <- runDB $ selectList f [LimitTo $ fromMaybe 10 limit]
    return $ Right $ clean <$> item
    where
       clean (Entity key dbitem) = (key, dbitem)
@@ -94,8 +85,8 @@ dbCreateItem:: Item           -- ^ The key
 dbCreateItem item = do
    key <- runDB $ insertBy item
    case key of
-      Left (Entity key dbitem) -> return $ Right (key, dbitem)
-      Right key -> return $ Right (key, item)
+      Left (Entity k dbitem) -> return $ Right (k, dbitem)
+      Right k -> return $ Right (k, item)
 
 -- | Delete the item
 dbDeleteItem:: Key Item                       -- ^ The key
@@ -112,7 +103,7 @@ dbUpdateItem key items = do
    runDB $ update key items
    dbitem <- runDB $ get key
    case dbitem of
-      Just dbitem ->
-         return $ Right $ Just (key, dbitem)
+      Just d ->
+         return $ Right $ Just (key, d)
       Nothing ->
          return $ Right Nothing

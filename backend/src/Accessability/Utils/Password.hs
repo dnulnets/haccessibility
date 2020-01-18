@@ -15,7 +15,7 @@ module Accessability.Utils.Password (authHashPassword, authValidatePassword) whe
 -- External imports
 --
 import Data.Text (Text)
-import Data.Text.Encoding (encodeUtf8, decodeUtf8)
+import Data.Text.Encoding (encodeUtf8)
 import Data.ByteString (ByteString)
 import Crypto.KDF.BCrypt (hashPassword,validatePassword)
 

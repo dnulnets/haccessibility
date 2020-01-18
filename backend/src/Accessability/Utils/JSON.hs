@@ -19,5 +19,5 @@ import Data.Char (toLower)
 
 -- | Make the strings first character lowercase
 firstLower :: String -> String
-firstLower (head:tail) = toLower head : tail
+firstLower (h:t) = toLower h : t
 firstLower [] = []

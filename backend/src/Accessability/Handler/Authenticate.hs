@@ -14,10 +14,6 @@ module Accessability.Handler.Authenticate (postAuthenticateR) where
 --
 -- External imports
 --
-import Data.Text (Text)
-import Data.Text.Encoding (encodeUtf8, decodeUtf8)
-import Data.HexString (HexString)
-import Data.ByteString (ByteString)
 import Data.Time.Clock.System (
   getSystemTime,
   SystemTime(..))
@@ -35,7 +31,7 @@ import Accessability.Model.Database
 import Accessability.Model.Transform (keyToText)
 import Accessability.Foundation (Server(..), Handler)
 import Accessability.Utils.JWT (jsonToToken)
-import Accessability.Utils.Password (authHashPassword, authValidatePassword)
+import Accessability.Utils.Password (authValidatePassword)
 import Accessability.Interface.Authenticate (Authenticate(..), UserInfo (..))
 import Accessability.Settings (AppSettings(..))
 
@@ -48,9 +44,9 @@ postAuthenticateR = do
   seconds <- liftIO $ fromIntegral . systemSeconds <$> getSystemTime
   appset <- appSettings <$> getYesod
   let secret = tokenSecret appset
-      length = tokenExpiration appset
+      len = tokenExpiration appset
     in case dbuser of
          Just (Entity userId user) | authValidatePassword (userPassword user) (password auth) -> do
-                                       token <- return $ jsonToToken secret seconds length $ toJSON $ keyToText userId
+                                       let token = jsonToToken secret seconds len $ toJSON $ keyToText userId
                                        returnJson $ UserInfo (keyToText userId) token (userUsername user) (userEmail user)
          _ -> sendResponseStatus status401 Null

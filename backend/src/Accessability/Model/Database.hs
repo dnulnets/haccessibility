@@ -27,7 +27,6 @@ import Data.Text (Text)
 --
 -- Import for persistence
 --
-import Database.Persist
 import Database.Persist.TH
 
 --
@@ -35,8 +34,6 @@ import Database.Persist.TH
 --
 import Accessability.Data.Geo (Geo(..))
 import Accessability.Data.Item (ItemLevel(..), ItemSource(..), ItemState(..))
-import Accessability.Data.Persist.Item
-import Accessability.Data.Persist.Geo
 
 -- Create migration function using both our entities and
 -- serversession-backend-persistent ones.

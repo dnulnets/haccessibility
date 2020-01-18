@@ -22,10 +22,7 @@ module Accessability.Handler.REST (
 --
 -- Import standard libs
 --
-import Data.Text (Text, pack, unpack, splitOn)
-import Data.HexString (HexString(..))
-import GHC.Generics (Generic(..))
-import Control.Exception (SomeException)
+import Data.Text (Text, splitOn, pack)
 import qualified UnliftIO.Exception as UIOE
 
 --
@@ -33,8 +30,7 @@ import qualified UnliftIO.Exception as UIOE
 --
 import Yesod
 import Network.HTTP.Types (
-    status200,
-    status400)
+    status200)
 
 --
 -- My own imports
@@ -42,11 +38,8 @@ import Network.HTTP.Types (
 import Accessability.Data.Functor
 import Accessability.Foundation (
     Handler,
-    Server(..),
-    getAuthenticatedUser,
     requireAuthentication)
 import qualified Accessability.Model.Database as DB
-import Accessability.Data.Item
 import Accessability.Model.REST
 import qualified Accessability.Handler.Database as DBF
 import Accessability.Model.Transform

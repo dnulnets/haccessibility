@@ -17,9 +17,7 @@ module Accessability.Handler.GQL (postGQLR) where
 --
 -- Import standard libs
 --
-import Data.Text (Text, pack, unpack, splitOn)
-import GHC.Generics (Generic(..))
-import Control.Exception (SomeException)
+import Data.Text (pack, unpack, splitOn)
 import qualified UnliftIO.Exception as UIOE
 
 --
@@ -31,7 +29,6 @@ import Data.Morpheus.Types    (GQLRootResolver (..),
                               ID(..),
                               MutRes,
                               Undefined(..),
-                              GQLType(..),
                               liftEither,
                               GQLRequest(..),
                               GQLResponse(..))
@@ -45,22 +42,18 @@ import Network.HTTP.Types (status200)
 --
 -- Persist library
 --
-import Database.Persist
-import Database.Persist.TH
 import Database.Persist.Sql
 
 --
 -- My own imports
 --
 import Accessability.Data.Functor
-import Accessability.Foundation (Handler, Server(..), requireAuthentication)
+import Accessability.Foundation (Handler, requireAuthentication)
 import Accessability.Model.GQL
 import qualified Accessability.Model.Database as DB
 import Accessability.Model.Transform (
    toGQLItem,
-   toDataItem,
-   idToKey,
-   keyToID)
+   idToKey)
 import qualified Accessability.Handler.Database as DBF
 
 -- | The GraphQL Root resolver
@@ -96,7 +89,7 @@ resolveUpdateItem arg =
 resolveDeleteItem ::MutationDeleteItemArgs   -- ^ The arguments for the query
                   ->MutRes e Handler (Maybe Item)    -- ^ The result of the query
 resolveDeleteItem arg = do
-   lift $ DBF.dbDeleteItem $ toSqlKey $ read $ unpack $ unpackID $ deleteItemId arg
+   _ <- lift $ DBF.dbDeleteItem $ toSqlKey $ read $ unpack $ unpackID $ deleteItemId arg
    return Nothing
 
 -- | The mutation create item resolver
@@ -150,4 +143,4 @@ postGQLR = do
    response <- UIOE.catchAny (Right <$> gqlApi request) (pure . Left . show)
    case response of
       Left e -> invalidArgs $ ["Unable to find any items in the database"] <> splitOn "\n" (pack e)
-      Right response -> sendStatusJSON status200 response
+      Right r -> sendStatusJSON status200 r

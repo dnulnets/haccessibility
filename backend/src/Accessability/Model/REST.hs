@@ -23,8 +23,7 @@ module Accessability.Model.REST (
 --
 -- Import standard libs
 --
-import Data.Char (toLower)
-import Data.Text (Text, pack)
+import Data.Text (Text)
 import GHC.Generics (Generic(..))
 
 --
@@ -40,7 +39,6 @@ import Accessability.Data.Item (
     ItemLevel(..),
     ItemState(..),
     ItemSource(..))
-import Accessability.Data.Json.Item
 import Accessability.Utils.JSON (firstLower)
 
 -- | The argument for the queryitems query

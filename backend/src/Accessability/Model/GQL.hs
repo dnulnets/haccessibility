@@ -2,7 +2,6 @@
 {-# LANGUAGE TypeFamilies         #-}
 {-# LANGUAGE DeriveAnyClass       #-}
 {-# LANGUAGE FlexibleInstances    #-}
-{-# LANGUAGE TemplateHaskell      #-}
 
 -- |
 -- Module      : Acessability.Model.GQL
@@ -38,17 +37,9 @@ import Data.Text (Text, pack)
 import GHC.Generics (Generic(..))
 
 --
--- To be bale to generate the persist field
---
-import Database.Persist
-import Database.Persist.TH
-
---
 -- Import for morpheus
 --
-
-import Data.Morpheus.Kind     (SCALAR, ENUM)
-import Data.Morpheus.Types    (GQLType(..), GQLScalar(..), ID(..), ScalarValue(..))
+import Data.Morpheus.Types    (GQLType(..), ID(..))
 
 --
 -- My own imports
@@ -57,33 +48,6 @@ import Accessability.Data.Item (
     ItemLevel(..),
     ItemSource(..),
     ItemState(..))
-
---
--- Enumeration ItemLevel
---
-
--- Make ItemLevel a GQL type
-instance GQLType ItemLevel where
-    type  KIND ItemLevel = ENUM
-    description = const $ Just $ pack "The level of accessability of the item, L1-L5. L5 is the highest "
-
---
--- Enumeration ItemSource
---
-
--- Make ItemSource a GQL type
-instance GQLType ItemSource where
-    type  KIND ItemSource = ENUM
-    description = const $ Just $ pack "The source of the items state, i.e. if the items activity is manual or automatically determined"
-
---
--- Enumeration ItemState
---
-
--- Make ItemLevel a GQL type
-instance GQLType ItemState where
-    type  KIND ItemState = ENUM
-    description = const $ Just $ pack "The items state, i.e. if it is Online, Offline or Unknown"
 
 --
 -- Object Item
@@ -128,7 +92,7 @@ data MutationCreateItemArgs = MutationCreateItemArgs {
     } deriving (Generic)
 
 -- | The argument for the queryitem query
-data MutationDeleteItemArgs = MutationDeleteItemArgs {
+newtype MutationDeleteItemArgs = MutationDeleteItemArgs {
         deleteItemId::ID            -- ^ The key of the item
     } deriving (Generic)
 
@@ -156,12 +120,12 @@ data Query m = Query {
                     -> m (Maybe Item)     -- ^ The found item
 
         , queryItems:: QueryItemsArgs   -- ^ The arguments for the query
-                    -> m ([Item])       -- ^ The list of found items
+                    -> m [Item]       -- ^ The list of found items
 
     } deriving (Generic, GQLType)
 
 -- | The argument for the queryitem query
-data QueryItemArgs = QueryItemArgs {
+newtype QueryItemArgs = QueryItemArgs {
     queryItemId      :: ID -- ^ The identifier
     } deriving (Generic)
 

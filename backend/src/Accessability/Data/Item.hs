@@ -1,6 +1,8 @@
 {-# LANGUAGE DeriveGeneric        #-}
 {-# LANGUAGE TypeFamilies         #-}
 {-# LANGUAGE FlexibleInstances    #-}
+{-# LANGUAGE DeriveAnyClass       #-}
+{-# LANGUAGE TemplateHaskell      #-}
 
 -- |
 -- Module      : Acessability.Data.Item
@@ -23,9 +25,30 @@ module Accessability.Data.Item (
 --
 -- Import standard libs
 --
-import Data.Char (toLower)
 import Data.Text (Text, pack)
 import GHC.Generics (Generic(..))
+
+--
+-- Import for persistence
+--
+import Database.Persist.TH
+
+--
+-- JSON library
+--
+import Data.Aeson
+import Data.Aeson.TH
+
+--
+-- Imports for GQL
+--
+import Data.Morpheus.Kind     (ENUM)
+import Data.Morpheus.Types    (GQLType(..))
+
+--
+-- Import our own stuff
+--
+import Accessability.Utils.JSON (firstLower)
 
 --
 -- Enumeration ItemLevel
@@ -63,3 +86,95 @@ data Item = Item {
     , itemLatitude:: Float      -- ^ The latitude of the item
     , itemLongitude:: Float     -- ^ The longitude of the item
     } deriving (Generic)
+
+--
+-- Persistence
+--
+
+--
+-- Persistence for Enumeration ItemLevel
+--
+
+derivePersistField "ItemLevel"
+
+--
+-- Persistence for Enumeration ItemSource
+--
+    
+derivePersistField "ItemSource"
+
+--
+-- Persistence for Enumeration ItemState
+--
+    
+derivePersistField "ItemState"
+
+--
+-- GQL Instances
+--
+
+-- Make ItemLevel a GQL type
+instance GQLType ItemLevel where
+    type  KIND ItemLevel = ENUM
+    description = const $ Just $ pack "The level of accessability of the item, L1-L5. L5 is the highest "
+
+-- Make ItemSource a GQL type
+instance GQLType ItemSource where
+    type  KIND ItemSource = ENUM
+    description = const $ Just $ pack "The source of the items state, i.e. if the items activity is manual or automatically determined"
+
+-- Make ItemLevel a GQL type
+instance GQLType ItemState where
+    type  KIND ItemState = ENUM
+    description = const $ Just $ pack "The items state, i.e. if it is Online, Offline or Unknown"
+
+--
+-- JSON interfaces
+--
+--
+-- JSON Option
+--
+customOptions::Options
+customOptions = defaultOptions
+
+--
+-- JSON for Enumeration ItemLevel
+--
+
+instance ToJSON ItemLevel where
+    toJSON     = genericToJSON customOptions
+    toEncoding = genericToEncoding customOptions
+    
+instance FromJSON ItemLevel where
+    parseJSON = genericParseJSON customOptions
+    
+--
+-- JSON for Enumeration ItemSource
+--
+
+instance ToJSON ItemSource where
+    toJSON     = genericToJSON customOptions
+    toEncoding = genericToEncoding customOptions
+    
+instance FromJSON ItemSource where
+    parseJSON = genericParseJSON customOptions
+
+--
+-- JSON for Enumeration ItemState
+--
+
+instance ToJSON ItemState where
+    toJSON     = genericToJSON customOptions
+    toEncoding = genericToEncoding customOptions
+    
+instance FromJSON ItemState where
+    parseJSON = genericParseJSON customOptions
+
+--
+-- JSON for Item
+--
+
+-- |Automatically derive JSON but we do not want the first charatcer in the field to go out
+$(deriveJSON defaultOptions {
+    fieldLabelModifier = firstLower . drop 4 -- Get rid of the 'item' in the field names
+  } ''Item)

@@ -21,7 +21,7 @@ module Boot (serverMain) where
 -- Standard libraries
 --
 import           Data.ByteString.Char8              (pack)
-import           Data.Maybe                         (listToMaybe, fromMaybe, maybe)
+import           Data.Maybe                         (listToMaybe, fromMaybe)
 import           Control.Monad.Logger               (runStderrLoggingT)
 import           Control.Monad.Trans.Resource       (runResourceT)
 import           System.Environment                 (getArgs)
@@ -41,7 +41,7 @@ import           Yesod.Static
 --
 -- Get our own items
 --
-import           Accessability.Foundation           (Handler, Route (..),
+import           Accessability.Foundation           (Route (..),
                                                      Server (..),
                                                      resourcesServer)
 
@@ -73,11 +73,11 @@ mkMigrate "migrateAll" entityDefs
 serverMain :: IO ()
 serverMain = do
     database <- fromMaybe "haccdb:5432" . listToMaybe <$> getArgs
-    static@(Static settings) <- static "static"
+    mystatic <- static "static"
     runStderrLoggingT $ withPostgresqlPool (pack ("postgresql://heatserver:heatserver@" <> database <> "/heat")) 5 $ \pool -> liftIO $ do
         runResourceT $ flip runSqlPool pool $
             runMigration migrateAll
-        application <- toWaiApp $ Server { getStatic = static,
+        application <- toWaiApp $ Server { getStatic = mystatic,
             appSettings = defaultSettings,
             serverConnectionPool = pool }
         WAIT.runTLS (WAIT.tlsSettings "../deployment/tls.pem" "../deployment/tls.key")

@@ -29,7 +29,7 @@ import Data.Aeson.TH
 --
 -- Heat imports
 --
-import Accessability.Model.Database
+--import Accessability.Model.Database
 
 -- |Authenticate body description, comes with the POST
 data Authenticate = Authenticate

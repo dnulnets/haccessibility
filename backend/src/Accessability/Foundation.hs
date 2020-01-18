@@ -29,8 +29,7 @@ module Accessability.Foundation (
 --
 -- Standard libraries
 --
-import Data.Text (Text, pack)
-import Data.Int (Int64)
+import Data.Text (Text)
 import Data.Aeson (
   fromJSON,
   Result(..))
@@ -46,7 +45,6 @@ import Database.Persist.Postgresql
 --
 import Accessability.Settings (AppSettings(..))
 import Accessability.Utils.JWT (tokenToJson)
-import Accessability.Model.Transform (textToKey)
 
 --
 -- The HTTP server and network libraries
@@ -80,10 +78,6 @@ mkYesodData "Server" [parseRoutes|
 /api/authenticate AuthenticateR POST
 !/ StaticR Static getStatic
 |]
-
--- | Cookie name used for the sessions of this example app.
-sessionCookieName :: Text
-sessionCookieName = "IoTHub"
 
 -- | Our server is a yesod instance, no session handling needed since
 -- this is an API and we use JWT.
@@ -119,14 +113,10 @@ instance YesodPersist Server where
 -- return with a Permission Denied to the REST caller.
 requireAuthentication :: Handler () -- ^ The Handler
 requireAuthentication = do
-  bearer <- lookupBearerAuth
-  seconds <- liftIO $ fromIntegral . systemSeconds <$> getSystemTime    
-  secret <- tokenSecret . appSettings <$> getYesod
-  case bearer of
+  userId <- getAuthenticatedUser
+  case userId of
     Nothing -> permissionDenied "You are not authenticated"
-    Just token -> case tokenToJson secret seconds token of
-        Nothing -> permissionDenied "You are not authenticated"
-        Just _ -> pure ()
+    Just _ -> pure ()
 
 -- | Checks to see if the caller is authenticated, if so it returns with the user identity
 -- that was part of the JWT the caller sent with the request.
