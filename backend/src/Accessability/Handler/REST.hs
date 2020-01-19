@@ -43,6 +43,7 @@ import qualified Accessability.Model.Database as DB
 import Accessability.Model.REST
 import qualified Accessability.Handler.Database as DBF
 import Accessability.Model.Transform
+import Accessability.Data.Geo
 
 -- | The REST GET handler for an item, i.e. return with the data of an item based on the items
 -- key provided in the URL api/item/0000000000000001
@@ -85,8 +86,7 @@ putItemR key = do
             DBF.changeField DB.ItemLevel (putItemLevel queryBody) <>
             DBF.changeField DB.ItemSource (putItemSource queryBody) <>
             DBF.changeField DB.ItemState (putItemState queryBody) <>
-            DBF.changeField DB.ItemLongitude (realToFrac <$> putItemLongitude queryBody) <>
-            DBF.changeField DB.ItemLatitude (realToFrac <$> putItemLatitude queryBody))
+            DBF.changeField DB.ItemPosition (position (realToFrac <$> putItemLongitude queryBody) (realToFrac <$> putItemLatitude queryBody)))
         (pure . Left . show)
     case result of
         Left e -> invalidArgs $ ["Unable to update the item in the database", key] <> splitOn "\n" (pack e)
@@ -105,8 +105,7 @@ postCreateItemR = do
             DB.itemLevel = postItemLevel body,
             DB.itemSource = postItemSource body,
             DB.itemState = postItemState body,
-            DB.itemLongitude = realToFrac $ postItemLongitude body,
-            DB.itemLatitude = realToFrac $ postItemLatitude body })
+            DB.itemPosition = Position $ PointXY (realToFrac $ postItemLongitude body) (realToFrac $ postItemLatitude body)})
         (pure . Left . show)
     case result of
         Left e -> invalidArgs $ ["Unable to create a new item in the database"] <> splitOn "\n" (pack e)
@@ -120,10 +119,10 @@ postItemsR = do
     queryBody <- requireCheckJsonBody::Handler PostItemsBody
     result <- UIOE.catchAny
         (fffmap toGenericItem $ DBF.dbFetchItems (
-            DBF.filter DB.ItemLatitude (<=.) (realToFrac <$> postItemsLatitudeMax queryBody) <>
-            DBF.filter DB.ItemLatitude (>=.) (realToFrac <$> postItemsLatitudeMin queryBody) <>
-            DBF.filter DB.ItemLongitude (<=.) (realToFrac <$> postItemsLongitudeMax queryBody) <>
-            DBF.filter DB.ItemLongitude (>=.) (realToFrac <$> postItemsLongitudeMin queryBody) <>
+--            DBF.filter DB.ItemLatitude (<=.) (realToFrac <$> postItemsLatitudeMax queryBody) <>
+--            DBF.filter DB.ItemLatitude (>=.) (realToFrac <$> postItemsLatitudeMin queryBody) <>
+--            DBF.filter DB.ItemLongitude (<=.) (realToFrac <$> postItemsLongitudeMax queryBody) <>
+--            DBF.filter DB.ItemLongitude (>=.) (realToFrac <$> postItemsLongitudeMin queryBody) <>
             ( DBF.filter DB.ItemDescription DBF.ilike (postItemsText queryBody) ||.
             DBF.filter DB.ItemName DBF.ilike (postItemsText queryBody)) )
             (postItemsLimit queryBody))

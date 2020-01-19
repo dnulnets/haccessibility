@@ -32,7 +32,7 @@ import Database.Persist.TH
 --
 -- Our own types
 --
-import Accessability.Data.Geo (Geo(..))
+import Accessability.Data.Geo (Position(..))
 import Accessability.Data.Item (ItemLevel(..), ItemSource(..), ItemState(..))
 
 -- Create migration function using both our entities and
@@ -49,8 +49,7 @@ Item
     level ItemLevel     -- ^ The level of accessability
     source ItemSource   -- ^ The source of the state
     state ItemState     -- ^ The state of the item
-    longitude Double    -- ^ Longitude in WGS84
-    latitude Double     -- ^ Latitude in WGS84
+    position Position        -- ^ The geodetical position
     UniqueItemName name -- ^ The name is unique
     deriving Show
 
@@ -61,9 +60,4 @@ User
     UniqueUserUsername username -- ^ The username is unique
     deriving Show
 
-TestItem
-    name Text
-    pos Geo
-    UniqueTestItemName name
-    deriving Show
 |]

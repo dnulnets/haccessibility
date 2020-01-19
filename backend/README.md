@@ -1,7 +1,7 @@
 # Accessibility API and portal provider
 A graphQL- and REST-based interface for accessibility information on geographical locations. This is a prototype for the Swedish IoT Hub for Accessibility. It also serves the portals single page application.
 
-It is written in Haskell and uses the morpheus graphQL resolver and the Yesod web framework together with Persistent to handle a PostgreSQL database.
+It is written in Haskell and uses the morpheus graphQL resolver and the Yesod web framework together with Persistent to handle a PostgreSQL database with the postgis extender for spatial and geographic objects.
 
 ## Build
 To be able to build the portal you need the following (version is just indicative):

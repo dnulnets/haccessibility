@@ -37,6 +37,7 @@ import Database.Persist.Sql
 -- Our own imports
 --
 import qualified Accessability.Model.Database as DB
+import Accessability.Data.Geo
 import qualified Accessability.Model.GQL as GQL
 import qualified Accessability.Data.Item as G
 
@@ -64,8 +65,8 @@ toGQLItem (key, item) = GQL.Item { GQL.itemId = Just $ keyToID key,
     GQL.itemLevel = DB.itemLevel item,
     GQL.itemSource = DB.itemSource item,
     GQL.itemState = DB.itemState item,
-    GQL.itemLongitude = realToFrac $ DB.itemLongitude item,
-    GQL.itemLatitude = realToFrac $ DB.itemLatitude item}
+    GQL.itemLongitude = realToFrac $ longitude $ DB.itemPosition item,
+    GQL.itemLatitude = realToFrac $ latitude $ DB.itemPosition item}
 
 -- | Converts a database item to a generic
 toGenericItem::(Key DB.Item, DB.Item)   -- ^ The database item
@@ -76,8 +77,8 @@ toGenericItem (key, item) = G.Item { G.itemId = Just $ keyToText key,
     G.itemLevel = DB.itemLevel item,
     G.itemSource = DB.itemSource item,
     G.itemState = DB.itemState item,
-    G.itemLongitude = realToFrac $ DB.itemLongitude item,
-    G.itemLatitude = realToFrac $ DB.itemLatitude item}
+    G.itemLongitude = realToFrac $ longitude $ DB.itemPosition item,
+    G.itemLatitude = realToFrac $ latitude $ DB.itemPosition item}
 
 -- | Converts a GQL item to a database item
 toDataItem::GQL.Item   -- ^ The database item
@@ -87,5 +88,6 @@ toDataItem item = DB.Item { DB.itemName =  GQL.itemName item,
     DB.itemLevel = GQL.itemLevel item,
     DB.itemSource = GQL.itemSource item,
     DB.itemState = GQL.itemState item,
-    DB.itemLatitude = realToFrac $ GQL.itemLatitude item,
-    DB.itemLongitude = realToFrac $ GQL.itemLongitude item}
+    DB.itemPosition = Position $ PointXY (realToFrac $ GQL.itemLatitude item) (realToFrac $ GQL.itemLongitude item)}
+--    DB.itemLatitude = realToFrac $ GQL.itemLatitude item,
+--    DB.itemLongitude = realToFrac $ GQL.itemLongitude item}
