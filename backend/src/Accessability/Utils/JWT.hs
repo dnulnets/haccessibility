@@ -8,7 +8,7 @@
 -- Maintainer  : tomas.stenlund@telia.com
 -- Stability   : experimental
 -- Portability : POSIX
--- 
+--
 -- This module contains functions to create and verify JSON Web Token
 -- and to extract and insert the unregistered claim as a JSON structure
 -- where you can store relevant information for your application
@@ -18,11 +18,11 @@ module Accessability.Utils.JWT (jsonToToken,
 --
 -- External Library imports
 --
-import Data.Text (Text)
-import Data.Map as Map (fromList, (!?))
-import Data.Aeson (Value)
-import Data.Time.Clock (NominalDiffTime)
-import Web.JWT as JWT
+import           Data.Aeson      (Value)
+import           Data.Map        as Map (fromList, (!?))
+import           Data.Text       (Text)
+import           Data.Time.Clock (NominalDiffTime)
+import           Web.JWT         as JWT
 
 -- | The name of the unregistered claim in the JSON Web Token
 key :: Text -- ^ The name of the key

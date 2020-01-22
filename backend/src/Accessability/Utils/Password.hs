@@ -6,7 +6,7 @@
 -- Maintainer  : tomas.stenlund@telia.com
 -- Stability   : experimental
 -- Portability : POSIX
--- 
+--
 -- This module contains functionality to generate and verify bcrypted passwords.
 --
 module Accessability.Utils.Password (authHashPassword, authValidatePassword) where
@@ -14,16 +14,16 @@ module Accessability.Utils.Password (authHashPassword, authValidatePassword) whe
 --
 -- External imports
 --
-import Data.Text (Text)
-import Data.Text.Encoding (encodeUtf8)
-import Data.ByteString (ByteString)
-import Crypto.KDF.BCrypt (hashPassword,validatePassword)
+import           Crypto.KDF.BCrypt  (hashPassword, validatePassword)
+import           Data.ByteString    (ByteString)
+import           Data.Text          (Text)
+import           Data.Text.Encoding (encodeUtf8)
 
 -- |Validates a password by checking a hashed password with the supplied password
 authValidatePassword::Text -- ^The hashed password
                     ->Text -- ^The user supplied password in clear text
                     ->Bool -- ^True if they match, otherwise false
-authValidatePassword hpwd upwd = validatePassword (encodeUtf8 upwd) (encodeUtf8 hpwd) 
+authValidatePassword hpwd upwd = validatePassword (encodeUtf8 upwd) (encodeUtf8 hpwd)
 
 -- |Hashes a password.
 authHashPassword :: Integer       -- ^The cost of the hashing work
@@ -32,4 +32,4 @@ authHashPassword :: Integer       -- ^The cost of the hashing work
 authHashPassword cost pwd = hashPassword (fromIntegral cost) (encodeUtf8 pwd)
 
   -- "$2b$10$jRs4Mriaz0BMBljpRc1NyO3/DSQP4J6Fco6izBU2dfbREaLcM6Vwy"
-  
+

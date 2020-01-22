@@ -1,8 +1,8 @@
-{-# LANGUAGE DeriveGeneric        #-}
-{-# LANGUAGE TypeFamilies         #-}
-{-# LANGUAGE FlexibleInstances    #-}
-{-# LANGUAGE DeriveAnyClass       #-}
-{-# LANGUAGE TemplateHaskell      #-}
+{-# LANGUAGE DeriveAnyClass    #-}
+{-# LANGUAGE DeriveGeneric     #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE TemplateHaskell   #-}
+{-# LANGUAGE TypeFamilies      #-}
 
 -- |
 -- Module      : Acessability.Data.Item
@@ -12,7 +12,7 @@
 -- Maintainer  : tomas.stenlund@permobil.com
 -- Stability   : experimental
 -- Portability : POSIX
--- 
+--
 -- This module contains the common item type regardless of interface or database
 -- that is associated with geographical items.
 --
@@ -25,30 +25,30 @@ module Accessability.Data.Item (
 --
 -- Import standard libs
 --
-import Data.Text (Text, pack)
-import GHC.Generics (Generic(..))
+import           Data.Text                (Text, pack)
+import           GHC.Generics             (Generic (..))
 
 --
 -- Import for persistence
 --
-import Database.Persist.TH
+import           Database.Persist.TH
 
 --
 -- JSON library
 --
-import Data.Aeson
-import Data.Aeson.TH
+import           Data.Aeson
+import           Data.Aeson.TH
 
 --
 -- Imports for GQL
 --
-import Data.Morpheus.Kind     (ENUM)
-import Data.Morpheus.Types    (GQLType(..))
+import           Data.Morpheus.Kind       (ENUM)
+import           Data.Morpheus.Types      (GQLType (..))
 
 --
 -- Import our own stuff
 --
-import Accessability.Utils.JSON (firstLower)
+import           Accessability.Utils.JSON (firstLower)
 
 --
 -- Enumeration ItemLevel
@@ -77,14 +77,15 @@ data ItemState = Unknown | Online | Offline deriving (Generic, Show, Read)
 
 -- | Definition of the item
 data Item = Item {
-    itemId::Maybe Text          -- ^ Item key
-    , itemName::Text            -- ^ The name of the item
-    , itemDescription:: Text    -- ^ The description of the item
-    , itemSource:: ItemSource   -- ^ How the items online state is determined
-    , itemState:: ItemState     -- ^ The state of the item
-    , itemLevel:: ItemLevel     -- ^ The accessability level of the item
-    , itemLatitude:: Float      -- ^ The latitude of the item
-    , itemLongitude:: Float     -- ^ The longitude of the item
+    itemId            :: Maybe Text          -- ^ Item key
+    , itemName        :: Text            -- ^ The name of the item
+    , itemDescription ::  Text    -- ^ The description of the item
+    , itemSource      ::  ItemSource   -- ^ How the items online state is determined
+    , itemState       ::  ItemState     -- ^ The state of the item
+    , itemLevel       ::  ItemLevel     -- ^ The accessability level of the item
+    , itemLatitude    ::  Float      -- ^ The latitude of the item
+    , itemLongitude   ::  Float     -- ^ The longitude of the item
+    , itemDistance    :: Maybe Float -- ^ The distance to a specified point at the time of the query
     } deriving (Generic)
 
 --
@@ -100,13 +101,13 @@ derivePersistField "ItemLevel"
 --
 -- Persistence for Enumeration ItemSource
 --
-    
+
 derivePersistField "ItemSource"
 
 --
 -- Persistence for Enumeration ItemState
 --
-    
+
 derivePersistField "ItemState"
 
 --
@@ -134,7 +135,7 @@ instance GQLType ItemState where
 --
 -- JSON Option
 --
-customOptions::Options
+customOptions :: Options
 customOptions = defaultOptions
 
 --
@@ -144,10 +145,10 @@ customOptions = defaultOptions
 instance ToJSON ItemLevel where
     toJSON     = genericToJSON customOptions
     toEncoding = genericToEncoding customOptions
-    
+
 instance FromJSON ItemLevel where
     parseJSON = genericParseJSON customOptions
-    
+
 --
 -- JSON for Enumeration ItemSource
 --
@@ -155,7 +156,7 @@ instance FromJSON ItemLevel where
 instance ToJSON ItemSource where
     toJSON     = genericToJSON customOptions
     toEncoding = genericToEncoding customOptions
-    
+
 instance FromJSON ItemSource where
     parseJSON = genericParseJSON customOptions
 
@@ -166,7 +167,7 @@ instance FromJSON ItemSource where
 instance ToJSON ItemState where
     toJSON     = genericToJSON customOptions
     toEncoding = genericToEncoding customOptions
-    
+
 instance FromJSON ItemState where
     parseJSON = genericParseJSON customOptions
 

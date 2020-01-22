@@ -1,3 +1,5 @@
+{-# LANGUAGE ExplicitForAll #-}
+
 -- |
 -- Module      : Acessability.Data.Functor
 -- Description : Some generic functor functions to handle nested functors
@@ -6,7 +8,7 @@
 -- Maintainer  : tomas.stenlund@permobil.com
 -- Stability   : experimental
 -- Portability : POSIX
--- 
+--
 -- This module contains some functions that makes it easier to handle nested functors
 --
 module Accessability.Data.Functor (

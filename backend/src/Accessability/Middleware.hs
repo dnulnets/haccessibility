@@ -8,15 +8,13 @@
 -- Maintainer  : tomas.stenlund@telia.com
 -- Stability   : experimental
 -- Portability : POSIX
--- 
+--
 -- This module contains the CORS Middleware.
 module Accessability.Middleware (corsified) where
 
 -- Wai imports
-import Network.Wai (Middleware)
-import Network.Wai.Middleware.Cors (
-    CorsResourcePolicy(..),
-    cors)
+import           Network.Wai                 (Middleware)
+import           Network.Wai.Middleware.Cors (CorsResourcePolicy (..), cors)
 
 -- |The CORS middleware
 corsified :: Middleware -- ^Returns with the middleware

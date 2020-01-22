@@ -1,5 +1,5 @@
-{-# LANGUAGE TypeFamilies         #-}
-{-# LANGUAGE OverloadedStrings    #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeFamilies      #-}
 
 -- |
 -- Module      : Acessability.Handler.GQL
@@ -9,7 +9,7 @@
 -- Maintainer  : tomas.stenlund@permobil.com
 -- Stability   : experimental
 -- Portability : POSIX
--- 
+--
 -- This module contains the handler for graphQL queries route
 --
 module Accessability.Handler.GQL (postGQLR) where
@@ -17,45 +17,40 @@ module Accessability.Handler.GQL (postGQLR) where
 --
 -- Import standard libs
 --
-import Data.Text (pack, unpack, splitOn)
-import qualified UnliftIO.Exception as UIOE
+import           Data.Text                      (pack, splitOn, unpack)
+import qualified UnliftIO.Exception             as UIOE
 
 --
 -- Import for morpheus
 --
-import Data.Morpheus          (interpreter)
-import Data.Morpheus.Types    (GQLRootResolver (..),
-                              Res,
-                              ID(..),
-                              MutRes,
-                              Undefined(..),
-                              liftEither,
-                              GQLRequest(..),
-                              GQLResponse(..))
+import           Data.Morpheus                  (interpreter)
+import           Data.Morpheus.Types            (GQLRequest (..),
+                                                 GQLResponse (..),
+                                                 GQLRootResolver (..), ID (..),
+                                                 MutRes, Res, Undefined (..),
+                                                 liftEither)
 
 --
 -- Yesod and HTTP imports
 --
-import Yesod
-import Network.HTTP.Types (status200)
+import           Network.HTTP.Types             (status200)
+import           Yesod
 
 --
 -- Persist library
 --
-import Database.Persist.Sql
+import           Database.Persist.Sql
 
 --
 -- My own imports
 --
-import Accessability.Data.Functor
-import Accessability.Data.Geo
-import Accessability.Foundation (Handler, requireAuthentication)
-import Accessability.Model.GQL
-import qualified Accessability.Model.Database as DB
-import Accessability.Model.Transform (
-   toGQLItem,
-   idToKey)
+import           Accessability.Data.Functor
+import           Accessability.Data.Geo
+import           Accessability.Foundation       (Handler, requireAuthentication)
 import qualified Accessability.Handler.Database as DBF
+import qualified Accessability.Model.Database   as DB
+import           Accessability.Model.GQL
+import           Accessability.Model.Transform  (idToKey, toGQLItem)
 
 -- | The GraphQL Root resolver
 rootResolver :: GQLRootResolver Handler () Query Mutation Undefined
@@ -119,13 +114,9 @@ resolveItem args =
 resolveItems::QueryItemsArgs          -- ^ The arguments for the query
             ->Res e Handler [Item]    -- ^ The result of the query
 resolveItems args =
-   fffmap toGQLItem liftEither $ DBF.dbFetchItems (
---      DBF.filter DB.ItemLatitude (<=.) (realToFrac <$> queryItemsLatitudeMax args) <>
---      DBF.filter DB.ItemLatitude (>=.) (realToFrac <$> queryItemsLatitudeMin args) <>
---      DBF.filter DB.ItemLongitude (<=.) (realToFrac <$> queryItemsLongitudeMax args) <>
---      DBF.filter DB.ItemLongitude (>=.) (realToFrac <$> queryItemsLongitudeMin args) <>
-      ( DBF.filter DB.ItemDescription DBF.ilike (queryItemsText args) ||.
-      DBF.filter DB.ItemName DBF.ilike (queryItemsText args)) )
+   fffmap toGQLItem liftEither $ DBF.dbFetchItems (queryItemsText args) 
+      (position (realToFrac <$> queryItemsLongitude args) (realToFrac <$> queryItemsLatitude args))
+      (realToFrac <$> queryItemsDistance args)
       (queryItemsLimit args)
 
 -- | Compose the graphQL api

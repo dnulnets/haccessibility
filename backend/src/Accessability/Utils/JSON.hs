@@ -6,7 +6,7 @@
 -- Maintainer  : tomas.stenlund@permobil.com
 -- Stability   : experimental
 -- Portability : POSIX
--- 
+--
 -- This module contains helper functions for JSON translations
 --
 module Accessability.Utils.JSON (
@@ -15,9 +15,9 @@ module Accessability.Utils.JSON (
 --
 -- Standard libs
 --
-import Data.Char (toLower)
+import           Data.Char (toLower)
 
 -- | Make the strings first character lowercase
 firstLower :: String -> String
 firstLower (h:t) = toLower h : t
-firstLower [] = []
+firstLower []    = []

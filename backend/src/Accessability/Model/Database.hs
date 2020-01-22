@@ -13,27 +13,28 @@
 -- Maintainer  : tomas.stenlund@permobil.com
 -- Stability   : experimental
 -- Portability : POSIX
--- 
+--
 -- This module contains the database model and the haskell representation of
--- the data    
+-- the data
 --
 module Accessability.Model.Database where
 
 --
 -- Import standard libs
 --
-import Data.Text (Text)
+import           Data.Text               (Text)
 
 --
 -- Import for persistence
 --
-import Database.Persist.TH
+import           Database.Persist.TH
 
 --
 -- Our own types
 --
-import Accessability.Data.Geo (Position(..))
-import Accessability.Data.Item (ItemLevel(..), ItemSource(..), ItemState(..))
+import           Accessability.Data.Geo  (GeospatialPosition (..))
+import           Accessability.Data.Item (ItemLevel (..), ItemSource (..),
+                                          ItemState (..))
 
 -- Create migration function using both our entities and
 -- serversession-backend-persistent ones.
@@ -49,7 +50,7 @@ Item
     level ItemLevel     -- ^ The level of accessability
     source ItemSource   -- ^ The source of the state
     state ItemState     -- ^ The state of the item
-    position Position        -- ^ The geodetical position
+    position GeospatialPosition        -- ^ The geodetical position
     UniqueItemName name -- ^ The name is unique
     deriving Show
 

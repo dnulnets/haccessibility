@@ -1,6 +1,6 @@
-{-# LANGUAGE FlexibleInstances    #-}
-{-# LANGUAGE TypeFamilies         #-}
-{-# LANGUAGE OverloadedStrings    #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeFamilies      #-}
 
 -- |
 -- Module      : Accessability.Data.Geo
@@ -10,12 +10,14 @@
 -- Maintainer  : tomas.stenlund@permobil.com
 -- Stability   : experimental
 -- Portability : POSIX
--- 
--- This module creates a new geography type
+--
+-- This module creates a new geography type containing generic geospatial content
+-- but also specific positional type as well. It adds Persistent support for PostGIS extension
+-- in postgres using Extended Well Known Binary format, EWKB
 --
 module Accessability.Data.Geo (
-    Geo(..),
-    Position(..),
+    Geospatial(..),
+    GeospatialPosition(..),
     longitude,
     latitude,
     position,
@@ -24,85 +26,97 @@ module Accessability.Data.Geo (
 --
 -- Import standard libs
 --
-import Data.ByteString.Lazy (toStrict)
-import Data.ByteString.Char8 (pack)
-import Data.Text (pack)
-import Data.Text.Encoding (encodeUtf8)
-import Data.Geospatial (GeospatialGeometry(..), GeoPositionWithoutCRS(..), PointXY(..), GeoPoint(..)) 
+import           Data.ByteString.Lazy        (toStrict)
+import           Data.Geospatial             (GeoPoint (..),
+                                              GeoPositionWithoutCRS (..),
+                                              GeospatialGeometry (..),
+                                              PointXY (..))
+import           Data.Text                   (pack)
+import           Data.Text.Encoding          (encodeUtf8)
 
 --
 -- To be able to generate the persist field
 --
-import Database.Persist
-import Database.Persist.Sql
+import           Database.Persist
+import           Database.Persist.Sql
 
 --import Data.Geospatial
-import Data.Hex
-import Data.HexString
-import Data.Internal.Ewkb.Geometry (SridType(..))
-import Data.Internal.Wkb.Endian
-import Data.Ewkb
+import           Data.Ewkb
+import           Data.Hex
+import           Data.HexString
+import           Data.Internal.Ewkb.Geometry (SridType (..))
+import           Data.Internal.Wkb.Endian
 
 --
 -- New data types
 --
 -- |Our default SRID, which is WGS84, 4326
+defaultSRID::SridType
 defaultSRID = Srid 4326
 
--- | The geography type
-newtype Geo = Geo GeospatialGeometry
-    deriving (Show)
+-- | The generic Geography type
+newtype Geospatial = Geometry GeospatialGeometry
+  deriving (Show)
 
--- | The Position type
-newtype Position = Position PointXY
+-- | The specific GeometryPoint, handles  type
+newtype GeospatialPosition = Position PointXY
   deriving (Show)
 
 --
 -- Convenience functions
 --
-longitude::Position->Double
+
+-- |Extracts the longitude from a GeospatialPosition
+longitude::GeospatialPosition -- ^ The geospatial position
+  ->Double                    -- ^ The extracted longitude
 longitude (Position (PointXY x _)) = x
 
-latitude::Position->Double
+latitude::GeospatialPosition  -- ^ The geospatial position
+  ->Double                    -- ^ The extracted latitude
 latitude (Position (PointXY _ y)) = y
 
-position::Maybe Double->Maybe Double->Maybe Position
+position::Maybe Double    -- ^ Longitude
+  ->Maybe Double          -- ^ Latitude
+  ->Maybe GeospatialPosition  -- ^ The geosatial position
 position (Just lo) (Just la) = Just (Position (PointXY lo la))
-position _ _ = Nothing
+position _ _                 = Nothing
 
 
 --
 -- Persistence
 --
-geoPoint::GeospatialGeometry->Either String PointXY
+
+-- |Extracts a PointXY from a GeospatialGeometry if it exists
+geoPoint::GeospatialGeometry -- ^ The geospatial gemoetry
+  ->Either String PointXY    -- ^ The PointXY or an error
 geoPoint (Point (GeoPoint (GeoPointXY pxy))) = Right pxy
-geoPoint _ = Left "The geospatialgeometry is not a POINT"
+geoPoint _ = Left "The geospatialgeometry is not a POINTXY"
 
 -- |Marshalling to and from the SQL data type and the Position data type
-instance PersistField Position where
+instance PersistField GeospatialPosition where
   toPersistValue (Position t) = PersistDbSpecific $ encodeUtf8 $ toText $ fromBytes $ toStrict $ toByteString LittleEndian defaultSRID (Point (GeoPoint (GeoPointXY t)))
 
   fromPersistValue (PersistDbSpecific t) = do
     p <- return $ geoPoint <$> (parseHexByteString (Hex t))
     case p of
-      Left e -> Left $ Data.Text.pack e
+      Left e          -> Left $ Data.Text.pack e
       Right (Left ie) -> Left $ Data.Text.pack ie
       Right (Right v) -> Right $ Position v
-    
+
 --    either (Left . pack) Right $ (Position . geoPoint) <$> parseHexByteString (Hex t)
   fromPersistValue _ = Left "Position values must be converted from PersistDbSpecific"
 
 -- |Set the SQL data type for the Position type
-instance PersistFieldSql Position where
+instance PersistFieldSql GeospatialPosition where
   sqlType _ = SqlOther "GEOGRAPHY(POINT,4326)"
 
 -- |Marshalling to and from the SQL data type and the Geo data type
-instance PersistField Geo where
-  toPersistValue (Geo t) = PersistDbSpecific $ toStrict $ toByteString LittleEndian defaultSRID t
+instance PersistField Geospatial where
+  toPersistValue (Geometry t) = PersistDbSpecific $ toStrict $ toByteString LittleEndian defaultSRID t
 
-  fromPersistValue (PersistDbSpecific t) = either (Left . Data.Text.pack) Right $ Geo <$> parseHexByteString (Hex t)
+  fromPersistValue (PersistDbSpecific t) = either (Left . Data.Text.pack) Right $ Geometry <$> parseHexByteString (Hex t)
   fromPersistValue _ = Left "Geo values must be converted from PersistDbSpecific"
 
 -- |Set the SQL data type for the geography point
-instance PersistFieldSql Geo where
+instance PersistFieldSql Geospatial where
   sqlType _ = SqlOther "GEOGRAPHY"

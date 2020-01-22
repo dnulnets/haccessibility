@@ -1,10 +1,10 @@
-{-# LANGUAGE OverloadedStrings          #-}
-{-# LANGUAGE QuasiQuotes                #-}
-{-# LANGUAGE TemplateHaskell            #-}
-{-# LANGUAGE TypeFamilies               #-}
-{-# LANGUAGE ViewPatterns               #-}
-{-# LANGUAGE MultiParamTypeClasses      #-}
-{-# LANGUAGE FlexibleContexts           #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE QuasiQuotes           #-}
+{-# LANGUAGE TemplateHaskell       #-}
+{-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE ViewPatterns          #-}
 {-# OPTIONS_GHC -Wwarn=unused-top-binds #-}
 
 -- |
@@ -15,7 +15,7 @@
 -- Maintainer  : tomas.stenlund@permobil.com
 -- Stability   : experimental
 -- Portability : POSIX
--- 
+--
 -- This module contains the foundation of the server and defines server and routes
 -- types etc. to be able to run the application
 --
@@ -30,29 +30,27 @@ module Accessability.Foundation (
 --
 -- Standard libraries
 --
-import Data.Text (Text)
-import Data.Aeson (
-  fromJSON,
-  Result(..))
-import Data.Time.Clock.System
+import           Data.Aeson                  (Result (..), fromJSON)
+import           Data.Text                   (Text)
+import           Data.Time.Clock.System
 
 --
 -- Persistence libraries
 --
-import Database.Persist.Postgresql
+import           Database.Persist.Postgresql
 
 --
 -- Our own stuff
 --
-import Accessability.Settings (AppSettings(..))
-import Accessability.Utils.JWT (tokenToJson)
+import           Accessability.Settings      (AppSettings (..))
+import           Accessability.Utils.JWT     (tokenToJson)
 
 --
 -- The HTTP server and network libraries
 --
-import Yesod
-import Yesod.Static
-import Yesod.Auth
+import           Yesod
+import           Yesod.Auth
+import           Yesod.Static
 
 --
 -- Server session cookies
@@ -62,8 +60,8 @@ import Yesod.Auth
 
 -- | Our server and settings
 data Server = Server {
-    getStatic :: Static,                   -- ^ All static files
-    appSettings :: AppSettings             -- ^ Settings for the server
+    getStatic              :: Static,                   -- ^ All static files
+    appSettings            :: AppSettings             -- ^ Settings for the server
     , serverConnectionPool :: ConnectionPool -- ^ The pool of database connections
 }
 
@@ -99,7 +97,7 @@ instance YesodPersist Server where
     -- | The persisten backend
     type YesodPersistBackend Server = SqlBackend
 
-    -- | Executes the database action using the server database pool 
+    -- | Executes the database action using the server database pool
     runDB action = do
         server <- getYesod
         runSqlPool action $ serverConnectionPool server
@@ -117,14 +115,14 @@ requireAuthentication = do
   userId <- getAuthenticatedUser
   case userId of
     Nothing -> permissionDenied "You are not authenticated"
-    Just _ -> pure ()
+    Just _  -> pure ()
 
 -- | Checks to see if the caller is authenticated, if so it returns with the user identity
 -- that was part of the JWT the caller sent with the request.
 getAuthenticatedUser ::Handler (Maybe Text) -- ^ The user identity
 getAuthenticatedUser = do
   bearer <- lookupBearerAuth
-  seconds <- liftIO $ fromIntegral . systemSeconds <$> getSystemTime    
+  seconds <- liftIO $ fromIntegral . systemSeconds <$> getSystemTime
   secret <- tokenSecret . appSettings <$> getYesod
   return $ case bearer of
     Nothing -> Nothing
@@ -133,5 +131,5 @@ getAuthenticatedUser = do
         Nothing -> Nothing
         Just info ->
           case fromJSON info of
-            Error _ -> Nothing
+            Error _     -> Nothing
             Success uid -> Just uid

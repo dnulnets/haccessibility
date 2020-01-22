@@ -6,7 +6,7 @@
 -- Maintainer  : tomas.stenlund@telia.com
 -- Stability   : experimental
 -- Portability : POSIX
--- 
+--
 -- This module contains the authenticate route for the application.
 --
 module Accessability.Handler.Authenticate (postAuthenticateR) where
@@ -14,26 +14,26 @@ module Accessability.Handler.Authenticate (postAuthenticateR) where
 --
 -- External imports
 --
-import Data.Time.Clock.System (
-  getSystemTime,
-  SystemTime(..))
+import           Data.Time.Clock.System               (SystemTime (..),
+                                                       getSystemTime)
 
-import Network.HTTP.Types.Status (status401)
+import           Network.HTTP.Types.Status            (status401)
 
-import Database.Persist.Sql
+import           Database.Persist.Sql
 
-import Yesod
+import           Yesod
 
 --
 -- Internal imports
 --
-import Accessability.Model.Database
-import Accessability.Model.Transform (keyToText)
-import Accessability.Foundation (Server(..), Handler)
-import Accessability.Utils.JWT (jsonToToken)
-import Accessability.Utils.Password (authValidatePassword)
-import Accessability.Interface.Authenticate (Authenticate(..), UserInfo (..))
-import Accessability.Settings (AppSettings(..))
+import           Accessability.Foundation             (Handler, Server (..))
+import           Accessability.Interface.Authenticate (Authenticate (..),
+                                                       UserInfo (..))
+import           Accessability.Model.Database
+import           Accessability.Model.Transform        (keyToText)
+import           Accessability.Settings               (AppSettings (..))
+import           Accessability.Utils.JWT              (jsonToToken)
+import           Accessability.Utils.Password         (authValidatePassword)
 
 -- |Authenticate the user and create a JSON Web Token that is returned so it can be used
 -- for following calls

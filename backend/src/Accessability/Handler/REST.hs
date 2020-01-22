@@ -1,6 +1,6 @@
-{-# LANGUAGE TypeFamilies         #-}
-{-# LANGUAGE ScopedTypeVariables  #-}
-{-# LANGUAGE OverloadedStrings    #-}
+{-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeFamilies        #-}
 -- |
 -- Module      : Acessability.Handler.REST
 -- Description : The REST API entrypoint
@@ -9,7 +9,7 @@
 -- Maintainer  : tomas.stenlund@permobil.com
 -- Stability   : experimental
 -- Portability : POSIX
--- 
+--
 -- This module contains the handler for REST API
 --
 module Accessability.Handler.REST (
@@ -22,28 +22,25 @@ module Accessability.Handler.REST (
 --
 -- Import standard libs
 --
-import Data.Text (Text, splitOn, pack)
-import qualified UnliftIO.Exception as UIOE
+import           Data.Text                      (Text, pack, splitOn)
+import qualified UnliftIO.Exception             as UIOE
 
 --
 -- Yesod and HTTP imports
 --
-import Yesod
-import Network.HTTP.Types (
-    status200)
+import           Network.HTTP.Types             (status200)
+import           Yesod
 
 --
 -- My own imports
 --
-import Accessability.Data.Functor
-import Accessability.Foundation (
-    Handler,
-    requireAuthentication)
-import qualified Accessability.Model.Database as DB
-import Accessability.Model.REST
+import           Accessability.Data.Functor
+import           Accessability.Data.Geo
+import           Accessability.Foundation       (Handler, requireAuthentication)
 import qualified Accessability.Handler.Database as DBF
-import Accessability.Model.Transform
-import Accessability.Data.Geo
+import qualified Accessability.Model.Database   as DB
+import           Accessability.Model.REST
+import           Accessability.Model.Transform
 
 -- | The REST GET handler for an item, i.e. return with the data of an item based on the items
 -- key provided in the URL api/item/0000000000000001
@@ -118,14 +115,10 @@ postItemsR = do
     requireAuthentication
     queryBody <- requireCheckJsonBody::Handler PostItemsBody
     result <- UIOE.catchAny
-        (fffmap toGenericItem $ DBF.dbFetchItems (
---            DBF.filter DB.ItemLatitude (<=.) (realToFrac <$> postItemsLatitudeMax queryBody) <>
---            DBF.filter DB.ItemLatitude (>=.) (realToFrac <$> postItemsLatitudeMin queryBody) <>
---            DBF.filter DB.ItemLongitude (<=.) (realToFrac <$> postItemsLongitudeMax queryBody) <>
---            DBF.filter DB.ItemLongitude (>=.) (realToFrac <$> postItemsLongitudeMin queryBody) <>
-            ( DBF.filter DB.ItemDescription DBF.ilike (postItemsText queryBody) ||.
-            DBF.filter DB.ItemName DBF.ilike (postItemsText queryBody)) )
-            (postItemsLimit queryBody))
+        (fffmap toGenericItem (DBF.dbFetchItems (postItemsText queryBody) 
+            (position (realToFrac <$> postItemsLongitude queryBody) (realToFrac <$> postItemsLatitude queryBody)) 
+            (realToFrac <$> postItemsDistance queryBody) 
+            (postItemsLimit queryBody)))
         (pure . Left . show)
     case result of
         Left e -> invalidArgs $ ["Unable to find any items in the database"] <> splitOn "\n" (pack e)

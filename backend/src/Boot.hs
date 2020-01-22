@@ -21,10 +21,10 @@ module Boot (serverMain) where
 --
 -- Standard libraries
 --
-import           Data.ByteString.Char8              (pack)
-import           Data.Maybe                         (listToMaybe, fromMaybe)
 import           Control.Monad.Logger               (runStderrLoggingT)
 import           Control.Monad.Trans.Resource       (runResourceT)
+import           Data.ByteString.Char8              (pack)
+import           Data.Maybe                         (fromMaybe, listToMaybe)
 import           System.Environment                 (getArgs)
 
 --
@@ -42,8 +42,7 @@ import           Yesod.Static
 --
 -- Get our own items
 --
-import           Accessability.Foundation           (Route (..),
-                                                     Server (..),
+import           Accessability.Foundation           (Route (..), Server (..),
                                                      resourcesServer)
 
 import           Accessability.Handler.GQL          (postGQLR)
