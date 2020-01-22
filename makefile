@@ -12,19 +12,16 @@ build-certificate:
 	openssl req -nodes -newkey rsa:4096 -sha512 -x509 -days 365 -subj '/CN=haccsrv/O=IoT Hub for Accessability, Sweden./C=SE' -out deployment/tls.pem -keyout deployment/tls.key
 
 run:
-	cd backend;stack exec gql-exe -- 172.18.0.2
+	cd backend;./run.sh
 	
-image-build-portal-env:	
-	docker build -t hportalbuild:1 -t hportalbuild:1.0 -t hportalbuild:latest -f deployment/Dockerfile.build-portal .
+image-purescript-build-env:	
+	docker build -t paccbuild:1 -t paccbuild:1.0 -t paccbuild:latest -f deployment/Dockerfile.purescript-build-env .
 
 image-db:	
 	docker build -t haccdb:1 -t haccdb:1.0 -t haccdb:latest -f deployment/Dockerfile.db .
 
-image-svc:	
-	docker build -t haccsvc:1 -t haccsvc:1.0 -t haccsvc:latest -f deployment/Dockerfile.svc .
+image-haskell-build-env:	
+	docker build -t haccbuild:1 -t haccbuild:1.0 -t haccbuild:latest -f deployment/Dockerfile.haskell-build-env .
 
-image-build-env:	
-	docker build -t haccbuild:1 -t haccbuild:1.0 -t haccbuild:latest -f deployment/Dockerfile.build-env .
-
-image-build:	
-	docker build -t haccsvc:1 -t haccsvc:1.0 -t haccsvc:latest -f deployment/Dockerfile.build .
+image-build-server:	
+	docker build -t haccsvc:1 -t haccsvc:1.0 -t haccsvc:latest -f deployment/Dockerfile.build-server .
