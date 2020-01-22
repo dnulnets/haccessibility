@@ -97,7 +97,7 @@ instance PersistField GeospatialPosition where
   toPersistValue (Position t) = PersistDbSpecific $ encodeUtf8 $ toText $ fromBytes $ toStrict $ toByteString LittleEndian defaultSRID (Point (GeoPoint (GeoPointXY t)))
 
   fromPersistValue (PersistDbSpecific t) = do
-    p <- return $ geoPoint <$> (parseHexByteString (Hex t))
+    let p = geoPoint <$> parseHexByteString (Hex t)
     case p of
       Left e          -> Left $ Data.Text.pack e
       Right (Left ie) -> Left $ Data.Text.pack ie

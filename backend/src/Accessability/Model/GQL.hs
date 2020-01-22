@@ -130,10 +130,10 @@ newtype QueryItemArgs = QueryItemArgs {
 
 -- | The argument for the queryitems query
 data QueryItemsArgs = QueryItemsArgs {
-    queryItemsLongitude   :: Maybe Float
-    , queryItemsLatitude  :: Maybe Float
-    , queryItemsDistance  :: Maybe Float
-    , queryItemsLimit        :: Maybe Int
-    , queryItemsText         :: Maybe Text
+    queryItemsLongitude  :: Maybe Float
+    , queryItemsLatitude :: Maybe Float
+    , queryItemsDistance :: Maybe Float
+    , queryItemsLimit    :: Maybe Int
+    , queryItemsText     :: Maybe Text
     } deriving (Generic)
 

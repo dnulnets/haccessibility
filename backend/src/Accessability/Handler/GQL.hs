@@ -114,7 +114,7 @@ resolveItem args =
 resolveItems::QueryItemsArgs          -- ^ The arguments for the query
             ->Res e Handler [Item]    -- ^ The result of the query
 resolveItems args =
-   fffmap toGQLItem liftEither $ DBF.dbFetchItems (queryItemsText args) 
+   fffmap toGQLItem liftEither $ DBF.dbFetchItems (queryItemsText args)
       (position (realToFrac <$> queryItemsLongitude args) (realToFrac <$> queryItemsLatitude args))
       (realToFrac <$> queryItemsDistance args)
       (queryItemsLimit args)

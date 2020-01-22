@@ -41,11 +41,11 @@ import           Accessability.Utils.JSON (firstLower)
 
 -- | The argument for the queryitems query
 data PostItemsBody = PostItemsBody {
-    postItemsLongitude   ::  Maybe Float -- ^ The longitude of search circle
-    , postItemsLatitude  :: Maybe Float  -- ^ The latitude of the search circle
-    , postItemsDistance  :: Maybe Float  -- ^ The distance or size of the search circle
-    , postItemsLimit        :: Maybe Int -- ^ Max number of items
-    , postItemsText         :: Maybe Text -- ^ The text that must be present in name or description
+    postItemsLongitude  ::  Maybe Float -- ^ The longitude of search circle
+    , postItemsLatitude :: Maybe Float  -- ^ The latitude of the search circle
+    , postItemsDistance :: Maybe Float  -- ^ The distance or size of the search circle
+    , postItemsLimit    :: Maybe Int -- ^ Max number of items
+    , postItemsText     :: Maybe Text -- ^ The text that must be present in name or description
     } deriving (Generic)
 
 -- |Automatically derive JSON but we do not want the first charatcer in the field to go out

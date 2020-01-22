@@ -115,9 +115,9 @@ postItemsR = do
     requireAuthentication
     queryBody <- requireCheckJsonBody::Handler PostItemsBody
     result <- UIOE.catchAny
-        (fffmap toGenericItem (DBF.dbFetchItems (postItemsText queryBody) 
-            (position (realToFrac <$> postItemsLongitude queryBody) (realToFrac <$> postItemsLatitude queryBody)) 
-            (realToFrac <$> postItemsDistance queryBody) 
+        (fffmap toGenericItem (DBF.dbFetchItems (postItemsText queryBody)
+            (position (realToFrac <$> postItemsLongitude queryBody) (realToFrac <$> postItemsLatitude queryBody))
+            (realToFrac <$> postItemsDistance queryBody)
             (postItemsLimit queryBody)))
         (pure . Left . show)
     case result of

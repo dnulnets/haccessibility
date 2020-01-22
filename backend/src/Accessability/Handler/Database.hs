@@ -1,7 +1,6 @@
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE TupleSections    #-}
-{-# LANGUAGE TypeFamilies     #-}
+{-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeFamilies      #-}
 
 -- |
 -- Module      : Acessability.Handler.Database
@@ -28,14 +27,13 @@ module Accessability.Handler.Database (
 --
 -- Import standard libs
 --
-import           Data.Maybe                   (fromMaybe)
 import           Data.Text                    (Text, pack)
 
 --
 --
 --
-import Database.Persist
-import Database.Persist.Sql
+import           Database.Persist
+import           Database.Persist.Sql
 
 --
 -- Yesod and HTTP imports
@@ -77,7 +75,7 @@ dbFetchItem :: Key Item                                                       --
             ->Handler (Either String (Maybe (Key Item, Item, Maybe Double)))  -- ^ The result of the database search
 dbFetchItem key = do
    item <- runDB $ get key
-   return $ Right $ (cleanup key) <$> item
+   return $ Right $ cleanup key <$> item
    where
       cleanup::Key Item->Item->(Key Item, Item, Maybe Double)
       cleanup k i = (k, i, Nothing)
@@ -96,11 +94,11 @@ dbFetchItems t p d limit = do
       Nothing -> do
          i2 <- runDB $ rawSql (sqlFetchBuildQuery t p d limit) (sqlFetchPlaceholder t p d limit)
          return $ clean2 <$> i2
-   return $ Right $ item
+   return $ Right item
    where
       -- Clean up the query to return data that only returns key, item and distance
       clean1::(Entity Item, Single Double)->(Key Item, Item, Maybe Double)
-      clean1 (Entity key dbitem,Single d) = (key, dbitem, Just d)
+      clean1 (Entity key dbitem,Single dd) = (key, dbitem, Just dd)
 
       -- Clean up the query to return data that only returns key, item and distance, in
       -- this spceific instance no distance
@@ -109,31 +107,31 @@ dbFetchItems t p d limit = do
 
       -- Limit the number of returned items
       sqlFetchLimit::Maybe Int->Text
-      sqlFetchLimit Nothing = ""
+      sqlFetchLimit Nothing  = ""
       sqlFetchLimit (Just _) = " LIMIT ?"
 
       -- Create the placeholders for LIMIT
       sqlFetchLimitPlaceholder::Maybe Int->[PersistValue]
-      sqlFetchLimitPlaceholder Nothing = []
+      sqlFetchLimitPlaceholder Nothing  = []
       sqlFetchLimitPlaceholder (Just i) = [PersistInt64 $ fromIntegral i]
 
       -- Build the query depending on what search parameters have been provided
       sqlFetchBuildQuery::Maybe Text->Maybe GeospatialPosition->Maybe Double->Maybe Int->Text
-      sqlFetchBuildQuery Nothing Nothing _ l = "SELECT ?? FROM item ORDER BY name" <> (sqlFetchLimit l)
-      sqlFetchBuildQuery (Just _) Nothing _ l = "SELECT ?? FROM item WHERE (name ILIKE ? OR description ILIKE ?) ORDER BY name" <> (sqlFetchLimit l)
-      sqlFetchBuildQuery (Just _) (Just _) Nothing l = "SELECT ??, ST_Distance(position, ?, true) FROM item WHERE (name ILIKE ? OR description ILIKE ?) ORDER BY ST_Distance(position, ?, true)" <> (sqlFetchLimit l)
-      sqlFetchBuildQuery (Just _) (Just _) (Just _) l = "SELECT ??, ST_Distance(position, ?, true) FROM item WHERE (name ILIKE ? OR description ILIKE ?) AND ST_DWithin(position,?,?,true) ORDER BY ST_Distance(position, ?, true)" <> (sqlFetchLimit l)
-      sqlFetchBuildQuery Nothing (Just _) (Just _) l = "SELECT ??, ST_Distance(position, ?, true) FROM item WHERE ST_DWithin(position,?,?,true) ORDER BY ST_Distance(position, ?, true)" <> (sqlFetchLimit l)
-      sqlFetchBuildQuery Nothing (Just _) Nothing l = "SELECT ??, ST_Distance(position, ?, true) FROM item ORDER BY ST_Distance(position, ?, true)" <> (sqlFetchLimit l)
+      sqlFetchBuildQuery Nothing Nothing _ l = "SELECT ?? FROM item ORDER BY name" <> sqlFetchLimit l
+      sqlFetchBuildQuery (Just _) Nothing _ l = "SELECT ?? FROM item WHERE (name ILIKE ? OR description ILIKE ?) ORDER BY name" <> sqlFetchLimit l
+      sqlFetchBuildQuery (Just _) (Just _) Nothing l = "SELECT ??, ST_Distance(position, ?, true) FROM item WHERE (name ILIKE ? OR description ILIKE ?) ORDER BY ST_Distance(position, ?, true)" <> sqlFetchLimit l
+      sqlFetchBuildQuery (Just _) (Just _) (Just _) l = "SELECT ??, ST_Distance(position, ?, true) FROM item WHERE (name ILIKE ? OR description ILIKE ?) AND ST_DWithin(position,?,?,true) ORDER BY ST_Distance(position, ?, true)" <> sqlFetchLimit l
+      sqlFetchBuildQuery Nothing (Just _) (Just _) l = "SELECT ??, ST_Distance(position, ?, true) FROM item WHERE ST_DWithin(position,?,?,true) ORDER BY ST_Distance(position, ?, true)" <> sqlFetchLimit l
+      sqlFetchBuildQuery Nothing (Just _) Nothing l = "SELECT ??, ST_Distance(position, ?, true) FROM item ORDER BY ST_Distance(position, ?, true)" <> sqlFetchLimit l
 
       -- Build the placeholder depending on what search parameters have been provided
       sqlFetchPlaceholder::Maybe Text->Maybe GeospatialPosition->Maybe Double->Maybe Int->[PersistValue]
       sqlFetchPlaceholder Nothing Nothing _ l = sqlFetchLimitPlaceholder l
-      sqlFetchPlaceholder (Just t) Nothing _ l = [PersistText t, PersistText t] <> (sqlFetchLimitPlaceholder l)
-      sqlFetchPlaceholder (Just t) (Just p) Nothing l = [toPersistValue p, PersistText t, PersistText t, toPersistValue p] <> (sqlFetchLimitPlaceholder l)
-      sqlFetchPlaceholder (Just t) (Just p) (Just d) l = [toPersistValue p, PersistText t, PersistText t, toPersistValue p, PersistDouble d, toPersistValue p] <> (sqlFetchLimitPlaceholder l)
-      sqlFetchPlaceholder Nothing (Just p) (Just d) l = [toPersistValue p, toPersistValue p, PersistDouble d, toPersistValue p] <> (sqlFetchLimitPlaceholder l)
-      sqlFetchPlaceholder Nothing (Just p) Nothing l = [toPersistValue p, toPersistValue p] <> (sqlFetchLimitPlaceholder l)
+      sqlFetchPlaceholder (Just tt) Nothing _ l = [PersistText tt, PersistText tt] <> sqlFetchLimitPlaceholder l
+      sqlFetchPlaceholder (Just tt) (Just pp) Nothing l = [toPersistValue pp, PersistText tt, PersistText tt, toPersistValue pp] <> sqlFetchLimitPlaceholder l
+      sqlFetchPlaceholder (Just tt) (Just pp) (Just dd) l = [toPersistValue pp, PersistText tt, PersistText tt, toPersistValue pp, PersistDouble dd, toPersistValue pp] <> sqlFetchLimitPlaceholder l
+      sqlFetchPlaceholder Nothing (Just pp) (Just dd) l = [toPersistValue pp, toPersistValue pp, PersistDouble dd, toPersistValue pp] <> sqlFetchLimitPlaceholder l
+      sqlFetchPlaceholder Nothing (Just pp) Nothing l = [toPersistValue pp, toPersistValue pp] <> sqlFetchLimitPlaceholder l
 
 -- | Creates the item in the database and return with the item and its keys
 dbCreateItem:: Item                                                 -- ^ The Item
