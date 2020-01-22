@@ -62,6 +62,7 @@ library:
     - yesod-static
     - wkt-geom
     - geojson
+    - random
 
 executables:
   gql-exe:

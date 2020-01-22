@@ -23,10 +23,12 @@ module Boot (serverMain) where
 --
 import           Control.Monad.Logger               (runStderrLoggingT)
 import           Control.Monad.Trans.Resource       (runResourceT)
-import           Data.ByteString.Char8              (pack)
+import qualified Data.ByteString.Char8              as DB
+import qualified Data.Text                          as DT
 import           Data.Maybe                         (fromMaybe, listToMaybe)
-import           System.Environment                 (getArgs)
 
+import           System.Environment                 (getEnv)
+import           System.Random
 --
 -- Persistence libraries
 --
@@ -53,7 +55,7 @@ import           Accessability.Handler.REST         (deleteItemR, getItemR,
 
 import           Accessability.Handler.Authenticate (postAuthenticateR)
 
-import           Accessability.Settings             (defaultSettings)
+import           Accessability.Settings             (defaultSettings, AppSettings(..))
 
 import           Accessability.Middleware           (corsified)
 
@@ -69,17 +71,33 @@ mkYesodDispatch "Server" resourcesServer
 --
 mkMigrate "migrateAll" entityDefs
 
+-- Example HAPI_DATABASE "postgresql://heatserver:heatserver@yolo.com:5432/heat"
+-- Example HAPI_CERTIFICATE "../deployment/tls.pem"
+-- Example HAPI_KEY "../deployment/tls.key"
+-- Example HAPI_JWT_SECRET "mandelmassa"
+-- Example HAPI_JWT_COST 
+
 -- | Main starting point for the server
 serverMain :: IO ()
 serverMain = do
-    database <- fromMaybe "haccdb:5432" . listToMaybe <$> getArgs
+    gen <- newStdGen 
+    let jwtSecret = take 10 $ randomRs ('a','z') gen 
+    database <- getEnv "HAPI_DATABASE"
+    pem <- getEnv "HAPI_CERTIFICATE"
+    key <- getEnv "HAPI_KEY"
+    cost <- read <$> getEnv "HAPI_PASSWORD_COST"    
+    time <- read <$> getEnv "HAPI_JWT_SESSION_LENGTH"
     mystatic <- static "static"
-    runStderrLoggingT $ withPostgresqlPool (pack ("postgresql://heatserver:heatserver@" <> database <> "/heat")) 5 $ \pool -> liftIO $ do
+    runStderrLoggingT $ withPostgresqlPool (DB.pack database) 5 $ \pool -> liftIO $ do
         runResourceT $ flip runSqlPool pool $
             runMigration migrateAll
-        application <- toWaiApp $ Server { getStatic = mystatic,
-            appSettings = defaultSettings,
+        application <- toWaiApp $ Server {
+            getStatic = mystatic,
+            appSettings = defaultSettings {
+                tokenSecret = DT.pack jwtSecret,
+                passwordCost = cost,
+                tokenExpiration = time},
             serverConnectionPool = pool }
-        WAIT.runTLS (WAIT.tlsSettings "../deployment/tls.pem" "../deployment/tls.key")
+        WAIT.runTLS (WAIT.tlsSettings pem key)
             (WAI.setServerName "Accessability Server - IoTHub Sweden"
             (WAI.setHost "*" WAI.defaultSettings)) $ corsified application
