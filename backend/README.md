@@ -1,5 +1,7 @@
 # Accessibility API and portal provider
-A graphQL- and REST-based interface for accessibility information on geographical locations. This is a prototype for the Swedish IoT Hub for Accessibility. It also serves the portals single page application.
+A graphQL- and REST-based API for accessibility information on geographical locations. This is a prototype for the Swedish IoT Hub for Accessibility. The server also publishes the portal single page application that can be accessed from a web browser or a mobile phone browser.
+
+A geographical location in this prototype contains a unique name, a description, its geodetic position (in WGS84), the level of accessability (1-5), what source (Manual, Automatic) that sets the state of the location (Unknown, Online, Offline).
 
 It is written in Haskell and uses the morpheus graphQL resolver and the Yesod web framework together with Persistent to handle a PostgreSQL database with the postgis extender for spatial and geographic objects.
 
@@ -20,12 +22,27 @@ or
 ```
 make build-backend
 ```
+## Environment variables
+The server is configured by setting the following environment variables:
 
-## Geographical location
+```
+export HAPI_KEY=/home/tomas/haskell/haccessability/deployment/tls.key
+export HAPI_CERTIFICATE=/home/tomas/haskell/haccessability/deployment/tls.pem
+export HAPI_DATABASE=postgresql://uid:password@172.17.0.2:5432/heat
+export HAPI_JWT_SESSION_LENGTH=3600
+export HAPI_PASSWORD_COST=10
+```
 
-A basic geographical location in this prototype contains a unique name, a description, its geodetic position (in WGS84), the level of accessability (1-5), what source (Manual, Automatic) that sets the state of the location (Unknown, Online, Offline).
+The **HAPI_KEY** and **HAPI_CERTIFICATE** points to the certificate and key used for the TLS setup.
 
-More information is supposed to be added to the location based on the type of location, such as store, restaurant, public space, etc.
+The **HAPI_DATABASE** contains the URL to the PostGIS database.
+
+The **HAPI_JWT_SESSION_LENGTH** contains the session timeout value.
+
+The **HAPI_PASSWORD_COST** contains the bcrypt cost factor for the password hashing.
+
+## Portal
+The portal is located at **/index.html** and can be accessed from a PC or mobile browser.
 
 ## REST interface
 The REST interface is located at **/api** and content type is **application/json**.
@@ -61,6 +78,7 @@ type Item {
   itemLevel:ItemLevel!
   itemLatitude:Float!
   itemLongitude:Float!
+  itemDistance:Float!
 }
 ```
 
@@ -71,10 +89,10 @@ queryItem(
   ):Item
   
 queryItems(
-  queryItemsLongitudeMin:Float!
-  queryItemsLatitudeMin:Float!
-  queryItemsLatitudeMin:Float!
-  queryItemsLongitudeMax:Float!
+  queryItemsLongitude:Float!
+  queryItemsLatitude:Float!
+  queryItemsDistance:Float!
+  queryItemsLimit:Int!
   ):[Item!]!
 ```
 #### queryItem Example
@@ -91,6 +109,7 @@ query FetchThemAll { queryItem (
     itemLevel
     itemLongitude
     itemLatitude
+    itemDistance
   }
 }
 ```
