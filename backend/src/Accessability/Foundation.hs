@@ -89,7 +89,10 @@ instance Yesod Server where
   errorHandler r = respond "text/plain" $ show r
 
   -- No middleware
-  yesodMiddleware = id
+  yesodMiddleware handler = do
+    addHeader "Cache-Control" "no-cache, must-revalidate"
+    defaultYesodMiddleware handler
+
 
 -- | The persistence instance for the server
 instance YesodPersist Server where

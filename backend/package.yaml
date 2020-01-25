@@ -1,10 +1,10 @@
-name:                gql
+name:                accessibility
 version:             0.1.0.0
-github:              "githubuser/gql"
+github:              "dnulnets"
 license:             BSD3
-author:              "Author name here"
-maintainer:          "example@example.com"
-copyright:           "2019 Author name here"
+author:              "Tomas Stenlund"
+maintainer:          "tomas.stenlund@telia.com"
+copyright:           "2019 Tomas Stenlund"
 
 extra-source-files:
 - README.md
@@ -63,9 +63,11 @@ library:
     - wkt-geom
     - geojson
     - random
+    - wai-app-static
 
 executables:
-  gql-exe:
+
+  accessibility-server:
     main:                Main.hs
     source-dirs:         app
     ghc-options:
@@ -73,10 +75,20 @@ executables:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
-    - gql
+    - accessibility
+
+  adduser:
+    main:                Main.hs
+    source-dirs:         adduser
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - accessibility
 
 tests:
-  gql-test:
+  accessibility-test:
     main:                Spec.hs
     source-dirs:         test
     ghc-options:
@@ -84,4 +96,4 @@ tests:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
-    - gql
+    - accesibility

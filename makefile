@@ -1,6 +1,7 @@
 
 build-portal:
 	cd portal;./generate.sh
+	cd portal;cat ./src/Version.purs
 	cd portal;spago build
 	cd portal;spago bundle-app
 	-rm -fR backend/static

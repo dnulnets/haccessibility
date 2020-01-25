@@ -1,7 +1,7 @@
 FROM paccbuild:latest as portal
 COPY . /haccessability
 WORKDIR /haccessability/portal
-RUN rm -fR output && rm -fR dist && rm -fR .cache && rm -fR .spago && ./generate.sh && spago build && spago bundle-app && parcel build index.html
+RUN rm -fR output && rm -fR dist && rm -fR .cache && rm -fR .spago && ./generate.sh && cat ./src/Version.purs && spago build && spago bundle-app && parcel build index.html
 
 FROM haccbuild:latest as build
 COPY . /opt/build
@@ -11,11 +11,11 @@ COPY --from=portal /haccessability/portal/dist/* ./static/
 RUN stack clean && stack build --system-ghc && stack install
 
 FROM ubuntu:disco
-RUN mkdir -p /opt/gql
+RUN mkdir -p /opt/accessibility
 ARG BINARY_PATH
-WORKDIR /opt/gql
+WORKDIR /opt/accessibility
 RUN apt-get update && apt-get install -y libpq-dev && mkdir static
 COPY --from=build /root/.local/bin .
 COPY ./deployment/tls.* ./
 COPY --from=build /opt/build/backend/static/* ./static/
-CMD ["/opt/gql/gql-exe"]
+CMD ["/opt/accessibility/accessibility-server"]

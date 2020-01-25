@@ -39,6 +39,9 @@ import           Database.Persist.Postgresql
 --
 import qualified Network.Wai.Handler.Warp           as WAI
 import qualified Network.Wai.Handler.WarpTLS        as WAIT
+import WaiAppStatic.Storage.Filesystem (defaultWebAppSettings)
+import WaiAppStatic.Types (StaticSettings(..), MaxAge(..))
+
 import           Yesod
 import           Yesod.Static
 --
@@ -74,8 +77,8 @@ mkMigrate "migrateAll" entityDefs
 -- Example HAPI_DATABASE "postgresql://heatserver:heatserver@yolo.com:5432/heat"
 -- Example HAPI_CERTIFICATE "../deployment/tls.pem"
 -- Example HAPI_KEY "../deployment/tls.key"
--- Example HAPI_JWT_SECRET "mandelmassa"
--- Example HAPI_JWT_COST 
+-- Example HAPI_JWT_SECRET "fwfwefew"
+-- Example HAPI_JWT_COST 3600
 
 -- | Main starting point for the server
 serverMain :: IO ()
@@ -87,7 +90,8 @@ serverMain = do
     key <- getEnv "HAPI_KEY"
     cost <- read <$> getEnv "HAPI_PASSWORD_COST"    
     time <- read <$> getEnv "HAPI_JWT_SESSION_LENGTH"
-    mystatic <- static "static"
+    -- mystatic <- static "static"
+    mystatic <- return $ Static $ (defaultWebAppSettings "static") {ssUseHash = False}
     runStderrLoggingT $ withPostgresqlPool (DB.pack database) 5 $ \pool -> liftIO $ do
         runResourceT $ flip runSqlPool pool $
             runMigration migrateAll
@@ -99,5 +103,5 @@ serverMain = do
                 tokenExpiration = time},
             serverConnectionPool = pool }
         WAIT.runTLS (WAIT.tlsSettings pem key)
-            (WAI.setServerName "Accessability Server - IoTHub Sweden"
+            (WAI.setServerName "Accessibility Server - IoTHub Sweden"
             (WAI.setHost "*" WAI.defaultSettings)) $ corsified application

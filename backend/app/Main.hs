@@ -13,7 +13,7 @@
 
 module Main where
 
-    import Boot
+import Boot
     
-    main :: IO ()
-    main = serverMain
+main :: IO ()
+main = serverMain
