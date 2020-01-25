@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: fcb2a737fc57e37ce6c5edc5ac6e1ca87a8d8788da6b8269fb0e65bbd15dee34
+-- hash: 2e4953669f77067c917e4a355f499051b828f1865936df9cb53e2e11896ffd49
 
 name:           accessibility
 version:        0.1.0.0
@@ -113,6 +113,13 @@ executable adduser
   build-depends:
       accessibility
     , base >=4.7 && <5
+    , bytestring
+    , monad-logger
+    , persistent
+    , persistent-postgresql
+    , persistent-template
+    , resourcet
+    , text
   default-language: Haskell2010
 
 test-suite accessibility-test

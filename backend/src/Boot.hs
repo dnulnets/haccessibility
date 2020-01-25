@@ -78,7 +78,8 @@ mkMigrate "migrateAll" entityDefs
 -- Example HAPI_CERTIFICATE "../deployment/tls.pem"
 -- Example HAPI_KEY "../deployment/tls.key"
 -- Example HAPI_JWT_SECRET "fwfwefew"
--- Example HAPI_JWT_COST 3600
+-- Example HAPI_PASSWORD_COST 10
+-- Example HAPI_JWT_SESSION_LENGTH 3600
 
 -- | Main starting point for the server
 serverMain :: IO ()
