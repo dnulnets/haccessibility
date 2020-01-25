@@ -1,5 +1,6 @@
 
 build-portal:
+	cd portal;./generate.sh
 	cd portal;spago build
 	cd portal;spago bundle-app
 	-rm -fR backend/static
@@ -17,11 +18,14 @@ run:
 image-purescript-build-env:	
 	docker build -t paccbuild:1 -t paccbuild:1.0 -t paccbuild:latest -f deployment/Dockerfile.purescript-build-env .
 
-image-db:	
-	docker build -t haccdb:1 -t haccdb:1.0 -t haccdb:latest -f deployment/Dockerfile.db .
+image-build-db:	
+	docker build -t haccdb:1 -t haccdb:1.0 -t haccdb:latest -f deployment/Dockerfile.build-db .
 
 image-haskell-build-env:	
 	docker build -t haccbuild:1 -t haccbuild:1.0 -t haccbuild:latest -f deployment/Dockerfile.haskell-build-env .
 
 image-build-server:	
 	docker build -t haccsvc:1 -t haccsvc:1.0 -t haccsvc:latest -f deployment/Dockerfile.build-server .
+
+test:
+	docker build -t test:1 -t test:1.0 -t test:latest -f deployment/Dockerfile.test .

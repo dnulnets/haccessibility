@@ -1,5 +1,5 @@
 FROM fpco/stack-build:lts-14.16
 RUN mkdir /opt/build
 COPY . /opt/build
-RUN cd /opt/build/backend && stack build --system-ghc && stack install
+RUN cd /opt/build/backend && rm -fR .stack-work && stack build --system-ghc && stack install
 

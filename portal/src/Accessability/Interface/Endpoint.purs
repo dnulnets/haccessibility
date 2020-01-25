@@ -18,6 +18,10 @@ import Routing.Duplex (RouteDuplex', path, root, segment, string, optional)
 -- |The base URL for the api
 newtype BaseURL = BaseURL String
 
+-- |The show instance
+instance showBaseURL :: Show BaseURL where
+  show (BaseURL s) = s
+
 -- |The nedpoint needed from the backend server
 data Endpoint = Authenticate
                 | Item (Maybe String)

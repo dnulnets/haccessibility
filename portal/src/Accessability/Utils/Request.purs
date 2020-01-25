@@ -29,6 +29,7 @@ import Control.Monad.Reader.Class (class MonadAsk)
 import Effect.Aff.Class (class MonadAff,
                          liftAff)
 import Effect.Class (liftEffect)
+import Effect.Console (log)
 
 import Effect.Ref (Ref)
 import Effect.Ref as Ref
@@ -93,6 +94,7 @@ mkRequest ∷ ∀ a m r v. MonadAff m
             → m (Either String (Tuple AXS.StatusCode v))
 mkRequest ep rm = do
   baseURL <- asks _.baseURL
+  liftEffect $ log $ "BaseURL = " <> show baseURL
   response <- liftAff $ AX.request $ defaultRequest baseURL ep rm Nothing
   pure case response of
     Left err → Left $ AX.printError err -- Make a string out of affjax errors

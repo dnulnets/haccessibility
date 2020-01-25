@@ -1,7 +1,7 @@
 FROM paccbuild:latest as portal
 COPY . /haccessability
 WORKDIR /haccessability/portal
-RUN rm -fR output && rm -fR dist && rm -fR .cache && rm -fR .spago && ./generate.sh && spago build && spago bundle-app && parcel build index.html
+RUN rm -fR output && rm -fR dist && rm -fR .cache && rm -fR .spago && spago build && spago bundle-app && parcel build index.html
 
 FROM haccbuild:latest as build
 COPY . /opt/build
