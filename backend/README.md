@@ -6,9 +6,10 @@ A geographical location in this prototype contains a unique name, a description,
 It is written in Haskell and uses the morpheus graphQL resolver and the Yesod web framework together with Persistent to handle a PostgreSQL database with the postgis extender for spatial and geographic objects.
 
 ## Build
-To be able to build the portal you need the following (version is just indicative):
+To be able to build the portal you need the following (version is just indicative, and others might work):
 
 1. stack 2.1.3
+2. libpq-dev
 
 Install stack according to its [Homepage](https://docs.haskellstack.org/en/stable/README/).
 
@@ -45,11 +46,26 @@ The **HAPI_PASSWORD_COST** contains the bcrypt cost factor for the password hash
 The portal is located at **/index.html** and can be accessed from a PC or mobile browser.
 
 ## REST interface
-The REST interface is located at **/api** and content type is **application/json**.
+The REST interface is located at **/api**. You need to authenticate first to get a token than must be provided when using the other endpoints in the API. The following headers must be set:
+
+```
+Authorization: Bearer <token>
+Content-Type: application/json
+Accept: application/json
+```
+
+### Authenticate - POST /api/authenticate
+Authenticates a user using the provided username and password and returns a token to be used for all the other endpoints in the API.
+
+```
+POST /api/authenticate
+{ "username":"<username>",
+"password":"<password>"}
+```
 
 ### Fetch an item - GET /api/item/<item key>
 Returns with the item as JSON.
-  
+
 ### Update an item - PUT /api/item/<item_key>
 The PUT body contains the fields on the item that is to be updated. The item_key points to the item.
 
@@ -80,10 +96,7 @@ type Item {
   itemLongitude:Float!
   itemDistance:Float!
 }
-```
 
-### The Query Type
-```
 queryItem(
   queryItemName:String!
   ):Item
@@ -94,46 +107,7 @@ queryItems(
   queryItemsDistance:Float!
   queryItemsLimit:Int!
   ):[Item!]!
-```
-#### queryItem Example
 
-```
-query FetchThemAll { queryItem (
-  queryItemName : "Sundsvall Centralstation")
-  {
-    itemID
-    itemName
-    itemDescription
-    itemSource
-    itemState
-    itemLevel
-    itemLongitude
-    itemLatitude
-    itemDistance
-  }
-}
-```
-#### queryItems Example
-
-```
-query FetchThemAll {
-  queryItems (
-    queryItemsLongitudeMin : 10.1
-    queryItemsLongitudeMax : 20.1
-    queryItemsLatitudeMin : 50.1
-    queryItemsLatitudeMax : 80.1)
-  {
-    itemID
-    itemName
-    itemDescription
-    itemLongitude
-    itemLatitude
-  }
-}
-```
-
-### The mutation type
-```
 createItem(
   createItemName:String!
   createItemDescription:String!
@@ -158,51 +132,4 @@ updateItem(
   updateItemLongitude:Float
   updateItemLatitude:Float
   ):Item
-```
-#### deleteItem Example
-```
-mutation DeleteItem {
-  deleteItem (
-    deleteItemName : "NP8 Arena"
-  )
-}
-```
-#### createItem Example
-```
-mutation CreateANewOne { createItem ( 
-  createItemName : "NP8 Arena"
-  createItemDescription : "The central soccer stadium"
-  createItemSource : Manual
-  createItemLevel : L3
-  createItemState : Online
-  createItemLongitude : 25.3156
-  createItemLatitude : 62.3369)
-  {
-    itemID
-    itemName
-    itemDescription
-    itemSource
-    itemState
-    itemLevel
-    itemLongitude
-    itemLatitude
-  }
-}
-```
-#### updateItem Example
-```
-mutation UpdateAnItem { updateItem ( 
-  updateItemID : "8"
-  updateItemName : "Statoil")
-  {
-    itemID
-    itemName
-    itemDescription
-    itemSource
-    itemState
-    itemLevel
-    itemLongitude
-    itemLatitude
-  }
-}
 ```
