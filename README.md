@@ -9,6 +9,9 @@ The github location of the Swedish IoT Hub Source code is [here](https://github.
 
 The project is based on Agenda 2030 and the goal of sustainable cities and communities and to provide universal access to safe, inclusive and accessible green spaces and public places, especially for women and children, the elderly and people with disabilities. The purpose is to provide information that promotes mobility and accessibility to public spaces. The project thus aims to achieve its goal of contributing to increased social interactions, increased quality of life and increased mental well-being for the project´s target groups.
 
+## Backend and Portal
+Information on the [a backend](backend/README.md), [a portal](portal/README.md) and [a deployment](deployment/README.md) can be found in the readme files for each part.
+
 ## Technology stack
 The backend is developed in Haskell and uses the Persistence, Yesod webframework and Morpheus graphQL library. The database is PostreSQL.
 
