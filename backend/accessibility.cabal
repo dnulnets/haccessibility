@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 2e4953669f77067c917e4a355f499051b828f1865936df9cb53e2e11896ffd49
+-- hash: 7ee3aa1eaf8aaa937c6f9cd534c2c122d64cdae48e735a578e090533ac43871f
 
 name:           accessibility
 version:        0.1.0.0
@@ -96,25 +96,26 @@ executable accessibility-server
   other-modules:
       Paths_accessibility
   hs-source-dirs:
-      app
+      server
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       accessibility
     , base >=4.7 && <5
   default-language: Haskell2010
 
-executable adduser
+executable hadmin
   main-is: Main.hs
   other-modules:
       Paths_accessibility
   hs-source-dirs:
-      adduser
+      hadmin
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       accessibility
     , base >=4.7 && <5
     , bytestring
     , monad-logger
+    , mtl
     , persistent
     , persistent-postgresql
     , persistent-template

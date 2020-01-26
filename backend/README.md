@@ -42,6 +42,9 @@ The **HAPI_JWT_SESSION_LENGTH** contains the session timeout value.
 
 The **HAPI_PASSWORD_COST** contains the bcrypt cost factor for the password hashing.
 
+## Management of the API and portal
+The API and portal can be managed using the **hadmin** command where you can manage users and items in the database.
+
 ## Portal
 The portal is located at **/index.html** and can be accessed from a PC or mobile browser.
 
