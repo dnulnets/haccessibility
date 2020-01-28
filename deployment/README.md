@@ -2,7 +2,18 @@
 ## Database image - Dockerfile.build-db
 Contains the setup of the database image. The image is named haccdb and tagged with 1, 1.0 and latest.
 
-Created by running makefile image-build-db from the root directory.
+Created by running makefile image-build-db from the root directory. You can also build it directly from the
+commandline with docker build and use the **--build-arg** to set other values for user, password and database
+name if you want to change the defaults.
+
+The argument **user** has the default value heatserver.
+
+The argument **password** has the default value heatserver.
+
+The argument **database** has the default value heat.
+
+Make sure you use the correct values for the HAPI_DATABASE environment variable when starting the server image.
+
 ## Haskell Build environment image (slow build) - Dockerfile.haskell-build-env
 Contains the setup of the build image that is used to build the haskell service quickly. The image is named haccbuild and tagged with 1, 1.0 and latest.
 

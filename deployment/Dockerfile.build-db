@@ -1,7 +1,10 @@
 FROM postgres:12
-ENV POSTGRES_PASSWORD heatserver
-ENV POSTGRES_USER heatserver
-ENV POSTGRES_DB heat
+ARG password=heatserver
+ARG user=heatserver
+ARG database=heat
+ENV POSTGRES_PASSWORD $password
+ENV POSTGRES_USER $user
+ENV POSTGRES_DB $database
 ENV POSTGIS_MAJOR 3
 ENV POSTGIS_VERSION 3.0.0+dfsg-2~exp1.pgdg100+1
 

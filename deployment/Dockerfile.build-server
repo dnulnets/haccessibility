@@ -14,7 +14,6 @@ RUN stack clean && stack build --system-ghc && stack install
 
 FROM ubuntu:disco
 RUN mkdir -p /opt/accessibility
-ARG BINARY_PATH
 WORKDIR /opt/accessibility
 RUN apt-get update && apt-get install -y libpq-dev && mkdir static
 COPY --from=build /root/.local/bin .
