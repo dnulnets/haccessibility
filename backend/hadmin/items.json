@@ -1,0 +1,48 @@
+[
+    {
+        "name":"NP3 Arena South West Entrance",
+        "description":"Sundsvall football arena, office space",
+        "source":"Manual",
+        "level":"L3",
+        "state":"Offline",
+        "longitude": 17.302273,
+        "latitude": 62.393406
+    },
+    {
+        "name":"NP3 Arena South Entrance",
+        "description":"Sundsvall football arena, stadion and office entrance",
+        "source":"Manual",
+        "level":"L4",
+        "state":"Offline",
+        "longitude": 17.300922,
+        "latitude": 62.393560
+    },
+    {
+        "name":"NP3 Arena East Entrance",
+        "description":"Sundsvall football arena, stadion entrance",
+        "source":"Manual",
+        "level":"L4",
+        "state":"Offline",
+        "longitude": 17.302562,
+        "latitude": 62.393844
+    },
+    {
+        "name":"NP3 Arena West Entrance",
+        "description":"Sundsvall football arena, field entrance",
+        "source":"Manual",
+        "level":"L4",
+        "state":"Offline",
+        "longitude": 17.299657,
+        "latitude": 62.393923
+    },
+    {
+        "name":"Circle-K Balder",
+        "description":"Circle-K gasoline station",
+        "source":"Manual",
+        "level":"L2",
+        "state":"Offline",
+        "longitude": 17.303989,
+        "latitude": 62.393789
+    }
+
+]

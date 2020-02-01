@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 7ee3aa1eaf8aaa937c6f9cd534c2c122d64cdae48e735a578e090533ac43871f
+-- hash: 92b4fd74ab299ee2f3d479fbf5b6bcd02da5186ca69c4327f7ef17c198872f7f
 
 name:           accessibility
 version:        0.1.0.0
@@ -112,6 +112,7 @@ executable hadmin
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       accessibility
+    , aeson
     , base >=4.7 && <5
     , bytestring
     , monad-logger

@@ -94,6 +94,7 @@ executables:
     - persistent-template
     - persistent
     - mtl
+    - aeson
 
 tests:
   accessibility-test:

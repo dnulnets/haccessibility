@@ -25,6 +25,7 @@ module Main where
 --
 -- Standard libraries
 --
+import           Control.Monad (forM_)
 import           Control.Monad.Logger               (runStderrLoggingT)
 import           Control.Monad.Trans.Resource       (runResourceT)
 import           Control.Monad.IO.Class  (liftIO, MonadIO)
@@ -34,6 +35,7 @@ import qualified Data.ByteString.Char8              as DB
 import qualified Data.Text                          as DT
 import qualified Data.Text.Encoding                 as DTE
 import           Data.Maybe                         (fromMaybe, listToMaybe)
+import           Data.Aeson                         (eitherDecodeFileStrict')
 
 import           System.Environment                 (getEnv, getArgs)
 
@@ -49,6 +51,8 @@ import           Database.Persist.TH
 --
 import           Accessability.Model.Database
 import           Accessability.Utils.Password
+import           Accessability.Model.REST
+import           Accessability.Data.Geo
 
 --
 -- The database migration function
@@ -96,6 +100,29 @@ addUser cost uname uemail upw = do
     user <- get ukey
     liftIO $ putStrLn $ "\nUser added!"
     liftIO $ printUser user
+
+-- |Parses the JSON file and inserts all items that can be decoded
+addItems::(MonadIO m) => String -- ^ Filename
+    ->ReaderT SqlBackend m ()   -- ^ A database effect
+addItems file = do
+    eia <- liftIO (eitherDecodeFileStrict' file::IO (Either String [Maybe PostItemBody]))
+    case eia of
+        (Left error) -> do
+            liftIO $ putStrLn $ "Error encountered during JSON parsing"
+            liftIO $ putStrLn $ error
+        (Right items) -> do
+            forM_ items storeItem
+            liftIO $ putStrLn "Items added!"
+    where
+        storeItem::(MonadIO m) => Maybe PostItemBody->ReaderT SqlBackend m (Maybe (Key Item))
+        storeItem (Just body) = Just <$> insert Item {
+            itemName =  postItemName body,
+            itemDescription = postItemDescription body,
+            itemLevel = postItemLevel body,
+            itemSource = postItemSource body,
+            itemState = postItemState body,
+            itemPosition = Position $ PointXY (realToFrac $ postItemLongitude body) (realToFrac $ postItemLatitude body)}
+        storeItem Nothing = return Nothing
 
 -- |Adds a user to the database
 deleteUser::(MonadIO m) => String -- ^ Username
@@ -162,6 +189,37 @@ handleListUser database = do
     runStderrLoggingT $ withPostgresqlPool (DB.pack database) 5 $ \pool -> liftIO $ do
         runSqlPersistMPool lsUser pool
 
+-- |Handles the adduser command
+handleAddItems:: String  -- ^ The database URL
+    ->[String]          -- ^ The command line arguments
+    ->IO ()             -- ^ The effect
+handleAddItems database args = do
+    case length args of
+        2 -> do
+            runStderrLoggingT $ withPostgresqlPool (DB.pack database) 5 $ \pool -> liftIO $ do
+                flip runSqlPersistMPool pool $ do
+                    addItems (args!!1)
+        otherwise -> do
+            putStrLn "Usage: hadmin additems <JSON-file with array of items>"
+
+usage::IO ()
+usage = do
+    putStrLn "Usage: hadmin <command> [parameters]"
+    putStrLn ""
+    putStrLn "User commands:"
+    putStrLn ""
+    putStrLn "adduser   <username> <email> <password>"
+    putStrLn "deluser   <username>"
+    putStrLn "chapw     <username> <new password>"
+    putStrLn "lsitems"
+    putStrLn ""
+    putStrLn "Item commands:"
+    putStrLn ""
+    putStrLn "additems  <JSON-file with array of items>"
+    putStrLn "delitem   <itemname>"
+    putStrLn "lsitems"
+    putStrLn ""
+
 -- Example HAPI_DATABASE "postgresql://heatserver:heatserver@yolo.com:5432/heat"
 -- Example HAPI_PASSWORD_COST 10
 
@@ -178,7 +236,7 @@ main = do
             "lsusers" -> handleListUser database
             "deluser" -> handleDeleteUser database args
             "chapw" -> handleChangePassword database cost args
-            otherwise -> do
-                putStrLn "Usage: hadmin <adduser|deluser|chapw|lsusers> [parameters]"
+            "additems" -> handleAddItems database args
+            otherwise -> usage
         else
-            putStrLn "Usage: hadmin <adduser|deluser|chapw|lsusers> [parameters]"
+            usage

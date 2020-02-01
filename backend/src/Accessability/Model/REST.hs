@@ -53,7 +53,7 @@ $(deriveJSON defaultOptions {
     fieldLabelModifier = firstLower . drop 9 -- Get rid of the 'postItem' in the field names
   } ''PostItemsBody)
 
--- | The argument for the queryitems query
+-- | The argument for the update item request
 data PutItemBody = PutItemBody {
     putItemName          :: Maybe Text            -- ^ The name of the item
     , putItemDescription ::  Maybe Text    -- ^ The description of the item
@@ -69,7 +69,7 @@ $(deriveJSON defaultOptions {
     fieldLabelModifier = firstLower . drop 7 -- Get rid of the 'postItem' in the field names
   } ''PutItemBody)
 
-  -- | The argument for the queryitems query
+  -- | The argument for the create item request
 data PostItemBody = PostItemBody {
     postItemName          :: Text            -- ^ The name of the item
     , postItemDescription :: Text    -- ^ The description of the item
