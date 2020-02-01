@@ -34,8 +34,9 @@ import           Control.Monad.Reader (ReaderT)
 import qualified Data.ByteString.Char8              as DB
 import qualified Data.Text                          as DT
 import qualified Data.Text.Encoding                 as DTE
-import           Data.Maybe                         (fromMaybe, listToMaybe)
+import           Data.Maybe                         (fromMaybe, listToMaybe, catMaybes)
 import           Data.Aeson                         (eitherDecodeFileStrict')
+import           Data.Int
 
 import           System.Environment                 (getEnv, getArgs)
 
@@ -43,6 +44,7 @@ import           System.Environment                 (getEnv, getArgs)
 -- Persistence libraries
 --
 import           Database.Persist
+import           Database.Persist.Sql
 import           Database.Persist.Postgresql
 import           Database.Persist.TH
 
@@ -54,11 +56,6 @@ import           Accessability.Utils.Password
 import           Accessability.Model.REST
 import           Accessability.Data.Geo
 
---
--- The database migration function
---
-mkMigrate "migrateAll" entityDefs
-
 -- |Print user information to stdout
 printUser::Maybe User   -- ^ The user to be printed
     -> IO ()            -- ^ IO effect
@@ -68,10 +65,22 @@ printUser (Just u) = do
     putStrLn $ "Username: " <> (DT.unpack $ userUsername u)
     putStrLn $ "Email: " <> (DT.unpack $ userEmail u)
 
--- |Prints a list of users
-printUsers::[User]->IO ()
-printUsers (u:users) = printUser (Just u) >> putStrLn "" >> printUsers users
-printUsers [] = return ()
+-- |Print user information to stdout
+printItem::Entity Item   -- ^ The item to be printed
+    -> IO ()            -- ^ IO effect
+printItem (Entity key u) = do
+    putStrLn $ "Key: " <> (show $ fromSqlKey key)
+    putStrLn $ "Name: " <> (DT.unpack $ itemName u)
+    putStrLn $ "Description: " <> (DT.unpack $ itemDescription u)
+    putStrLn $ "Position: " <> (show $ itemPosition u)
+    putStrLn $ "Level: " <> (show $ itemLevel u)
+    putStrLn $ "Source: " <> (show $ itemSource u)
+    putStrLn $ "State: " <> (show $ itemState u)
+    putStrLn ""
+
+--
+-- User related functions
+--
 
 -- |Adds a user to the database
 changePassword::(MonadIO m) => Integer -- ^ bcrypt cost
@@ -111,18 +120,19 @@ addItems file = do
             liftIO $ putStrLn $ "Error encountered during JSON parsing"
             liftIO $ putStrLn $ error
         (Right items) -> do
-            forM_ items storeItem
+            forM_ (catMaybes items) storeItem
             liftIO $ putStrLn "Items added!"
     where
-        storeItem::(MonadIO m) => Maybe PostItemBody->ReaderT SqlBackend m (Maybe (Key Item))
-        storeItem (Just body) = Just <$> insert Item {
-            itemName =  postItemName body,
-            itemDescription = postItemDescription body,
-            itemLevel = postItemLevel body,
-            itemSource = postItemSource body,
-            itemState = postItemState body,
-            itemPosition = Position $ PointXY (realToFrac $ postItemLongitude body) (realToFrac $ postItemLatitude body)}
-        storeItem Nothing = return Nothing
+        storeItem::(MonadIO m) => PostItemBody->ReaderT SqlBackend m ()
+        storeItem body = do
+            key <- insert Item {
+                itemName =  postItemName body,
+                itemDescription = postItemDescription body,
+                itemLevel = postItemLevel body,
+                itemSource = postItemSource body,
+                itemState = postItemState body,
+                itemPosition = Position $ PointXY (realToFrac $ postItemLongitude body) (realToFrac $ postItemLatitude body)}
+            liftIO $ putStrLn $ "Added item with key=" <> (show $ fromSqlKey key)
 
 -- |Adds a user to the database
 deleteUser::(MonadIO m) => String -- ^ Username
@@ -136,10 +146,10 @@ lsUser::(MonadIO m)=>ReaderT SqlBackend m () -- ^ A database effect
 lsUser = do
     users <- selectList [] [Asc UserUsername]
     liftIO $ putStrLn "\nList of users\n"
-    liftIO $ printUsers $ clean <$> users
+    liftIO $ forM_ (clean <$> users) printUser
     where
-        clean::(Entity User)->User
-        clean (Entity _ user) = user
+        clean::(Entity User)->Maybe User
+        clean (Entity _ user) = Just user
 
 -- |Handles the adduser command
 handleAddUser:: String  -- ^ The database URL
@@ -189,7 +199,11 @@ handleListUser database = do
     runStderrLoggingT $ withPostgresqlPool (DB.pack database) 5 $ \pool -> liftIO $ do
         runSqlPersistMPool lsUser pool
 
--- |Handles the adduser command
+--
+-- Items related functions
+--
+
+-- |Handles the additems command
 handleAddItems:: String  -- ^ The database URL
     ->[String]          -- ^ The command line arguments
     ->IO ()             -- ^ The effect
@@ -202,6 +216,44 @@ handleAddItems database args = do
         otherwise -> do
             putStrLn "Usage: hadmin additems <JSON-file with array of items>"
 
+-- |Handles the delitem command
+handleDelItem:: String  -- ^ The database URL
+    ->[String]          -- ^ The command line arguments
+    ->IO ()             -- ^ The effect
+handleDelItem database args = do
+    case length args of
+        2 -> do
+            runStderrLoggingT $ withPostgresqlPool (DB.pack database) 5 $ \pool -> liftIO $ do
+                flip runSqlPersistMPool pool $ do
+                    deleteItem (args!!1)
+        otherwise -> do
+            putStrLn "Usage: hadmin delitem <key>"
+    where
+        -- |Adds a user to the database
+        deleteItem::(MonadIO m) => String -- ^ The key
+            ->ReaderT SqlBackend m ()     -- ^ A database effect
+        deleteItem key = do
+            delete $ toKey key
+            liftIO $ putStrLn $ "\nItem deleted!"
+            where
+                toKey::String->Key Item
+                toKey s = toSqlKey (read s) 
+
+-- |Handles the delitem command
+handleListItems:: String  -- ^ The database URL
+    ->IO ()             -- ^ The effect
+handleListItems database = do
+    runStderrLoggingT $ withPostgresqlPool (DB.pack database) 5 $ \pool -> liftIO $ do
+        flip runSqlPersistMPool pool $ do
+            listItems
+    where
+        listItems::(MonadIO m)=>ReaderT SqlBackend m () -- ^ A database effect
+        listItems = do
+            items <- selectList [] [Asc ItemName]
+            liftIO $ putStrLn "\nList of items:"
+            liftIO $ forM_ items printItem
+
+-- |The usage information
 usage::IO ()
 usage = do
     putStrLn "Usage: hadmin <command> [parameters]"
@@ -216,7 +268,7 @@ usage = do
     putStrLn "Item commands:"
     putStrLn ""
     putStrLn "additems  <JSON-file with array of items>"
-    putStrLn "delitem   <itemname>"
+    putStrLn "delitem   <key>"
     putStrLn "lsitems"
     putStrLn ""
 
@@ -237,6 +289,8 @@ main = do
             "deluser" -> handleDeleteUser database args
             "chapw" -> handleChangePassword database cost args
             "additems" -> handleAddItems database args
+            "delitem" -> handleDelItem database args
+            "lsitems" -> handleListItems database
             otherwise -> usage
         else
             usage
