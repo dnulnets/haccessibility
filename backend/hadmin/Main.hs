@@ -51,6 +51,7 @@ import           Database.Persist.Sql
 -- Get our own items
 --
 import           Accessability.Data.Geo
+import qualified Accessability.Data.Item as ADI
 import           Accessability.Model.Database
 import           Accessability.Model.REST
 import           Accessability.Utils.Password
@@ -70,6 +71,7 @@ printItem::Entity Item   -- ^ The item to be printed
 printItem (Entity key u) = do
     putStrLn $ "Key: " <> (show $ fromSqlKey key)
     putStrLn $ "Name: " <> (DT.unpack $ itemName u)
+    putStrLn $ "GUID: " <> (DT.unpack $ itemGuid u)
     putStrLn $ "Description: " <> (DT.unpack $ itemDescription u)
     putStrLn $ "Position: " <> (show $ itemPosition u)
     putStrLn $ "Level: " <> (show $ itemLevel u)
@@ -277,8 +279,16 @@ usage = do
     putStrLn "delitem   <key>"
     putStrLn "lsitems"
     putStrLn ""
+    putStrLn "Format of data:"
+    putStrLn ""
     tid <- getCurrentTime
-    putStrLn $ DT.unpack $ DTE.decodeUtf8 $ B.toStrict $ encode $ tid
+    putStrLn $ "UTC Timestamp: " <> (DT.unpack $ DTE.decodeUtf8 $ B.toStrict $ encode $ tid)
+    putStrLn $ "Level: " <> (show [ADI.L1, ADI.L2, ADI.L3, ADI.L4, ADI.L5])
+    putStrLn $ "Source: " <> (show [ADI.Human, ADI.Machine])
+    putStrLn $ "Modifier: " <> (show [ADI.Static, ADI.Transient])
+    putStrLn $ "Approval: " <> (show [ADI.Waiting, ADI.Approved, ADI.Denied])
+    putStrLn $ "State: " <> (show [ADI.Unknown, ADI.Online, ADI.Offline])
+    putStrLn ""
 
 -- Example HAPI_DATABASE "postgresql://heatserver:heatserver@yolo.com:5432/heat"
 -- Example HAPI_PASSWORD_COST 10
