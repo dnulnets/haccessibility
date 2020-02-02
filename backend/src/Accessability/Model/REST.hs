@@ -24,7 +24,7 @@ module Accessability.Model.REST (
 -- Import standard libs
 --
 import           Data.Text                (Text)
-import           Data.Time.Clock (UTCTime)
+import           Data.Time.Clock          (UTCTime)
 import           GHC.Generics             (Generic (..))
 
 --
@@ -36,9 +36,9 @@ import           Data.Aeson.TH
 --
 -- Our own
 --
-import           Accessability.Data.Item  (ItemLevel (..), ItemSource (..),
-                                           ItemState (..), ItemModifier (..),
-                                           ItemApproval (..))
+import           Accessability.Data.Item  (ItemApproval (..), ItemLevel (..),
+                                           ItemModifier (..), ItemSource (..),
+                                           ItemState (..))
 import           Accessability.Utils.JSON (firstLower)
 
 -- | The argument for the queryitems query

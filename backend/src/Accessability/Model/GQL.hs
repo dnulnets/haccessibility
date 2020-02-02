@@ -1,8 +1,9 @@
 {-# LANGUAGE DeriveAnyClass    #-}
 {-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE TypeFamilies      #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeFamilies      #-}
+{-# OPTIONS_GHC -Wwarn=orphans #-}
 
 -- |
 -- Module      : Acessability.Model.GQL
@@ -34,27 +35,28 @@ module Accessability.Model.GQL (
 --
 -- Import standard libs
 --
-import           Data.Text               (Text, pack, unpack)
-import           Data.Text.Encoding (decodeUtf8)
-import           Data.Text.Lazy.Encoding      (encodeUtf8)
+import qualified Data.Aeson              as DA
+import           Data.ByteString.Lazy    (toStrict)
+import           Data.Text               (Text, pack)
+import           Data.Text.Encoding      (decodeUtf8)
 import           Data.Text.Lazy          (fromStrict)
-import           Data.ByteString.Lazy (toStrict)
-import           GHC.Generics            (Generic (..))
+import           Data.Text.Lazy.Encoding (encodeUtf8)
 import           Data.Time.Clock         (UTCTime)
-import           qualified Data.Aeson as DA
+import           GHC.Generics            (Generic (..))
 
 --
 -- Import for morpheus
 --
-import           Data.Morpheus.Kind       (SCALAR)
-import           Data.Morpheus.Types     (GQLType (..), ID (..), GQLScalar(..), ScalarValue(..))
+import           Data.Morpheus.Kind      (SCALAR)
+import           Data.Morpheus.Types     (GQLScalar (..), GQLType (..), ID (..),
+                                          ScalarValue (..))
 
 --
 -- My own imports
 --
-import           Accessability.Data.Item (ItemLevel (..), ItemSource (..),
-                                          ItemState (..), ItemModifier(..),
-                                          ItemApproval(..))
+import           Accessability.Data.Item (ItemApproval (..), ItemLevel (..),
+                                          ItemModifier (..), ItemSource (..),
+                                          ItemState (..))
 
 --
 -- Scalars
@@ -72,8 +74,8 @@ instance GQLScalar UTCTime where
     parseValue (Float _) = Left "Wrong type for UTC timestamp"
     parseValue (Boolean _) = Left "Wrong type for UTC timestamp"
     parseValue (String s) = case DA.decode $ encodeUtf8 $ fromStrict s of
-                                (Just u) -> Right $ u
-                                Nothing -> Left $ "Unable to parse " <> s
+                                (Just u) -> Right u
+                                Nothing  -> Left $ "Unable to parse " <> s
 
 
     --serialize u = String $ pack $ show u

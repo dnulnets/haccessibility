@@ -28,7 +28,7 @@ module Accessability.Data.Item (
 -- Import standard libs
 --
 import           Data.Text                (Text, pack)
-import           Data.Time.Clock (UTCTime)
+import           Data.Time.Clock          (UTCTime)
 import           GHC.Generics             (Generic (..))
 
 --

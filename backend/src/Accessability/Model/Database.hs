@@ -22,8 +22,8 @@ module Accessability.Model.Database where
 --
 -- Import standard libs
 --
-import           Data.Text              (Text)
-import           Data.Time.Clock        (UTCTime)
+import           Data.Text               (Text)
+import           Data.Time.Clock         (UTCTime)
 
 --
 -- Import for persistence
@@ -34,9 +34,9 @@ import           Database.Persist.TH
 -- Our own types
 --
 import           Accessability.Data.Geo  (GeospatialPosition (..))
-import           Accessability.Data.Item (ItemLevel (..), ItemSource (..),
-                                          ItemState (..), ItemModifier(..),
-                                          ItemApproval(..))
+import           Accessability.Data.Item (ItemApproval (..), ItemLevel (..),
+                                          ItemModifier (..), ItemSource (..),
+                                          ItemState (..))
 
 -- Create migration function using both our entities and
 -- serversession-backend-persistent ones.

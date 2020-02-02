@@ -17,7 +17,7 @@
 -- Maintainer  : tomas.stenlund@permobil.com
 -- Stability   : experimental
 -- Portability : POSIX
--- 
+--
 -- This module contains the source to be able to manage the accesibility API
 --
 
@@ -25,38 +25,35 @@ module Main where
 --
 -- Standard libraries
 --
-import           Control.Monad (forM_)
-import           Control.Monad.Logger               (runStderrLoggingT)
-import           Control.Monad.Trans.Resource       (runResourceT)
-import           Control.Monad.IO.Class  (liftIO, MonadIO)
-import           Control.Monad.Reader (ReaderT)
+import           Control.Monad                (forM_)
+import           Control.Monad.IO.Class       (MonadIO, liftIO)
+import           Control.Monad.Logger         (runStderrLoggingT)
+import           Control.Monad.Reader         (ReaderT)
 
-import qualified Data.ByteString.Char8              as DB
-import qualified Data.Text                          as DT
-import qualified Data.Text.Encoding                 as DTE
-import qualified Data.ByteString.Lazy as B
-import           Data.Maybe                         (fromMaybe, listToMaybe, catMaybes)
-import           Data.Aeson                         (eitherDecodeFileStrict')
-import           Data.Int
-import           Data.Time.Clock (UTCTime, getCurrentTime)
+import           Data.Aeson                   (eitherDecodeFileStrict')
 import           Data.Aeson
-import           System.Environment                 (getEnv, getArgs)
+import qualified Data.ByteString.Char8        as DB
+import qualified Data.ByteString.Lazy         as B
+import           Data.Maybe                   (catMaybes)
+import qualified Data.Text                    as DT
+import qualified Data.Text.Encoding           as DTE
+import           Data.Time.Clock              (getCurrentTime)
+import           System.Environment           (getArgs, getEnv)
 
 --
 -- Persistence libraries
 --
 import           Database.Persist
-import           Database.Persist.Sql
 import           Database.Persist.Postgresql
-import           Database.Persist.TH
+import           Database.Persist.Sql
 
 --
 -- Get our own items
 --
-import           Accessability.Model.Database
-import           Accessability.Utils.Password
-import           Accessability.Model.REST
 import           Accessability.Data.Geo
+import           Accessability.Model.Database
+import           Accessability.Model.REST
+import           Accessability.Utils.Password
 
 -- |Print user information to stdout
 printUser::Maybe User   -- ^ The user to be printed
@@ -99,7 +96,7 @@ changePassword cost uname upw = do
         (Just (Entity key _)) -> do
             update key [UserPassword =. (DTE.decodeUtf8 pw)]
             liftIO $ putStrLn "\nUser password changed!"
-        otherwise -> do
+        _ -> do
             liftIO $ putStrLn "\nUser not found!"
 
 -- |Adds a user to the database
@@ -121,9 +118,9 @@ addItems::(MonadIO m) => String -- ^ Filename
 addItems file = do
     eia <- liftIO (eitherDecodeFileStrict' file::IO (Either String [Maybe PostItemBody]))
     case eia of
-        (Left error) -> do
+        (Left e) -> do
             liftIO $ putStrLn $ "Error encountered during JSON parsing"
-            liftIO $ putStrLn $ error
+            liftIO $ putStrLn $ e
         (Right items) -> do
             forM_ (catMaybes items) storeItem
             liftIO $ putStrLn "Items added!"
@@ -171,7 +168,7 @@ handleAddUser database cost args = do
             runStderrLoggingT $ withPostgresqlPool (DB.pack database) 5 $ \pool -> liftIO $ do
                 flip runSqlPersistMPool pool $ do
                     addUser cost (args !! 1) (args !! 2) (args !! 3)
-        otherwise -> do
+        _ -> do
             putStrLn "Usage: hadmin adduser <username> <email> <password>"
 
 -- |Handles the chapw command
@@ -185,7 +182,7 @@ handleChangePassword database cost args = do
             runStderrLoggingT $ withPostgresqlPool (DB.pack database) 5 $ \pool -> liftIO $ do
                 flip runSqlPersistMPool pool $ do
                     changePassword cost (args !! 1) (args !! 2)
-        otherwise -> do
+        _ -> do
             putStrLn "Usage: hadmin chapw <username> <new password>"
 
 -- |Handles the adduser command
@@ -198,7 +195,7 @@ handleDeleteUser database args = do
             runStderrLoggingT $ withPostgresqlPool (DB.pack database) 5 $ \pool -> liftIO $ do
                 flip runSqlPersistMPool pool $ do
                     deleteUser (args !! 1)
-        otherwise -> do
+        _ -> do
             putStrLn "Usage: hadmin deluser <username>"
 
 -- |Handles the adduser command
@@ -222,7 +219,7 @@ handleAddItems database args = do
             runStderrLoggingT $ withPostgresqlPool (DB.pack database) 5 $ \pool -> liftIO $ do
                 flip runSqlPersistMPool pool $ do
                     addItems (args!!1)
-        otherwise -> do
+        _ -> do
             putStrLn "Usage: hadmin additems <JSON-file with array of items>"
 
 -- |Handles the delitem command
@@ -235,7 +232,7 @@ handleDelItem database args = do
             runStderrLoggingT $ withPostgresqlPool (DB.pack database) 5 $ \pool -> liftIO $ do
                 flip runSqlPersistMPool pool $ do
                     deleteItem (args!!1)
-        otherwise -> do
+        _ -> do
             putStrLn "Usage: hadmin delitem <key>"
     where
         -- |Adds a user to the database
@@ -246,7 +243,7 @@ handleDelItem database args = do
             liftIO $ putStrLn $ "\nItem deleted!"
             where
                 toKey::String->Key Item
-                toKey s = toSqlKey (read s) 
+                toKey s = toSqlKey (read s)
 
 -- |Handles the delitem command
 handleListItems:: String  -- ^ The database URL
@@ -295,13 +292,13 @@ main = do
     args <- getArgs
     if length args > 0
         then case args!!0 of
-            "adduser" -> handleAddUser database cost args
-            "lsusers" -> handleListUser database
-            "deluser" -> handleDeleteUser database args
-            "chapw" -> handleChangePassword database cost args
+            "adduser"  -> handleAddUser database cost args
+            "lsusers"  -> handleListUser database
+            "deluser"  -> handleDeleteUser database args
+            "chapw"    -> handleChangePassword database cost args
             "additems" -> handleAddItems database args
-            "delitem" -> handleDelItem database args
-            "lsitems" -> handleListItems database
-            otherwise -> usage
+            "delitem"  -> handleDelItem database args
+            "lsitems"  -> handleListItems database
+            _          -> usage
         else
             usage

@@ -25,7 +25,6 @@ import           Control.Monad.Logger               (runStderrLoggingT)
 import           Control.Monad.Trans.Resource       (runResourceT)
 import qualified Data.ByteString.Char8              as DB
 import qualified Data.Text                          as DT
-import           Data.Maybe                         (fromMaybe, listToMaybe)
 
 import           System.Environment                 (getEnv)
 import           System.Random
@@ -39,8 +38,8 @@ import           Database.Persist.Postgresql
 --
 import qualified Network.Wai.Handler.Warp           as WAI
 import qualified Network.Wai.Handler.WarpTLS        as WAIT
-import WaiAppStatic.Storage.Filesystem (defaultWebAppSettings)
-import WaiAppStatic.Types (StaticSettings(..), MaxAge(..))
+import           WaiAppStatic.Storage.Filesystem    (defaultWebAppSettings)
+import           WaiAppStatic.Types                 (StaticSettings (..))
 
 import           Yesod
 import           Yesod.Static
@@ -58,7 +57,8 @@ import           Accessability.Handler.REST         (deleteItemR, getItemR,
 
 import           Accessability.Handler.Authenticate (postAuthenticateR)
 
-import           Accessability.Settings             (defaultSettings, AppSettings(..))
+import           Accessability.Settings             (AppSettings (..),
+                                                     defaultSettings)
 
 import           Accessability.Middleware           (corsified)
 
@@ -84,15 +84,14 @@ mkMigrate "migrateAll" entityDefs
 -- | Main starting point for the server
 serverMain :: IO ()
 serverMain = do
-    gen <- newStdGen 
-    let jwtSecret = take 10 $ randomRs ('a','z') gen 
+    gen <- newStdGen
+    let jwtSecret = take 10 $ randomRs ('a','z') gen
     database <- getEnv "HAPI_DATABASE"
     pem <- getEnv "HAPI_CERTIFICATE"
     key <- getEnv "HAPI_KEY"
-    cost <- read <$> getEnv "HAPI_PASSWORD_COST"    
+    cost <- read <$> getEnv "HAPI_PASSWORD_COST"
     time <- read <$> getEnv "HAPI_JWT_SESSION_LENGTH"
-    -- mystatic <- static "static"
-    mystatic <- return $ Static $ (defaultWebAppSettings "static") {ssUseHash = False}
+    let mystatic = Static $ (defaultWebAppSettings "static") {ssUseHash = False}
     runStderrLoggingT $ withPostgresqlPool (DB.pack database) 5 $ \pool -> liftIO $ do
         runResourceT $ flip runSqlPool pool $
             runMigration migrateAll
