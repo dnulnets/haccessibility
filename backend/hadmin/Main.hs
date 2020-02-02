@@ -34,10 +34,12 @@ import           Control.Monad.Reader (ReaderT)
 import qualified Data.ByteString.Char8              as DB
 import qualified Data.Text                          as DT
 import qualified Data.Text.Encoding                 as DTE
+import qualified Data.ByteString.Lazy as B
 import           Data.Maybe                         (fromMaybe, listToMaybe, catMaybes)
 import           Data.Aeson                         (eitherDecodeFileStrict')
 import           Data.Int
-
+import           Data.Time.Clock (UTCTime, getCurrentTime)
+import           Data.Aeson
 import           System.Environment                 (getEnv, getArgs)
 
 --
@@ -76,6 +78,9 @@ printItem (Entity key u) = do
     putStrLn $ "Level: " <> (show $ itemLevel u)
     putStrLn $ "Source: " <> (show $ itemSource u)
     putStrLn $ "State: " <> (show $ itemState u)
+    putStrLn $ "Modifier: " <> (show $ itemModifier u)
+    putStrLn $ "Approval: " <> (show $ itemApproval u)
+    putStrLn $ "Created: " <> (DT.unpack $ DTE.decodeUtf8 $ B.toStrict $ encode $ itemCreated u)
     putStrLn ""
 
 --
@@ -127,6 +132,10 @@ addItems file = do
         storeItem body = do
             key <- insert Item {
                 itemName =  postItemName body,
+                itemGuid = postItemGuid body,
+                itemCreated = postItemCreated body,
+                itemModifier = postItemModifier body,
+                itemApproval = postItemApproval body,
                 itemDescription = postItemDescription body,
                 itemLevel = postItemLevel body,
                 itemSource = postItemSource body,
@@ -271,6 +280,8 @@ usage = do
     putStrLn "delitem   <key>"
     putStrLn "lsitems"
     putStrLn ""
+    tid <- getCurrentTime
+    putStrLn $ DT.unpack $ DTE.decodeUtf8 $ B.toStrict $ encode $ tid
 
 -- Example HAPI_DATABASE "postgresql://heatserver:heatserver@yolo.com:5432/heat"
 -- Example HAPI_PASSWORD_COST 10

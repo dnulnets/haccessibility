@@ -22,7 +22,8 @@ module Accessability.Model.Database where
 --
 -- Import standard libs
 --
-import           Data.Text               (Text)
+import           Data.Text              (Text)
+import           Data.Time.Clock        (UTCTime)
 
 --
 -- Import for persistence
@@ -34,7 +35,8 @@ import           Database.Persist.TH
 --
 import           Accessability.Data.Geo  (GeospatialPosition (..))
 import           Accessability.Data.Item (ItemLevel (..), ItemSource (..),
-                                          ItemState (..))
+                                          ItemState (..), ItemModifier(..),
+                                          ItemApproval(..))
 
 -- Create migration function using both our entities and
 -- serversession-backend-persistent ones.
@@ -46,12 +48,16 @@ share [mkPersist sqlSettings, mkSave "entityDefs"] [persistLowerCase|
 -- | The item, i.e. our base location
 Item
     name Text           -- ^ Name of the item
+    guid Text           -- ^ The global unique identifier of the item
     description Text    -- ^ Description of the location
     level ItemLevel     -- ^ The level of accessability
     source ItemSource   -- ^ The source of the state
     state ItemState     -- ^ The state of the item
-    position GeospatialPosition        -- ^ The geodetical position
-    UniqueItemName name -- ^ The name is unique
+    modifier ItemModifier   -- ^ The modifier of the item
+    approval ItemApproval   -- ^ The approval state of the item
+    position GeospatialPosition -- ^ The geodetical position
+    created UTCTime   -- ^ The created date
+    UniqueItemGuid guid -- ^ The guid is unique
     deriving Show
 
 User

@@ -62,6 +62,10 @@ toGQLItem::(Key DB.Item, DB.Item, Maybe Double)  -- ^ The database item and dist
     ->GQL.Item      -- ^ The GQL item
 toGQLItem (key, item, d) = GQL.Item { GQL.itemId = Just $ keyToID key,
     GQL.itemName =  DB.itemName item,
+    GQL.itemGuid = DB.itemGuid item,
+    GQL.itemModifier = DB.itemModifier item,
+    GQL.itemApproval = DB.itemApproval item,
+    GQL.itemCreated = DB.itemCreated item,
     GQL.itemDescription = DB.itemDescription item,
     GQL.itemLevel = DB.itemLevel item,
     GQL.itemSource = DB.itemSource item,
@@ -75,6 +79,10 @@ toGenericItem::(Key DB.Item, DB.Item, Maybe Double)   -- ^ The database item
     ->G.Item                            -- ^ The Generic item
 toGenericItem (key, item, d) = G.Item { G.itemId = Just $ keyToText key,
     G.itemName =  DB.itemName item,
+    G.itemGuid = DB.itemGuid item,
+    G.itemCreated = DB.itemCreated item,
+    G.itemModifier = DB.itemModifier item,
+    G.itemApproval = DB.itemApproval item,
     G.itemDescription = DB.itemDescription item,
     G.itemLevel = DB.itemLevel item,
     G.itemSource = DB.itemSource item,
@@ -87,6 +95,10 @@ toGenericItem (key, item, d) = G.Item { G.itemId = Just $ keyToText key,
 toDataItem::GQL.Item   -- ^ The database item
     ->DB.Item        -- ^ The GQL item
 toDataItem item = DB.Item { DB.itemName =  GQL.itemName item,
+    DB.itemGuid = GQL.itemGuid item,
+    DB.itemModifier = GQL.itemModifier item,
+    DB.itemApproval = GQL.itemApproval item,
+    DB.itemCreated = GQL.itemCreated item,
     DB.itemDescription = GQL.itemDescription item,
     DB.itemLevel = GQL.itemLevel item,
     DB.itemSource = GQL.itemSource item,

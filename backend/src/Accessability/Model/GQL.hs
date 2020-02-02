@@ -2,6 +2,7 @@
 {-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TypeFamilies      #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 -- |
 -- Module      : Acessability.Model.GQL
@@ -33,20 +34,50 @@ module Accessability.Model.GQL (
 --
 -- Import standard libs
 --
-import           Data.Text               (Text, pack)
+import           Data.Text               (Text, pack, unpack)
+import           Data.Text.Encoding (decodeUtf8)
+import           Data.Text.Lazy.Encoding      (encodeUtf8)
+import           Data.Text.Lazy          (fromStrict)
+import           Data.ByteString.Lazy (toStrict)
 import           GHC.Generics            (Generic (..))
+import           Data.Time.Clock         (UTCTime)
+import           qualified Data.Aeson as DA
 
 --
 -- Import for morpheus
 --
-import           Data.Morpheus.Types     (GQLType (..), ID (..))
+import           Data.Morpheus.Kind       (SCALAR)
+import           Data.Morpheus.Types     (GQLType (..), ID (..), GQLScalar(..), ScalarValue(..))
 
 --
 -- My own imports
 --
 import           Accessability.Data.Item (ItemLevel (..), ItemSource (..),
-                                          ItemState (..))
+                                          ItemState (..), ItemModifier(..),
+                                          ItemApproval(..))
 
+--
+-- Scalars
+--
+--
+-- GQL
+--
+instance GQLType UTCTime where
+    type  KIND UTCTime = SCALAR
+    description = const $ Just $ pack "The type that holds the UTC timestamp scalar"
+
+instance GQLScalar UTCTime where
+
+    parseValue (Int _) = Left "Wrong type for UTC timestamp"
+    parseValue (Float _) = Left "Wrong type for UTC timestamp"
+    parseValue (Boolean _) = Left "Wrong type for UTC timestamp"
+    parseValue (String s) = case DA.decode $ encodeUtf8 $ fromStrict s of
+                                (Just u) -> Right $ u
+                                Nothing -> Left $ "Unable to parse " <> s
+
+
+    --serialize u = String $ pack $ show u
+    serialize u = String $ decodeUtf8 $ toStrict $ DA.encode u
 --
 -- Object Item
 --
@@ -55,12 +86,16 @@ import           Accessability.Data.Item (ItemLevel (..), ItemSource (..),
 data Item = Item {
     itemId            :: Maybe ID  -- ^ The ID of the item
     , itemName        :: Text  -- ^ The name of the item
+    , itemGuid        :: Text  -- ^ The external unique identifier of the item
     , itemDescription :: Text       -- ^ The description of the item
     , itemSource      :: ItemSource      -- ^ How the items online state is determined
     , itemState       :: ItemState        -- ^ The state of the item
     , itemLevel       :: ItemLevel        -- ^ The accessability level of the item
+    , itemModifier    :: ItemModifier     -- ^ The modifier of the item
+    , itemApproval    :: ItemApproval     -- ^ The approval state of the item
     , itemLatitude    :: Float        -- ^ The latitude of the item
     , itemLongitude   :: Float       -- ^ The longitude of the item
+    , itemCreated     :: UTCTime   -- ^ The zoned time of the item
     , itemDistance    :: Maybe Float -- ^ The distance from a specified point provided by the query
     } deriving (Generic)
 
@@ -82,10 +117,14 @@ data Mutation m = Mutation {
 -- | The argument for the queryitem query
 data MutationCreateItemArgs = MutationCreateItemArgs {
         createItemName          ::Text            -- ^ The name of the item
+        , createItemGuid        :: Text           -- ^ The global unique identifier
         , createItemDescription :: Text  -- ^ The description of the item
         , createItemSource      :: ItemSource -- ^ How the items online state is determined
         , createItemState       :: ItemState   -- ^ The state of the item
         , createItemLevel       :: ItemLevel   -- ^ The accessability level of the item
+        , createItemModifier    :: ItemModifier -- ^ The modifier of the item
+        , createItemApproval    :: ItemApproval -- ^ The approval state of the item
+        , createItemCreated     :: UTCTime    -- ^ The create date of the item
         , createItemLongitude   :: Float  -- ^ The longitude of the location (WGS84)
         , createItemLatitude    :: Float   -- ^ The latitude of the location (WGS84)
     } deriving (Generic)
@@ -98,11 +137,15 @@ newtype MutationDeleteItemArgs = MutationDeleteItemArgs {
 -- | The argument for the queryitem query
 data MutationUpdateItemArgs = MutationUpdateItemArgs {
         updateItemId            :: ID
-        , updateItemName        ::Maybe Text            -- ^ The name of the item
+        , updateItemName        :: Maybe Text            -- ^ The name of the item
+        , updateItemGuid        :: Maybe Text           -- ^ The external unique identifier
         , updateItemDescription :: Maybe Text  -- ^ The description of the item
         , updateItemSource      :: Maybe ItemSource -- ^ How the items online state is determined
         , updateItemState       :: Maybe ItemState   -- ^ The state of the item
         , updateItemLevel       :: Maybe ItemLevel   -- ^ The accessability level of the item
+        , updateItemModifier    :: Maybe ItemModifier -- ^ The modifier of the item
+        , updateItemApproval    :: Maybe ItemApproval -- ^ The approval state of the item
+        , updateItemCreated     :: Maybe UTCTime   -- ^ The create time of the item
         , updateItemLongitude   :: Maybe Float  -- ^ The longitude of the location (WGS84)
         , updateItemLatitude    :: Maybe Float   -- ^ The latitude of the location (WGS84)
     } deriving (Generic)

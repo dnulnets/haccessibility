@@ -64,6 +64,7 @@ library:
     - geojson
     - random
     - wai-app-static
+    - time
 
 executables:
 
@@ -95,6 +96,7 @@ executables:
     - persistent
     - mtl
     - aeson
+    - time
 
 tests:
   accessibility-test:

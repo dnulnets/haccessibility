@@ -97,6 +97,10 @@ postCreateItemR = do
     body <- requireCheckJsonBody::Handler PostItemBody
     result <- UIOE.catchAny
         (fffmap toGenericItem DBF.dbCreateItem $ DB.Item {
+            DB.itemGuid = postItemGuid body,
+            DB.itemCreated = postItemCreated body,
+            DB.itemModifier = postItemModifier body,
+            DB.itemApproval = postItemApproval body,
             DB.itemName =  postItemName body,
             DB.itemDescription = postItemDescription body,
             DB.itemLevel = postItemLevel body,

@@ -93,6 +93,10 @@ resolveCreateItem ::MutationCreateItemArgs   -- ^ The arguments for the query
 resolveCreateItem arg =
    ffmap toGQLItem liftEither $ DBF.dbCreateItem $ DB.Item {
       DB.itemName =  createItemName arg,
+      DB.itemGuid = createItemGuid arg,
+      DB.itemCreated = createItemCreated arg,
+      DB.itemModifier = createItemModifier arg,
+      DB.itemApproval = createItemApproval arg,
       DB.itemDescription = createItemDescription arg,
       DB.itemLevel = createItemLevel arg,
       DB.itemSource = createItemSource arg,

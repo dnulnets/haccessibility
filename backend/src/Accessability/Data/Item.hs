@@ -20,12 +20,15 @@ module Accessability.Data.Item (
     Item(..),
     ItemLevel(..),
     ItemSource(..),
-    ItemState(..)) where
+    ItemState(..),
+    ItemModifier(..),
+    ItemApproval(..)) where
 
 --
 -- Import standard libs
 --
 import           Data.Text                (Text, pack)
+import           Data.Time.Clock (UTCTime)
 import           GHC.Generics             (Generic (..))
 
 --
@@ -50,26 +53,20 @@ import           Data.Morpheus.Types      (GQLType (..))
 --
 import           Accessability.Utils.JSON (firstLower)
 
---
--- Enumeration ItemLevel
---
-
 -- | The enumeration for the accessability level for an item
 data ItemLevel = L1 | L2 | L3 | L4 | L5 deriving (Generic, Show, Read)
 
---
--- Enumeration ItemSource
---
+-- | The enmueration for the source of the item
+data ItemSource = Human | Machine deriving (Generic, Show, Read)
 
--- | The enmueration for the source of the items state
-data ItemSource = Manual | Automatic deriving (Generic, Show, Read)
+-- | The enumeration for the modifier of the item
+data ItemModifier = Static | Transient deriving (Generic, Show, Read)
 
---
--- Enumeration ItemState
---
+-- | The enumeration for the approval of the item
+data ItemApproval = Waiting | Approved | Denied deriving (Generic, Show, Read)
 
 -- | The enmueration for the state of the item
-data ItemState = Unknown | Online | Offline deriving (Generic, Show, Read)
+data ItemState = Online | Unknown | Offline deriving (Generic, Show, Read)
 
 --
 -- Item
@@ -78,11 +75,15 @@ data ItemState = Unknown | Online | Offline deriving (Generic, Show, Read)
 -- | Definition of the item
 data Item = Item {
     itemId            :: Maybe Text          -- ^ Item key
-    , itemName        :: Text            -- ^ The name of the item
+    , itemName        :: Text            -- ^ The short name of the item
+    , itemGuid        :: Text            -- ^ The external unique identifier of the item
+    , itemCreated     :: UTCTime     -- ^ The creation time
     , itemDescription ::  Text    -- ^ The description of the item
     , itemSource      ::  ItemSource   -- ^ How the items online state is determined
     , itemState       ::  ItemState     -- ^ The state of the item
     , itemLevel       ::  ItemLevel     -- ^ The accessability level of the item
+    , itemModifier    :: ItemModifier       -- ^ The type of the item
+    , itemApproval    :: ItemApproval   -- ^ The tstae of approval for the item
     , itemLatitude    ::  Float      -- ^ The latitude of the item
     , itemLongitude   ::  Float     -- ^ The longitude of the item
     , itemDistance    :: Maybe Float -- ^ The distance to a specified point at the time of the query
@@ -111,6 +112,19 @@ derivePersistField "ItemSource"
 derivePersistField "ItemState"
 
 --
+-- Persistence for Enumeration ItemModifier
+--
+
+derivePersistField "ItemModifier"
+
+--
+-- Persistence for Enumeration ItemApproval
+--
+
+derivePersistField "ItemApproval"
+
+
+--
 -- GQL Instances
 --
 
@@ -128,6 +142,16 @@ instance GQLType ItemSource where
 instance GQLType ItemState where
     type  KIND ItemState = ENUM
     description = const $ Just $ pack "The items state, i.e. if it is Online, Offline or Unknown"
+
+-- Make ItemLevel a GQL type
+instance GQLType ItemModifier where
+    type  KIND ItemModifier = ENUM
+    description = const $ Just $ pack "The items modifier, i.e. if it is Static or Transient"
+
+-- Make ItemLevel a GQL type
+instance GQLType ItemApproval where
+    type  KIND ItemApproval = ENUM
+    description = const $ Just $ pack "The items approval, i.e. if it is Waiting, Approved or Denied"
 
 --
 -- JSON interfaces
@@ -169,6 +193,28 @@ instance ToJSON ItemState where
     toEncoding = genericToEncoding customOptions
 
 instance FromJSON ItemState where
+    parseJSON = genericParseJSON customOptions
+
+--
+-- JSON for Enumeration ItemModifier
+--
+
+instance ToJSON ItemModifier where
+    toJSON     = genericToJSON customOptions
+    toEncoding = genericToEncoding customOptions
+
+instance FromJSON ItemModifier where
+    parseJSON = genericParseJSON customOptions
+
+--
+-- JSON for Enumeration ItemApproval
+--
+
+instance ToJSON ItemApproval where
+    toJSON     = genericToJSON customOptions
+    toEncoding = genericToEncoding customOptions
+
+instance FromJSON ItemApproval where
     parseJSON = genericParseJSON customOptions
 
 --

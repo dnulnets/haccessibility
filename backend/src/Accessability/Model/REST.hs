@@ -24,6 +24,7 @@ module Accessability.Model.REST (
 -- Import standard libs
 --
 import           Data.Text                (Text)
+import           Data.Time.Clock (UTCTime)
 import           GHC.Generics             (Generic (..))
 
 --
@@ -36,7 +37,8 @@ import           Data.Aeson.TH
 -- Our own
 --
 import           Accessability.Data.Item  (ItemLevel (..), ItemSource (..),
-                                           ItemState (..))
+                                           ItemState (..), ItemModifier (..),
+                                           ItemApproval (..))
 import           Accessability.Utils.JSON (firstLower)
 
 -- | The argument for the queryitems query
@@ -56,10 +58,14 @@ $(deriveJSON defaultOptions {
 -- | The argument for the update item request
 data PutItemBody = PutItemBody {
     putItemName          :: Maybe Text            -- ^ The name of the item
+    , putItemGuid        :: Maybe Text            -- ^ The external id of the item
     , putItemDescription ::  Maybe Text    -- ^ The description of the item
     , putItemSource      ::  Maybe ItemSource   -- ^ How the items online state is determined
     , putItemState       ::  Maybe ItemState     -- ^ The state of the item
     , putItemLevel       ::  Maybe ItemLevel     -- ^ The accessability level of the item
+    , putItemModifier    ::  Maybe ItemModifier  -- ^ The modifier of the item
+    , putItemApproval    ::  Maybe ItemApproval  -- ^ The approval of the item
+    , putItemCreated     ::  Maybe UTCTime     -- ^ The created time of the item
     , putItemLatitude    ::  Maybe Float      -- ^ The latitude of the item
     , putItemLongitude   ::  Maybe Float     -- ^ The longitude of the item
     } deriving (Generic)
@@ -72,10 +78,14 @@ $(deriveJSON defaultOptions {
   -- | The argument for the create item request
 data PostItemBody = PostItemBody {
     postItemName          :: Text            -- ^ The name of the item
+    , postItemGuid        :: Text            -- ^ The external unique identifier
     , postItemDescription :: Text    -- ^ The description of the item
     , postItemSource      ::  ItemSource   -- ^ How the items online state is determined
     , postItemState       ::  ItemState     -- ^ The state of the item
     , postItemLevel       ::  ItemLevel     -- ^ The accessability level of the item
+    , postItemModifier    ::  ItemModifier  -- ^ The modifier of the item
+    , postItemApproval    ::  ItemApproval  -- ^ The approval state of the item
+    , postItemCreated     ::  UTCTime          -- ^ The created time stamp of the item
     , postItemLatitude    ::  Float      -- ^ The latitude of the item
     , postItemLongitude   ::  Float     -- ^ The longitude of the item
     } deriving (Generic)
