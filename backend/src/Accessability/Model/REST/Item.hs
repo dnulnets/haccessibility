@@ -5,7 +5,7 @@
 {-# LANGUAGE TypeFamilies      #-}
 
 -- |
--- Module      : Acessability.Model.REST
+-- Module      : Acessability.Model.REST.Item
 -- Description : The REST API types
 -- Copyright   : (c) Tomas Stenlund, 2019
 -- License     : BSD-3
@@ -13,9 +13,9 @@
 -- Stability   : experimental
 -- Portability : POSIX
 --
--- This module contains the types for the REST API
+-- This module contains the types for the Item resource for the REST API
 --
-module Accessability.Model.REST (
+module Accessability.Model.REST.Item (
     PostItemsBody(..),
     PostItemBody(..),
     PutItemBody(..)) where

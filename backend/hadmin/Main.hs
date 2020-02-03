@@ -27,11 +27,11 @@ module Main where
 --
 import           Control.Monad                (forM_)
 import           Control.Monad.IO.Class       (MonadIO, liftIO)
-import           Control.Monad.Logger         (runStderrLoggingT)
+import           Control.Monad.Logger         (runFileLoggingT)
 import           Control.Monad.Reader         (ReaderT)
 
-import           Data.Aeson                   (eitherDecodeFileStrict')
 import           Data.Aeson
+import           Data.Aeson.Encode.Pretty
 import qualified Data.ByteString.Char8        as DB
 import qualified Data.ByteString.Lazy         as B
 import           Data.Maybe                   (catMaybes)
@@ -53,34 +53,10 @@ import           Database.Persist.Sql
 import           Accessability.Data.Geo
 import qualified Accessability.Data.Item as ADI
 import           Accessability.Model.Database
-import           Accessability.Model.REST
+import           Accessability.Model.REST.Item
+import           Accessability.Model.Transform
 import           Accessability.Utils.Password
-
--- |Print user information to stdout
-printUser::Maybe User   -- ^ The user to be printed
-    -> IO ()            -- ^ IO effect
-printUser Nothing = do
-    putStrLn "No user"
-printUser (Just u) = do
-    putStrLn $ "Username: " <> (DT.unpack $ userUsername u)
-    putStrLn $ "Email: " <> (DT.unpack $ userEmail u)
-
--- |Print user information to stdout
-printItem::Entity Item   -- ^ The item to be printed
-    -> IO ()            -- ^ IO effect
-printItem (Entity key u) = do
-    putStrLn $ "Key: " <> (show $ fromSqlKey key)
-    putStrLn $ "Name: " <> (DT.unpack $ itemName u)
-    putStrLn $ "GUID: " <> (DT.unpack $ itemGuid u)
-    putStrLn $ "Description: " <> (DT.unpack $ itemDescription u)
-    putStrLn $ "Position: " <> (show $ itemPosition u)
-    putStrLn $ "Level: " <> (show $ itemLevel u)
-    putStrLn $ "Source: " <> (show $ itemSource u)
-    putStrLn $ "State: " <> (show $ itemState u)
-    putStrLn $ "Modifier: " <> (show $ itemModifier u)
-    putStrLn $ "Approval: " <> (show $ itemApproval u)
-    putStrLn $ "Created: " <> (DT.unpack $ DTE.decodeUtf8 $ B.toStrict $ encode $ itemCreated u)
-    putStrLn ""
+import           Accessability.Data.Functor
 
 --
 -- User related functions
@@ -97,9 +73,9 @@ changePassword cost uname upw = do
     case ukey of
         (Just (Entity key _)) -> do
             update key [UserPassword =. (DTE.decodeUtf8 pw)]
-            liftIO $ putStrLn "\nUser password changed!"
+            liftIO $ putStrLn "User password changed!"
         _ -> do
-            liftIO $ putStrLn "\nUser not found!"
+            liftIO $ putStrLn "User not found!"
 
 -- |Adds a user to the database
 addUser::(MonadIO m) => Integer -- ^ bcrypt cost
@@ -111,8 +87,13 @@ addUser cost uname uemail upw = do
     pw <- liftIO $ authHashPassword cost $ DT.pack upw
     ukey <- insert $ User (DT.pack uname) (DTE.decodeUtf8 pw) (DT.pack uemail)
     user <- get ukey
-    liftIO $ putStrLn $ "\nUser added!"
-    liftIO $ printUser user
+    case user of
+        (Just u) -> do
+            liftIO $ putStrLn $ DT.unpack $ DTE.decodeUtf8 $ B.toStrict $ encodePretty $ toGenericUser (ukey,u)
+        _ -> do
+            liftIO $ putStrLn $ "Unable to add user!"
+
+--    liftIO $ printUser user
 
 -- |Parses the JSON file and inserts all items that can be decoded
 addItems::(MonadIO m) => String -- ^ Filename
@@ -125,7 +106,6 @@ addItems file = do
             liftIO $ putStrLn $ e
         (Right items) -> do
             forM_ (catMaybes items) storeItem
-            liftIO $ putStrLn "Items added!"
     where
         storeItem::(MonadIO m) => PostItemBody->ReaderT SqlBackend m ()
         storeItem body = do
@@ -140,24 +120,23 @@ addItems file = do
                 itemSource = postItemSource body,
                 itemState = postItemState body,
                 itemPosition = Position $ PointXY (realToFrac $ postItemLongitude body) (realToFrac $ postItemLatitude body)}
-            liftIO $ putStrLn $ "Added item with key=" <> (show $ fromSqlKey key)
+            liftIO $ putStrLn $ "Added item with key " <> (show $ fromSqlKey key)
 
 -- |Adds a user to the database
 deleteUser::(MonadIO m) => String -- ^ Username
     ->ReaderT SqlBackend m ()   -- ^ A database effect
 deleteUser uname = do
     deleteBy $ UniqueUserUsername (DT.pack $ uname)
-    liftIO $ putStrLn $ "\nUser deleted!"
+    liftIO $ putStrLn $ "User deleted!"
 
 -- |List all users in the database
 lsUser::(MonadIO m)=>ReaderT SqlBackend m () -- ^ A database effect
 lsUser = do
     users <- selectList [] [Asc UserUsername]
-    liftIO $ putStrLn "\nList of users\n"
-    liftIO $ forM_ (clean <$> users) printUser
+    liftIO $ forM_ users cleanPrint
     where
-        clean::(Entity User)->Maybe User
-        clean (Entity _ user) = Just user
+        cleanPrint::(Entity User)->IO ()
+        cleanPrint (Entity key user) = putStrLn $ DT.unpack $ DTE.decodeUtf8 $ B.toStrict $ encodePretty $ toGenericUser (key, user)
 
 -- |Handles the adduser command
 handleAddUser:: String  -- ^ The database URL
@@ -167,7 +146,7 @@ handleAddUser:: String  -- ^ The database URL
 handleAddUser database cost args = do
     case length args of
         4 -> do
-            runStderrLoggingT $ withPostgresqlPool (DB.pack database) 5 $ \pool -> liftIO $ do
+            runFileLoggingT "hadmin.log" $ withPostgresqlPool (DB.pack database) 5 $ \pool -> liftIO $ do
                 flip runSqlPersistMPool pool $ do
                     addUser cost (args !! 1) (args !! 2) (args !! 3)
         _ -> do
@@ -181,7 +160,7 @@ handleChangePassword:: String  -- ^ The database URL
 handleChangePassword database cost args = do
     case length args of
         3 -> do
-            runStderrLoggingT $ withPostgresqlPool (DB.pack database) 5 $ \pool -> liftIO $ do
+            runFileLoggingT "hadmin.log" $ withPostgresqlPool (DB.pack database) 5 $ \pool -> liftIO $ do
                 flip runSqlPersistMPool pool $ do
                     changePassword cost (args !! 1) (args !! 2)
         _ -> do
@@ -194,7 +173,7 @@ handleDeleteUser:: String  -- ^ The database URL
 handleDeleteUser database args = do
     case length args of
         2 -> do
-            runStderrLoggingT $ withPostgresqlPool (DB.pack database) 5 $ \pool -> liftIO $ do
+            runFileLoggingT "hadmin.log" $ withPostgresqlPool (DB.pack database) 5 $ \pool -> liftIO $ do
                 flip runSqlPersistMPool pool $ do
                     deleteUser (args !! 1)
         _ -> do
@@ -204,7 +183,7 @@ handleDeleteUser database args = do
 handleListUser:: String  -- ^ The database URL
     ->IO ()              -- ^ The effect
 handleListUser database = do
-    runStderrLoggingT $ withPostgresqlPool (DB.pack database) 5 $ \pool -> liftIO $ do
+    runFileLoggingT "hadmin.log" $ withPostgresqlPool (DB.pack database) 5 $ \pool -> liftIO $ do
         runSqlPersistMPool lsUser pool
 
 --
@@ -218,7 +197,7 @@ handleAddItems:: String  -- ^ The database URL
 handleAddItems database args = do
     case length args of
         2 -> do
-            runStderrLoggingT $ withPostgresqlPool (DB.pack database) 5 $ \pool -> liftIO $ do
+            runFileLoggingT "hadmin.log" $ withPostgresqlPool (DB.pack database) 5 $ \pool -> liftIO $ do
                 flip runSqlPersistMPool pool $ do
                     addItems (args!!1)
         _ -> do
@@ -231,7 +210,7 @@ handleDelItem:: String  -- ^ The database URL
 handleDelItem database args = do
     case length args of
         2 -> do
-            runStderrLoggingT $ withPostgresqlPool (DB.pack database) 5 $ \pool -> liftIO $ do
+            runFileLoggingT "hadmin.log" $ withPostgresqlPool (DB.pack database) 5 $ \pool -> liftIO $ do
                 flip runSqlPersistMPool pool $ do
                     deleteItem (args!!1)
         _ -> do
@@ -242,7 +221,7 @@ handleDelItem database args = do
             ->ReaderT SqlBackend m ()     -- ^ A database effect
         deleteItem key = do
             delete $ toKey key
-            liftIO $ putStrLn $ "\nItem deleted!"
+            liftIO $ putStrLn $ "Item deleted!"
             where
                 toKey::String->Key Item
                 toKey s = toSqlKey (read s)
@@ -251,15 +230,17 @@ handleDelItem database args = do
 handleListItems:: String  -- ^ The database URL
     ->IO ()             -- ^ The effect
 handleListItems database = do
-    runStderrLoggingT $ withPostgresqlPool (DB.pack database) 5 $ \pool -> liftIO $ do
+    runFileLoggingT "hadmin.log" $ withPostgresqlPool (DB.pack database) 5 $ \pool -> liftIO $ do
         flip runSqlPersistMPool pool $ do
             listItems
     where
         listItems::(MonadIO m)=>ReaderT SqlBackend m () -- ^ A database effect
         listItems = do
-            items <- selectList [] [Asc ItemName]
-            liftIO $ putStrLn "\nList of items:"
-            liftIO $ forM_ items printItem
+            items <- ffmap clean $ selectList [] [Asc ItemName]
+            liftIO $ putStrLn $ DT.unpack $ DTE.decodeUtf8 $ B.toStrict $ encodePretty $ items
+
+        clean::Entity Item->ADI.Item
+        clean (Entity k i) = toGenericItem (k,i,Nothing)
 
 -- |The usage information
 usage::IO ()
@@ -296,7 +277,7 @@ usage = do
 -- | Main starting point for the server
 main :: IO ()
 main = do
-    putStrLn "hadmin 1.0, Written by Tomas Stenlund, Swedish IoT Hub for Accessibility\n"
+    putStrLn "hadmin 1.0, Written by Tomas Stenlund, Swedish IoT Hub for Accessibility"
     database <- getEnv "HAPI_DATABASE"
     cost <- read <$> getEnv "HAPI_PASSWORD_COST"
     args <- getArgs

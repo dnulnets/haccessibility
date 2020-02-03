@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: eeba3c61b5ee0fae5cc7ce10b59df6bb11c2754de74fcee9662d47d5e3de3215
+-- hash: 5752f7f378abe52770e456492600c52e6f1ca8c4c25df41aed63e4cb8560fdd8
 
 name:           accessibility
 version:        0.1.0.0
@@ -30,16 +30,17 @@ library
       Accessability.Data.Functor
       Accessability.Data.Geo
       Accessability.Data.Item
+      Accessability.Data.User
       Accessability.Foundation
-      Accessability.Handler.Authenticate
       Accessability.Handler.Database
       Accessability.Handler.GQL
-      Accessability.Handler.REST
-      Accessability.Interface.Authenticate
+      Accessability.Handler.REST.Authenticate
+      Accessability.Handler.REST.Item
       Accessability.Middleware
       Accessability.Model.Database
       Accessability.Model.GQL
-      Accessability.Model.REST
+      Accessability.Model.REST.Authenticate
+      Accessability.Model.REST.Item
       Accessability.Model.Transform
       Accessability.Settings
       Accessability.Utils.JSON
@@ -113,6 +114,7 @@ executable hadmin
   build-depends:
       accessibility
     , aeson
+    , aeson-pretty
     , base >=4.7 && <5
     , bytestring
     , monad-logger

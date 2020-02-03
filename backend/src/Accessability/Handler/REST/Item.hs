@@ -12,7 +12,7 @@
 --
 -- This module contains the handler for REST API
 --
-module Accessability.Handler.REST (
+module Accessability.Handler.REST.Item (
     getItemR,
     putItemR,
     deleteItemR,
@@ -39,7 +39,7 @@ import           Accessability.Data.Geo
 import           Accessability.Foundation       (Handler, requireAuthentication)
 import qualified Accessability.Handler.Database as DBF
 import qualified Accessability.Model.Database   as DB
-import           Accessability.Model.REST
+import           Accessability.Model.REST.Item
 import           Accessability.Model.Transform
 
 -- | The REST GET handler for an item, i.e. return with the data of an item based on the items

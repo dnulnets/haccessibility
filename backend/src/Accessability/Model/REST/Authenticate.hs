@@ -14,8 +14,8 @@
 -- This module contains the interfaces for the user handler API
 --
 
-module Accessability.Interface.Authenticate (Authenticate(..),
-                                    UserInfo(..)) where
+module Accessability.Model.REST.Authenticate (Authenticate(..),
+                                              UserInfo(..)) where
 
 --
 -- External imports

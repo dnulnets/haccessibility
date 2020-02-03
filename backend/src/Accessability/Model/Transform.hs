@@ -15,6 +15,7 @@ module Accessability.Model.Transform (
     toDataItem,
     toGenericItem,
     toGQLItem,
+    toGenericUser,
     textToKey,
     keyToText,
     idToKey,
@@ -39,6 +40,7 @@ import           Database.Persist.Sql
 --
 import           Accessability.Data.Geo
 import qualified Accessability.Data.Item      as G
+import qualified Accessability.Data.User      as G
 import qualified Accessability.Model.Database as DB
 import qualified Accessability.Model.GQL      as GQL
 
@@ -104,3 +106,12 @@ toDataItem item = DB.Item { DB.itemName =  GQL.itemName item,
     DB.itemSource = GQL.itemSource item,
     DB.itemState = GQL.itemState item,
     DB.itemPosition = Position $ PointXY (realToFrac $ GQL.itemLatitude item) (realToFrac $ GQL.itemLongitude item)}
+
+-- | Converts a Database user to a generic user
+toGenericUser::(Key DB.User, DB.User)->G.User
+toGenericUser (k, u) = G.User {
+        G.userId = Just $ keyToText k,
+        G.userUsername = DB.userUsername u,
+        G.userPassword = DB.userPassword u,
+        G.userEmail = DB.userEmail u
+    }

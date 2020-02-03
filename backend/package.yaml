@@ -96,6 +96,7 @@ executables:
     - persistent
     - mtl
     - aeson
+    - aeson-pretty
     - time
 
 tests:

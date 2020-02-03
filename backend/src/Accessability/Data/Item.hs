@@ -78,14 +78,14 @@ data Item = Item {
     , itemName        :: Text            -- ^ The short name of the item
     , itemGuid        :: Text            -- ^ The external unique identifier of the item
     , itemCreated     :: UTCTime     -- ^ The creation time
-    , itemDescription ::  Text    -- ^ The description of the item
-    , itemSource      ::  ItemSource   -- ^ How the items online state is determined
-    , itemState       ::  ItemState     -- ^ The state of the item
-    , itemLevel       ::  ItemLevel     -- ^ The accessability level of the item
+    , itemDescription :: Text    -- ^ The description of the item
+    , itemSource      :: ItemSource   -- ^ How the items online state is determined
+    , itemState       :: ItemState     -- ^ The state of the item
+    , itemLevel       :: ItemLevel     -- ^ The accessability level of the item
     , itemModifier    :: ItemModifier       -- ^ The type of the item
     , itemApproval    :: ItemApproval   -- ^ The tstae of approval for the item
-    , itemLatitude    ::  Float      -- ^ The latitude of the item
-    , itemLongitude   ::  Float     -- ^ The longitude of the item
+    , itemLatitude    :: Float      -- ^ The latitude of the item
+    , itemLongitude   :: Float     -- ^ The longitude of the item
     , itemDistance    :: Maybe Float -- ^ The distance to a specified point at the time of the query
     } deriving (Generic)
 

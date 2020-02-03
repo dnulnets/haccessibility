@@ -51,11 +51,11 @@ import           Accessability.Foundation           (Route (..), Server (..),
 
 import           Accessability.Handler.GQL          (postGQLR)
 
-import           Accessability.Handler.REST         (deleteItemR, getItemR,
+import           Accessability.Handler.REST.Item         (deleteItemR, getItemR,
                                                      postCreateItemR,
                                                      postItemsR, putItemR)
 
-import           Accessability.Handler.Authenticate (postAuthenticateR)
+import           Accessability.Handler.REST.Authenticate (postAuthenticateR)
 
 import           Accessability.Settings             (AppSettings (..),
                                                      defaultSettings)

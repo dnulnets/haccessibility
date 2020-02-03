@@ -4,6 +4,7 @@
 {-# LANGUAGE QuasiQuotes                #-}
 {-# LANGUAGE TemplateHaskell            #-}
 {-# LANGUAGE TypeFamilies               #-}
+{-# LANGUAGE DeriveGeneric              #-}
 
 -- |
 -- Module      : Acessability.Model.Database
@@ -24,7 +25,7 @@ module Accessability.Model.Database where
 --
 import           Data.Text               (Text)
 import           Data.Time.Clock         (UTCTime)
-
+import           GHC.Generics            (Generic (..))
 --
 -- Import for persistence
 --
@@ -58,13 +59,13 @@ Item
     position GeospatialPosition -- ^ The geodetical position
     created UTCTime   -- ^ The created date
     UniqueItemGuid guid -- ^ The guid is unique
-    deriving Show
+    deriving Show Generic
 
 User
     username Text       -- ^ The user name
     password Text       -- ^ The password, bcrypted
     email Text          -- ^ The users email
     UniqueUserUsername username -- ^ The username is unique
-    deriving Show
+    deriving Show Generic
 
 |]

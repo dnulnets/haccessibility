@@ -9,7 +9,7 @@
 --
 -- This module contains the authenticate route for the application.
 --
-module Accessability.Handler.Authenticate (postAuthenticateR) where
+module Accessability.Handler.REST.Authenticate (postAuthenticateR) where
 
 --
 -- External imports
@@ -27,7 +27,7 @@ import           Yesod
 -- Internal imports
 --
 import           Accessability.Foundation             (Handler, Server (..))
-import           Accessability.Interface.Authenticate (Authenticate (..),
+import           Accessability.Model.REST.Authenticate (Authenticate (..),
                                                        UserInfo (..))
 import           Accessability.Model.Database
 import           Accessability.Model.Transform        (keyToText)
