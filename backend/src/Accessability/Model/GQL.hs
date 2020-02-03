@@ -36,7 +36,7 @@ module Accessability.Model.GQL (
 -- Import standard libs
 --
 import qualified Data.Aeson              as DA
-import           Data.ByteString.Lazy    (toStrict)
+import qualified Data.ByteString.Lazy    as DBL
 import           Data.Text               (Text, pack)
 import           Data.Text.Encoding      (decodeUtf8)
 import           Data.Text.Lazy          (fromStrict)
@@ -79,7 +79,7 @@ instance GQLScalar UTCTime where
 
 
     --serialize u = String $ pack $ show u
-    serialize u = String $ decodeUtf8 $ toStrict $ DA.encode u
+    serialize u = String $ decodeUtf8 $ DBL.toStrict $ DBL.init . DBL.tail $ DA.encode u
 --
 -- Object Item
 --
