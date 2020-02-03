@@ -3,6 +3,10 @@ This is a prototype, among many other prototypes and solutions, for the Swedish 
 
 The wiki for this prototype is [here](https://github.com/dnulnets/haccessibility/wiki)
 
+The readme for the backend is [here](https://github.com/dnulnets/haccessibility/blob/master/backend/README.md)
+
+The readme for the portal is [here](https://github.com/dnulnets/haccessibility/blob/master/portal/README.md)
+
 The github location of the Swedish IoT Hub Source code is [here](https://github.com/orgs/iot-for-tillgenglighet/dashboard).
 
 ## Purpose and goal
