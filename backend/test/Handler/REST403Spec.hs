@@ -5,7 +5,7 @@ import TestPlatform
 
 spec :: Spec
 spec = withApp $ do
-        describe "Test Methods that needs authentication, but are not - HTTP Response 403" $ do
+        describe "Test Methods that needs authentication, but no credentials are given - HTTP Response 403" $ do
             it "POST /gql" $ do
                 request $ do
                     setMethod "POST"

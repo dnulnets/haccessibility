@@ -40,6 +40,9 @@ import           Yesod
 import           Yesod.Static
 import           Yesod.Test as X
 
+import Network.HTTP.Types.Header as X
+import Data.CaseInsensitive as X
+
 mkYesodDispatch "Server" resourcesServer
 
 staticFiles "static"
@@ -51,7 +54,7 @@ runDB query = do
 
 runDBWithApp :: Server -> SqlPersistM a -> IO a
 runDBWithApp app query = runSqlPersistMPool query (serverConnectionPool app)
-
+            
 makeServer ::IO Server
 makeServer = do
     gen <- newStdGen
@@ -71,6 +74,12 @@ makeServer = do
 withApp :: SpecWith (TestApp Server) -> Spec
 withApp = before $ do
     foundation <- makeServer
+    return $ testApp foundation logStdoutDev
+
+withCleanApp :: SpecWith (TestApp Server) -> Spec
+withCleanApp = before $ do
+    foundation <- makeServer
+    wipeDB foundation
     return $ testApp foundation logStdoutDev
 
 wipeDB :: Server -> IO ()

@@ -122,4 +122,6 @@ tests:
     - persistent-postgresql
     - bytestring
     - monad-logger
+    - http-types
+    - case-insensitive
     - hspec >= 2.0.0
