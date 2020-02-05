@@ -108,4 +108,18 @@ tests:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
-    - accesibility
+    - accessibility
+    - yesod-test
+    - persistent
+    - yesod
+    - yesod-core
+    - yesod-static
+    - text
+    - wai-app-static
+    - wai-extra
+    - random
+    - mtl
+    - persistent-postgresql
+    - bytestring
+    - monad-logger
+    - hspec >= 2.0.0

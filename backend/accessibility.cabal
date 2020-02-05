@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 5752f7f378abe52770e456492600c52e6f1ca8c4c25df41aed63e4cb8560fdd8
+-- hash: 701780669192171d653520eb4d80739a1330777f32e7e4e94a610397b0977a60
 
 name:           accessibility
 version:        0.1.0.0
@@ -131,11 +131,29 @@ test-suite accessibility-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      Handler.PortalSpec
+      Handler.REST403Spec
+      Handler.REST405Spec
+      TestPlatform
       Paths_accessibility
   hs-source-dirs:
       test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      accesibility
+      accessibility
     , base >=4.7 && <5
+    , bytestring
+    , hspec >=2.0.0
+    , monad-logger
+    , mtl
+    , persistent
+    , persistent-postgresql
+    , random
+    , text
+    , wai-app-static
+    , wai-extra
+    , yesod
+    , yesod-core
+    , yesod-static
+    , yesod-test
   default-language: Haskell2010

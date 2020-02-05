@@ -52,12 +52,6 @@ import           Yesod
 import           Yesod.Auth
 import           Yesod.Static
 
---
--- Server session cookies
---
---import Web.ServerSession.Backend.Persistent
---import Web.ServerSession.Frontend.Yesod
-
 -- | Our server and settings
 data Server = Server {
     getStatic              :: Static,                   -- ^ All static files

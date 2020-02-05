@@ -91,12 +91,11 @@ serverMain = do
     key <- getEnv "HAPI_KEY"
     cost <- read <$> getEnv "HAPI_PASSWORD_COST"
     time <- read <$> getEnv "HAPI_JWT_SESSION_LENGTH"
-    let mystatic = Static $ (defaultWebAppSettings "static") {ssUseHash = False}
     runStderrLoggingT $ withPostgresqlPool (DB.pack database) 5 $ \pool -> liftIO $ do
         runResourceT $ flip runSqlPool pool $
             runMigration migrateAll
         application <- toWaiApp $ Server {
-            getStatic = mystatic,
+            getStatic = Static $ (defaultWebAppSettings "static") {ssUseHash = False},
             appSettings = defaultSettings {
                 tokenSecret = DT.pack jwtSecret,
                 passwordCost = cost,
