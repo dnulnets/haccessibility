@@ -124,4 +124,6 @@ tests:
     - monad-logger
     - http-types
     - case-insensitive
+    - HUnit
+    - aeson
     - hspec >= 2.0.0

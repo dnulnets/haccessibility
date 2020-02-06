@@ -19,7 +19,11 @@ import           Accessability.Handler.REST.Item         (deleteItemR, getItemR,
 import           Accessability.Handler.REST.Authenticate (postAuthenticateR)
 
 import qualified Data.ByteString.Char8                as DB
-import           Data.Text                            hiding (take)
+import qualified Data.ByteString.Lazy as DBL
+import           Data.Text                            as T
+import qualified Data.Text.Lazy as TL
+import qualified Data.Text.Lazy.Encoding as DTLE
+import qualified Test.HUnit as HUnit
 
 import           Database.Persist                     hiding (get)
 import           Database.Persist.Postgresql
@@ -28,7 +32,9 @@ import           Database.Persist.Sql                 (SqlPersistM,
                                                        rawExecute, rawSql,
                                                        runSqlPersistMPool,
                                                        unSingle)
+import          Database.Persist.Sql as X (SqlPersistM)
 import           Network.Wai.Middleware.RequestLogger
+import Network.Wai.Test
 import           WaiAppStatic.Storage.Filesystem      (defaultWebAppSettings)
 import           WaiAppStatic.Types                   (StaticSettings (..))
 
@@ -39,6 +45,8 @@ import           Test.Hspec as X
 import           Yesod
 import           Yesod.Static
 import           Yesod.Test as X
+
+import Data.Aeson
 
 import Network.HTTP.Types.Header as X
 import Data.CaseInsensitive as X
@@ -54,11 +62,22 @@ runDB query = do
 
 runDBWithApp :: Server -> SqlPersistM a -> IO a
 runDBWithApp app query = runSqlPersistMPool query (serverConnectionPool app)
-            
+
+cleanDB::YesodExample Server ()
+cleanDB = do
+    app <- getTestYesod
+    liftIO $ runDBWithApp app $ do
+        tables <- getTables
+        sqlBackend <- ask
+
+        let escapedTables = fmap (connEscapeName sqlBackend . DBName) tables
+            query = "TRUNCATE TABLE " <> (intercalate ", " escapedTables)
+        rawExecute query []
+
 makeServer ::IO Server
 makeServer = do
     gen <- newStdGen
-    let jwtSecret = take 10 $ randomRs ('a','z') gen
+    let jwtSecret = Prelude.take 10 $ randomRs ('a','z') gen
     database <- getEnv "HAPI_DATABASE"
     cost <- read <$> getEnv "HAPI_PASSWORD_COST"
     time <- read <$> getEnv "HAPI_JWT_SESSION_LENGTH"
@@ -82,10 +101,16 @@ withCleanApp = before $ do
     wipeDB foundation
     return $ testApp foundation logStdoutDev
 
+withBaseDataApp :: SqlPersistM a->SpecWith (TestApp Server) -> Spec
+withBaseDataApp setup = before $ do
+    foundation <- makeServer
+    wipeDB foundation
+    runDBWithApp foundation setup
+    return $ testApp foundation logStdoutDev
+
 wipeDB :: Server -> IO ()
 wipeDB app = runDBWithApp app $ do
     tables <- getTables
-    liftIO $ putStrLn $ show tables
     sqlBackend <- ask
 
     let escapedTables = fmap (connEscapeName sqlBackend . DBName) tables
@@ -98,3 +123,22 @@ getTables = do
 
     return $ unSingle <$> tables
 
+
+-- Yes, just a shortcut
+failure :: (MonadIO a) => T.Text -> a b
+failure reason = (liftIO $ HUnit.assertFailure $ T.unpack reason) >> error ""
+
+getJsonBody::(FromJSON a)=>YesodExample site a
+getJsonBody = withResponse jsonBody
+
+jsonBody::(FromJSON a)=>SResponse -> YesodExample site a
+jsonBody (SResponse status header body) = do
+    case eitherDecode' body of
+        Left err -> do
+          let characterLimit = 1024
+              textBody = TL.toStrict $ DTLE.decodeUtf8 body
+              bodyPreview = if T.length textBody < characterLimit
+                then textBody
+                else T.take characterLimit textBody <> "... (use `printBody` to see complete response body)"
+          failure $ T.concat ["Failed to parse JSON response; error: ", T.pack err, "JSON: ", bodyPreview]            
+        Right v -> return v

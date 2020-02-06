@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: a3b2fe84e5bf3fe8148ae67365a6d67a3c6b11dd0dd8e6408f901b3868fbe835
+-- hash: bb25058494b419fd88bd6ade36ab3f0f832a57a239f23901f5b2c1f526da129b
 
 name:           accessibility
 version:        0.1.0.0
@@ -141,7 +141,9 @@ test-suite accessibility-test
       test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      accessibility
+      HUnit
+    , accessibility
+    , aeson
     , base >=4.7 && <5
     , bytestring
     , case-insensitive
