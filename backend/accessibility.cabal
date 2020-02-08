@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: bb25058494b419fd88bd6ade36ab3f0f832a57a239f23901f5b2c1f526da129b
+-- hash: d747a0a88cecedac6245b784a4b6dca2470b5ccabd09099a13e08e88ea0f4982
 
 name:           accessibility
 version:        0.1.0.0
@@ -155,6 +155,7 @@ test-suite accessibility-test
     , persistent-postgresql
     , random
     , text
+    , time
     , wai-app-static
     , wai-extra
     , yesod

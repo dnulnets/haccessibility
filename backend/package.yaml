@@ -126,4 +126,5 @@ tests:
     - case-insensitive
     - HUnit
     - aeson
+    - time
     - hspec >= 2.0.0

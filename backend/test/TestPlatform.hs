@@ -46,6 +46,9 @@ import           Yesod
 import           Yesod.Static
 import           Yesod.Test as X
 
+import Data.Time.Clock
+import Data.Time.Clock.System
+
 import Data.Aeson
 
 import Network.HTTP.Types.Header as X
@@ -54,6 +57,9 @@ import Data.CaseInsensitive as X
 mkYesodDispatch "Server" resourcesServer
 
 staticFiles "static"
+
+sec::YesodExample Server NominalDiffTime
+sec = liftIO $ fromIntegral . systemSeconds <$> getSystemTime
 
 runDB :: SqlPersistM a -> YesodExample Server a
 runDB query = do
