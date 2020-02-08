@@ -87,7 +87,7 @@ makeServer = do
     database <- getEnv "HAPI_DATABASE"
     cost <- read <$> getEnv "HAPI_PASSWORD_COST"
     time <- read <$> getEnv "HAPI_JWT_SESSION_LENGTH"
-    pool <- runStderrLoggingT $ createPostgresqlPool (DB.pack database) 5
+    pool <- runNoLoggingT $ createPostgresqlPool (DB.pack database) 5
     return Server {
         getStatic = Static $ (defaultWebAppSettings "static") {ssUseHash = False},
         appSettings = defaultSettings {
@@ -109,6 +109,13 @@ withCleanApp = before $ do
 
 withBaseDataApp :: SqlPersistM a->SpecWith (TestApp Server) -> Spec
 withBaseDataApp setup = before $ do
+    foundation <- makeServer
+    wipeDB foundation
+    runDBWithApp foundation setup
+    return $ testApp foundation logStdoutDev
+
+withBaseDataAppOnce :: SqlPersistM a->SpecWith (TestApp Server) -> Spec
+withBaseDataAppOnce setup = beforeAll $ do
     foundation <- makeServer
     wipeDB foundation
     runDBWithApp foundation setup

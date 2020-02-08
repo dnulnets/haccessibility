@@ -5,7 +5,7 @@ import TestPlatform
 
 spec :: Spec
 spec = withApp $ do
-        describe "Try using methods that is not supporte don the api" $ do
+        describe "Try using methods that is not supported on the api" $ do
             it "Try to get the root" $ do
                 request $ do
                     setMethod "GET"
