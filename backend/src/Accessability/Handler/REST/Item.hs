@@ -83,7 +83,7 @@ putItemR key = do
             DBF.changeField DB.ItemLevel (putItemLevel queryBody) <>
             DBF.changeField DB.ItemSource (putItemSource queryBody) <>
             DBF.changeField DB.ItemState (putItemState queryBody) <>
-            DBF.changeField DB.ItemPosition (position (realToFrac <$> putItemLongitude queryBody) (realToFrac <$> putItemLatitude queryBody)))
+            DBF.changeField DB.ItemPosition (maybePosition (realToFrac <$> putItemLongitude queryBody) (realToFrac <$> putItemLatitude queryBody)))
         (pure . Left . show)
     case result of
         Left e -> invalidArgs $ ["Unable to update the item in the database", key] <> splitOn "\n" (pack e)
@@ -120,7 +120,7 @@ postItemsR = do
     queryBody <- requireCheckJsonBody::Handler PostItemsBody
     result <- UIOE.catchAny
         (fffmap toGenericItem (DBF.dbFetchItems (postItemsText queryBody)
-            (position (realToFrac <$> postItemsLongitude queryBody) (realToFrac <$> postItemsLatitude queryBody))
+            (maybePosition (realToFrac <$> postItemsLongitude queryBody) (realToFrac <$> postItemsLatitude queryBody))
             (realToFrac <$> postItemsDistance queryBody)
             (postItemsLimit queryBody)))
         (pure . Left . show)

@@ -54,19 +54,19 @@ import           Data.Morpheus.Types      (GQLType (..))
 import           Accessability.Utils.JSON (firstLower)
 
 -- | The enumeration for the accessability level for an item
-data ItemLevel = L1 | L2 | L3 | L4 | L5 deriving (Generic, Show, Read)
+data ItemLevel = L1 | L2 | L3 | L4 | L5 deriving (Generic, Show, Read, Eq)
 
 -- | The enmueration for the source of the item
-data ItemSource = Human | Machine deriving (Generic, Show, Read)
+data ItemSource = Human | Machine deriving (Generic, Show, Read, Eq)
 
 -- | The enumeration for the modifier of the item
-data ItemModifier = Static | Transient deriving (Generic, Show, Read)
+data ItemModifier = Static | Transient deriving (Generic, Show, Read, Eq)
 
 -- | The enumeration for the approval of the item
-data ItemApproval = Waiting | Approved | Denied deriving (Generic, Show, Read)
+data ItemApproval = Waiting | Approved | Denied deriving (Generic, Show, Read, Eq)
 
 -- | The enmueration for the state of the item
-data ItemState = Online | Unknown | Offline deriving (Generic, Show, Read)
+data ItemState = Online | Unknown | Offline deriving (Generic, Show, Read, Eq)
 
 --
 -- Item

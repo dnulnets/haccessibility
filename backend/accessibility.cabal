@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: d747a0a88cecedac6245b784a4b6dca2470b5ccabd09099a13e08e88ea0f4982
+-- hash: 8bb64252212719dbdb2f2d54218045a96443b5fcb536e2a24ebe46f344e26bdc
 
 name:           accessibility
 version:        0.1.0.0
@@ -135,6 +135,7 @@ test-suite accessibility-test
       Handler.PortalSpec
       Handler.REST403Spec
       Handler.REST405Spec
+      Handler.RESTItemSpec
       TestPlatform
       Paths_accessibility
   hs-source-dirs:

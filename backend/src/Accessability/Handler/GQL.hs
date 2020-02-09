@@ -78,7 +78,7 @@ resolveUpdateItem arg =
          DBF.changeField DB.ItemLevel (updateItemLevel arg) <>
          DBF.changeField DB.ItemSource (updateItemSource arg) <>
          DBF.changeField DB.ItemState (updateItemState arg) <>
-         DBF.changeField DB.ItemPosition (position (realToFrac <$> updateItemLongitude arg) (realToFrac <$> updateItemLatitude arg))
+         DBF.changeField DB.ItemPosition (maybePosition (realToFrac <$> updateItemLongitude arg) (realToFrac <$> updateItemLatitude arg))
 
 -- | The mutation create item resolver
 resolveDeleteItem ::MutationDeleteItemArgs   -- ^ The arguments for the query
@@ -119,7 +119,7 @@ resolveItems::QueryItemsArgs          -- ^ The arguments for the query
             ->Res e Handler [Item]    -- ^ The result of the query
 resolveItems args =
    fffmap toGQLItem liftEither $ DBF.dbFetchItems (queryItemsText args)
-      (position (realToFrac <$> queryItemsLongitude args) (realToFrac <$> queryItemsLatitude args))
+      (maybePosition (realToFrac <$> queryItemsLongitude args) (realToFrac <$> queryItemsLatitude args))
       (realToFrac <$> queryItemsDistance args)
       (queryItemsLimit args)
 

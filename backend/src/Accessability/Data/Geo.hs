@@ -20,6 +20,7 @@ module Accessability.Data.Geo (
     GeospatialPosition(..),
     longitude,
     latitude,
+    maybePosition,
     position,
     PointXY(..)) where
 
@@ -75,12 +76,16 @@ latitude::GeospatialPosition  -- ^ The geospatial position
   ->Double                    -- ^ The extracted latitude
 latitude (Position (PointXY _ y)) = y
 
-position::Maybe Double    -- ^ Longitude
+maybePosition::Maybe Double    -- ^ Longitude
   ->Maybe Double          -- ^ Latitude
   ->Maybe GeospatialPosition  -- ^ The geosatial position
-position (Just lo) (Just la) = Just (Position (PointXY lo la))
-position _ _                 = Nothing
+maybePosition (Just lo) (Just la) = Just (Position (PointXY lo la))
+maybePosition _ _                 = Nothing
 
+position::Double    -- ^ Longitude
+  ->Double          -- ^ Latitude
+  ->GeospatialPosition  -- ^ The geosatial position
+position lo la = Position (PointXY lo la)
 
 --
 -- Persistence
