@@ -2,6 +2,19 @@
 {-# LANGUAGE QuasiQuotes       #-}
 {-# LANGUAGE TemplateHaskell   #-}
 
+
+-- |
+-- Module      : TestPlatform
+-- Description : The test platform for all tests
+-- Copyright   : (c) Tomas Stenlund, 2020
+-- License     : BSD-3
+-- Maintainer  : tomas.stenlund@permobil.com
+-- Stability   : experimental
+-- Portability : POSIX
+--
+-- This module contains a set of functions that makes it setting up the testing
+-- specifications
+--
 module TestPlatform (module TestPlatform, module X) where
 
 import           Control.Monad.Logger
