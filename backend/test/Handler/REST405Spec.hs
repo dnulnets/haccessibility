@@ -4,7 +4,7 @@ module Handler.REST405Spec (spec) where
 import TestPlatform
 
 spec :: Spec
-spec = withApp $ do
+spec = withAppOnce $ do
         describe "Try using methods that is not supported on the api" $ do
             it "Try to get the root" $ do
                 request $ do

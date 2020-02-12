@@ -87,7 +87,7 @@ data Item = Item {
     , itemLatitude    :: Float      -- ^ The latitude of the item
     , itemLongitude   :: Float     -- ^ The longitude of the item
     , itemDistance    :: Maybe Float -- ^ The distance to a specified point at the time of the query
-    } deriving (Generic)
+    } deriving (Generic, Show)
 
 --
 -- Persistence

@@ -54,7 +54,8 @@ getItemR key = do
         (pure . Left . show)
     case result of
         Left e -> invalidArgs $ ["Unable to get the item from the database", key] <> splitOn "\n" (pack e)
-        Right item -> sendStatusJSON status200 item
+        Right Nothing -> sendResponseNoContent
+        Right (Just i) -> sendStatusJSON status200 i
 
 -- | The REST delete handler, i.e. return with the data of an item based on the items
 -- key and delete the item.
@@ -79,9 +80,12 @@ putItemR key = do
     result <- UIOE.catchAny
         (fffmap toGenericItem $ DBF.dbUpdateItem (textToKey key) $
             DBF.changeField DB.ItemName (putItemName queryBody) <>
+            DBF.changeField DB.ItemGuid (putItemGuid queryBody) <>
             DBF.changeField DB.ItemDescription (putItemDescription queryBody) <>
             DBF.changeField DB.ItemLevel (putItemLevel queryBody) <>
             DBF.changeField DB.ItemSource (putItemSource queryBody) <>
+            DBF.changeField DB.ItemModifier (putItemModifier queryBody) <>
+            DBF.changeField DB.ItemApproval (putItemApproval queryBody) <>
             DBF.changeField DB.ItemState (putItemState queryBody) <>
             DBF.changeField DB.ItemPosition (maybePosition (realToFrac <$> putItemLongitude queryBody) (realToFrac <$> putItemLatitude queryBody)))
         (pure . Left . show)

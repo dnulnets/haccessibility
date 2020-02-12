@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes       #-}
 {-# LANGUAGE TemplateHaskell   #-}
-
+{-# LANGUAGE ViewPatterns      #-}
 
 -- |
 -- Module      : TestPlatform
@@ -86,16 +86,16 @@ runDBWithApp :: Server          -- ^ The yesod foundation
     -> SqlPersistM a -> IO a    -- ^ The database action
 runDBWithApp app query = runSqlPersistMPool query (serverConnectionPool app)
 
--- |Makes the server for the tests.
+-- |Makes the yesod WAI server for the tests.
 makeServer ::IO Server
 makeServer = do
     gen <- newStdGen
     let jwtSecret = Prelude.take 10 $ randomRs ('a','z') gen
-    database <- getEnv "HAPI_DATABASE"
-    cost <- read <$> getEnv "HAPI_PASSWORD_COST"
-    time <- read <$> getEnv "HAPI_JWT_SESSION_LENGTH"
-    -- pool <- runNoLoggingT $ createPostgresqlPool (DB.pack database) 5
-    pool <- runStderrLoggingT $ createPostgresqlPool (DB.pack database) 5
+    database <- getEnv "HAPI_TEST_DATABASE"
+    cost <- read <$> getEnv "HAPI_TEST_PASSWORD_COST"
+    time <- read <$> getEnv "HAPI_TEST_JWT_SESSION_LENGTH"
+    pool <- runNoLoggingT $ createPostgresqlPool (DB.pack database) 5
+    -- pool <- runStderrLoggingT $ createPostgresqlPool (DB.pack database) 5
     return Server {
         getStatic = Static $ (defaultWebAppSettings "static") {ssUseHash = False},
         appSettings = defaultSettings {
@@ -107,6 +107,13 @@ makeServer = do
 -- |Runs before every "it" in the Spec, no database wiping
 withApp :: SpecWith (TestApp Server) -> Spec
 withApp = before $ do
+    foundation <- makeServer
+    migrateDB foundation
+    return $ testApp foundation logStdoutDev
+
+-- |Runs before every "it" in the Spec, no database wiping
+withAppOnce :: SpecWith (TestApp Server) -> Spec
+withAppOnce = beforeAll $ do
     foundation <- makeServer
     migrateDB foundation
     return $ testApp foundation logStdoutDev
@@ -151,6 +158,10 @@ wipeDB app = runDBWithApp app $ do
         query = "TRUNCATE TABLE " <> (intercalate ", " escapedTables)
     rawExecute query []
 
+--
+-- jsonbody
+--
+
 -- |Transforms the last response body to a JSON object
 getJsonBody::(FromJSON a)=>YesodExample site a
 getJsonBody = withResponse jsonBody
@@ -169,6 +180,10 @@ getJsonBody = withResponse jsonBody
                             else T.take characterLimit textBody <> "... (use `printBody` to see complete response body)"
                     failure $ T.concat ["Failed to parse JSON response; error: ", T.pack err, "JSON: ", bodyPreview]
                 Right v -> return v
+
+--
+-- Proximity functions
+--
 
 -- |Determine if the NominalDiffTime is less than 1 second.
 timeProximity::NominalDiffTime -- ^ The difference in seconds

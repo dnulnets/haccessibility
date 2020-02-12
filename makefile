@@ -22,6 +22,11 @@ image-purescript-build-env:
 image-build-db:	
 	docker build -t haccdb:1 -t haccdb:1.0 -t haccdb:latest -f deployment/Dockerfile.build-db .
 
+image-build-test-db:	
+	docker build -t hacctdb:1 -t hacctdb:1.0 -t hacctdb:latest --build-arg database=test -f deployment/Dockerfile.build-db .
+
+database=heat
+
 image-haskell-build-env:	
 	docker build -t haccbuild:1 -t haccbuild:1.0 -t haccbuild:latest -f deployment/Dockerfile.haskell-build-env .
 

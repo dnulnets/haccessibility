@@ -59,7 +59,7 @@ defaultSRID = Srid 4326
 newtype Geospatial = Geometry GeospatialGeometry
   deriving (Show)
 
--- | The specific GeometryPoint, handles  type
+-- | The specific GeometryPoint, handles  type, X=longitude, Y=latitude
 newtype GeospatialPosition = Position PointXY
   deriving (Show)
 

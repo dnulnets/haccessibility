@@ -4,7 +4,7 @@ module Handler.REST403Spec (spec) where
 import TestPlatform
 
 spec :: Spec
-spec = withApp $ do
+spec = withAppOnce $ do
         describe "Test Methods that needs authentication, but no credentials are given" $ do
             it "Try to use the graphQL interface" $ do
                 post GQLR
