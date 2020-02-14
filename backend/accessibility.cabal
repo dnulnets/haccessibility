@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 8bb64252212719dbdb2f2d54218045a96443b5fcb536e2a24ebe46f344e26bdc
+-- hash: 918ad8ab44054a977a89d595de791d084517d7560d61a1a422f658cdc4b4ee41
 
 name:           accessibility
 version:        0.1.0.0
@@ -131,6 +131,7 @@ test-suite accessibility-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      Handler.GQLItemSpec
       Handler.LoginSpec
       Handler.PortalSpec
       Handler.REST403Spec
