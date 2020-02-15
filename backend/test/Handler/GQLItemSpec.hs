@@ -4,10 +4,12 @@ module Handler.GQLItemSpec (spec) where
 
 import Data.Maybe
 import Data.Text.Encoding (encodeUtf8)
-import Data.Text (pack)
+import Data.Text (Text,pack)
+import Data.Set (Set, isSubsetOf, fromList)
 import Data.Time.Clock
 import Data.Time.Clock.System
-import Data.Aeson (Value(..), encode)
+import Data.Aeson (Value(..), Object (..), (.:), encode, FromJSON)
+import Data.Aeson.Types (parse, Result(..), Parser)
 import Database.Persist hiding (get)
 
 import TestPlatform
@@ -37,6 +39,11 @@ baseData = do
     _ <- insert $ DB.Item "Test-7" "GUID-7" "Test 7 Description" L5 Machine Online Transient Waiting (position (-17.303989) (-62.393789)) now
     _ <- insert $ DB.Item "Test-8" "GUID-8" "Test 8 Description" L5 Machine Online Transient Waiting (position (-17.303989) (-62.393789)) now
     return ()
+
+-- |The set of identifiers expected in the graphQL schema
+gqlItems::Set String
+gqlItems = fromList ["ItemApproval", "ItemState", "ItemSource", "ItemLevel",
+    "UTCTime", "ItemModifier", "Item", "Query", "Mutation"]
 
 -- |Our test item
 newItem::IO PostItemBody
@@ -118,7 +125,24 @@ spec = withBaseDataAppOnce baseData $ do
                     addRequestHeader (mk "Authorization", encodeUtf8 $ "Bearer " <> token)
                     setUrl GQLR
                     setRequestBody $ "{\"query\":\"{__schema {types { name }}}\"}"
-                (v::Maybe Value) <- getJsonBody
-                liftIO $ putStrLn $ show v
                 statusIs 200
 
+                -- Check the result
+                (v::Object) <- getJsonBody
+                liftIO $ case parse locate v of 
+                    Error s -> expectationFailure s
+                    Success a -> (gqlItems `isSubsetOf` (fromList a)) `shouldBe` True
+    where
+
+        -- |Retrieves the string array of graphql types from a JSON response
+        locate::Object -> Parser [String]
+        locate obj = do
+            a <- next "data" obj >>= next "__schema" >>= next "types"
+            sequence $ next "name" <$> a
+            where
+                next::(FromJSON a)=>Text->Object->Parser a
+                next = flip (.:)
+
+
+
+                

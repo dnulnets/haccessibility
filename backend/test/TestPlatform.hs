@@ -185,10 +185,10 @@ getJsonBody = withResponse jsonBody
 -- Proximity functions
 --
 
--- |Determine if the NominalDiffTime is less than 1 second.
+-- |Determine if the NominalDiffTime is less than 2 second.
 timeProximity::NominalDiffTime -- ^ The difference in seconds
     ->Bool                     -- ^ If it is close enough in time
-timeProximity n = (abs n) < 1.0
+timeProximity n = (abs n) < 2.0
 
 -- |Determine if the longitude or latitude difference is less than 0.000001, it is considered enough
 -- to be able to distinguish individuals on the map, i.e. around 1 dm distance
