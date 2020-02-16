@@ -85,7 +85,15 @@ gqlItems = fromList ["ItemApproval", "ItemState", "ItemSource", "ItemLevel",
 gqlQueryItem::Text->Text
 gqlQueryItem id = "query FetchThemAll { queryItem (queryItemId: \\\"" <> id <>
     "\\\") {itemId itemName itemGuid itemDescription itemSource itemState itemLevel itemModifier itemApproval itemLatitude itemLongitude itemDistance itemCreated}}"
--- |The test specification
+
+-- |graphql get items query
+gqlQueryItems::Text
+gqlQueryItems = "query FetchThemAll {queryItems (queryItemsText: \\\"%\\\") {itemId}}"
+
+-- |graphql get items query
+gqlQueryItemsD::Text->Text
+gqlQueryItemsD d = "query FetchThemAll {queryItems (queryItemsDistance: " <> d
+    <> ", queryItemsLongitude: 17.302273, queryItemsLatitude: 62.393406) {itemId}}"
 
 queryItemText::String->IO PostItemsBody
 queryItemText s = do
@@ -125,7 +133,7 @@ spec = withBaseDataAppOnce baseData $ do
 
                 -- Check the result
                 (v::Object) <- getJsonBody
-                liftIO $ case parse locate v of 
+                liftIO $ case parse locateSchema v of 
                     Error s -> expectationFailure s
                     Success a -> (gqlItems `isSubsetOf` (fromList a)) `shouldBe` True
 
@@ -183,25 +191,113 @@ spec = withBaseDataAppOnce baseData $ do
                         ((testItemLatitude a) - 62.393406) `shouldSatisfy` lolaProximity
                         diffUTCTime (testItemCreated a) now `shouldSatisfy` timeProximity
 
+            it "Query all items, should be 8" $ do
+
+                -- Log in to get the token
+                request $ do
+                    setMethod "POST"
+                    addRequestHeader (mk "Content-Type","application/json")
+                    addRequestHeader (mk "Accept", "application/json")
+                    setUrl AuthenticateR
+                    setRequestBody "{ \"username\":\"test\",\"password\":\"test\"}"
+                token <- itoken <$> getJsonBody
+                statusIs 200
+
+                -- Retrieve the items using GQL
+                request $ do
+                    setMethod "POST"
+                    addRequestHeader (mk "Content-Type","application/json")
+                    addRequestHeader (mk "Accept", "application/json")
+                    addRequestHeader (mk "Authorization", encodeUtf8 $ "Bearer " <> token)
+                    setUrl GQLR
+                    setRequestBody $ fromStrict . encodeUtf8 $ "{\"query\":\"" <> gqlQueryItems <> 
+                        "\", \"operationName\":\"FetchThemAll\"}"                    
+                statusIs 200
+
+                -- Generic fetch, should be 8
+                (v::Object) <- getJsonBody
+                liftIO $ case parse (locateItem "queryItems") v of 
+                    Error s -> expectationFailure s
+                    Success (a::[Object]) -> do
+                        (length a) `shouldBe` 8
+
+            it "Query all items within 1m, should be 1" $ do
+
+                -- Log in to get the token
+                request $ do
+                    setMethod "POST"
+                    addRequestHeader (mk "Content-Type","application/json")
+                    addRequestHeader (mk "Accept", "application/json")
+                    setUrl AuthenticateR
+                    setRequestBody "{ \"username\":\"test\",\"password\":\"test\"}"
+                token <- itoken <$> getJsonBody
+                statusIs 200
+
+                -- Retrieve the items using GQL
+                request $ do
+                    setMethod "POST"
+                    addRequestHeader (mk "Content-Type","application/json")
+                    addRequestHeader (mk "Accept", "application/json")
+                    addRequestHeader (mk "Authorization", encodeUtf8 $ "Bearer " <> token)
+                    setUrl GQLR
+                    setRequestBody $ fromStrict . encodeUtf8 $ "{\"query\":\"" <> (gqlQueryItemsD "1") <> 
+                        "\", \"operationName\":\"FetchThemAll\"}"                    
+                statusIs 200
+
+                -- Generic fetch, should be 1
+                (v::Object) <- getJsonBody
+                liftIO $ case parse (locateItem "queryItems") v of 
+                    Error s -> expectationFailure s
+                    Success (a::[Object]) -> do
+                        (length a) `shouldBe` 1
+
+            it "Query all items within 80m, should be 3" $ do
+
+                -- Log in to get the token
+                request $ do
+                    setMethod "POST"
+                    addRequestHeader (mk "Content-Type","application/json")
+                    addRequestHeader (mk "Accept", "application/json")
+                    setUrl AuthenticateR
+                    setRequestBody "{ \"username\":\"test\",\"password\":\"test\"}"
+                token <- itoken <$> getJsonBody
+                statusIs 200
+
+                -- Retrieve the items using GQL
+                request $ do
+                    setMethod "POST"
+                    addRequestHeader (mk "Content-Type","application/json")
+                    addRequestHeader (mk "Accept", "application/json")
+                    addRequestHeader (mk "Authorization", encodeUtf8 $ "Bearer " <> token)
+                    setUrl GQLR
+                    setRequestBody $ fromStrict . encodeUtf8 $ "{\"query\":\"" <> (gqlQueryItemsD "80") <> 
+                        "\", \"operationName\":\"FetchThemAll\"}"                    
+                statusIs 200
+
+                -- Generic fetch, should be 1
+                (v::Object) <- getJsonBody
+                liftIO $ case parse (locateItem "queryItems") v of 
+                    Error s -> expectationFailure s
+                    Success (a::[Object]) -> do
+                        (length a) `shouldBe` 3
+
     where
 
+
+        -- |Create a parser for a specific field
+        drill::(FromJSON a)=>Text->Object->Parser a
+        drill = flip (.:)
+
         -- |Retrieve the response data
-        locateItem::(FromJSON a) => Text->Object -> Parser a
+        locateItem::(FromJSON a) => Text -- ^The field below the data filed in the garphQL response
+            -> Object                    -- ^The json structure
+            -> Parser a                  -- ^The parser for the "a"-structure
         locateItem f o = do
-            next "data" o >>= next f
-            where
-                next::(FromJSON a)=>Text->Object->Parser a
-                next = flip (.:)
+            drill "data" o >>= drill f
 
         -- |Retrieves the string array of graphql types from a schema request
-        locate::Object -> Parser [String]
-        locate obj = do
-            a <- next "data" obj >>= next "__schema" >>= next "types"
-            sequence $ next "name" <$> a
-            where
-                next::(FromJSON a)=>Text->Object->Parser a
-                next = flip (.:)
-
-
-
-                
+        locateSchema::Object    -- ^The json structure
+            -> Parser [String]  -- ^The parser for the schema structure
+        locateSchema o = do
+            s <- drill "data" o >>= drill "__schema" >>= drill "types"
+            sequence $ drill "name" <$> s

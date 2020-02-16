@@ -221,7 +221,7 @@ instance FromJSON ItemApproval where
 -- JSON for Item
 --
 
--- |Automatically derive JSON but we do not want the first charatcer in the field to go out
+-- |Automatically derive JSON but we do not want the first character in the field to go out
 $(deriveJSON defaultOptions {
     fieldLabelModifier = firstLower . drop 4 -- Get rid of the 'item' in the field names
   } ''Item)
