@@ -128,4 +128,5 @@ tests:
     - aeson
     - time
     - containers
+    - morpheus-graphql
     - hspec >= 2.0.0

@@ -1,29 +1,65 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell #-}
+
 module Handler.GQLItemSpec (spec) where
 
 import Data.Maybe
 import Data.Text.Encoding (encodeUtf8)
+import Data.ByteString.Lazy (fromStrict)
 import Data.Text (Text,pack)
 import Data.Set (Set, isSubsetOf, fromList)
 import Data.Time.Clock
 import Data.Time.Clock.System
-import Data.Aeson (Value(..), Object (..), (.:), encode, FromJSON)
+
+import Data.Aeson (Value(..), Object (..), (.:), encode,
+    FromJSON, Options(..), defaultOptions)
 import Data.Aeson.Types (parse, Result(..), Parser)
+import Data.Aeson.TH (deriveJSON)
+
 import Database.Persist hiding (get)
 
 import TestPlatform
 
 import Yesod (liftIO)
 
+import           Data.Morpheus.Types          (ID (..), unpackID)
+
 import Accessability.Data.Item as DI
 import Accessability.Data.Geo
+import Accessability.Data.Functor
 import Accessability.Model.Database as DB
+import Accessability.Model.GQL as GQL
 import Accessability.Model.REST.Authenticate
 import Accessability.Model.REST.Item
 import Accessability.Model.Transform
 import Accessability.Utils.JWT
 import Accessability.Settings
+import Accessability.Utils.JSON (firstLower)
+
+-- | Test types
+data TestItem = TestItem {
+    testItemId            :: Maybe Text  -- ^ The ID of the item
+    , testItemName        :: Text  -- ^ The name of the item
+    , testItemGuid        :: Text  -- ^ The external unique identifier of the item
+    , testItemDescription :: Text       -- ^ The description of the item
+    , testItemSource      :: ItemSource      -- ^ How the items online state is determined
+    , testItemState       :: ItemState        -- ^ The state of the item
+    , testItemLevel       :: ItemLevel        -- ^ The accessability level of the item
+    , testItemModifier    :: ItemModifier     -- ^ The modifier of the item
+    , testItemApproval    :: ItemApproval     -- ^ The approval state of the item
+    , testItemLatitude    :: Float        -- ^ The latitude of the item
+    , testItemLongitude   :: Float       -- ^ The longitude of the item
+    , testItemCreated     :: UTCTime   -- ^ The zoned time of the item
+    , testItemDistance    :: Maybe Float -- ^ The distance from a specified point provided by the query
+    }
+    -- deriving (Generic)
+
+-- |Automatically derive JSON of TestItem
+$(deriveJSON defaultOptions {
+    fieldLabelModifier = firstLower . drop 4 -- Get rid of the 'test' in the field names
+  } ''TestItem)
+
 
 -- |Sets up the database for all the tests we run towards it
 baseData::SqlPersistM ()
@@ -45,49 +81,11 @@ gqlItems::Set String
 gqlItems = fromList ["ItemApproval", "ItemState", "ItemSource", "ItemLevel",
     "UTCTime", "ItemModifier", "Item", "Query", "Mutation"]
 
--- |Our test item
-newItem::IO PostItemBody
-newItem = do
-    now <- liftIO $ getCurrentTime
-    return $ PostItemBody { postItemName = "test"
-        , postItemGuid = "68436843-43ggfs-432gvvdd"
-        , postItemDescription = "A test item"
-        , postItemSource = Machine
-        , postItemState = Online
-        , postItemLevel = L1
-        , postItemModifier = Static
-        , postItemApproval = Waiting
-        , postItemCreated = now
-        , postItemLatitude = 62.393844
-        , postItemLongitude = 17.302273}
-
--- |Our test item
-updateItem::IO PutItemBody
-updateItem = do
-    now <- liftIO $ getCurrentTime
-    return $ PutItemBody {
-        putItemName = Just "Updated Name"
-        , putItemGuid = Just "Updated GUID"
-        , putItemDescription = Just "Updated Description"
-        , putItemSource = Just Human
-        , putItemState = Just Offline
-        , putItemLevel = Just L1
-        , putItemModifier = Just Static
-        , putItemApproval = Just Approved
-        , putItemCreated = Just now
-        , putItemLatitude = Just 0
-        , putItemLongitude = Just 0
-        }
-
--- |Our base test query
-queryItem::Float->IO PostItemsBody
-queryItem d = do
-    return PostItemsBody {
-        postItemsLongitude = Just 17.302273
-        , postItemsLatitude = Just 62.393844
-        , postItemsDistance = Just d
-        , postItemsLimit = Nothing
-        , postItemsText = Nothing }
+-- |graphql get item query
+gqlQueryItem::Text->Text
+gqlQueryItem id = "query FetchThemAll { queryItem (queryItemId: \\\"" <> id <>
+    "\\\") {itemId itemName itemGuid itemDescription itemSource itemState itemLevel itemModifier itemApproval itemLatitude itemLongitude itemDistance itemCreated}}"
+-- |The test specification
 
 queryItemText::String->IO PostItemsBody
 queryItemText s = do
@@ -98,7 +96,6 @@ queryItemText s = do
         , postItemsLimit = Nothing
         , postItemsText = Just $ pack s}
 
--- |The test specification
 spec :: Spec
 spec = withBaseDataAppOnce baseData $ do
 
@@ -116,8 +113,7 @@ spec = withBaseDataAppOnce baseData $ do
                 token <- itoken <$> getJsonBody
                 statusIs 200
 
-                -- Create an item
-                pb <- liftIO $ newItem
+                -- Retrieve the schema
                 request $ do
                     setMethod "POST"
                     addRequestHeader (mk "Content-Type","application/json")
@@ -132,9 +128,72 @@ spec = withBaseDataAppOnce baseData $ do
                 liftIO $ case parse locate v of 
                     Error s -> expectationFailure s
                     Success a -> (gqlItems `isSubsetOf` (fromList a)) `shouldBe` True
+
+            it "Fetch an item using queryItem" $ do
+
+                -- Log in to get the token
+                request $ do
+                    setMethod "POST"
+                    addRequestHeader (mk "Content-Type","application/json")
+                    addRequestHeader (mk "Accept", "application/json")
+                    setUrl AuthenticateR
+                    setRequestBody "{ \"username\":\"test\",\"password\":\"test\"}"
+                token <- itoken <$> getJsonBody
+                statusIs 200
+
+                -- Query for the item to read TEST-1
+                q <- liftIO $ queryItemText "TEST-1"
+                request $ do
+                    setMethod "POST"
+                    addRequestHeader (mk "Content-Type","application/json")
+                    addRequestHeader (mk "Accept", "application/json")
+                    addRequestHeader (mk "Authorization", encodeUtf8 $ "Bearer " <> token)
+                    setUrl ItemsR
+                    setRequestBody $ encode q
+                let clean i = fromJust $ DI.itemId i                
+                (ai::[Text]) <- ffmap clean getJsonBody
+                liftIO $ length ai `shouldBe` 1
+
+                -- Retrieve the item using GQL
+                request $ do
+                    setMethod "POST"
+                    addRequestHeader (mk "Content-Type","application/json")
+                    addRequestHeader (mk "Accept", "application/json")
+                    addRequestHeader (mk "Authorization", encodeUtf8 $ "Bearer " <> token)
+                    setUrl GQLR
+                    setRequestBody $ fromStrict . encodeUtf8 $ "{\"query\":\"" <> (gqlQueryItem (ai !! 0)) <> 
+                        "\", \"operationName\":\"FetchThemAll\"}"                    
+                statusIs 200
+
+                (v::Object) <- getJsonBody
+                liftIO $ case parse (locateItem "queryItem") v of 
+                    Error s -> expectationFailure s
+                    Success a -> do
+                        now <- getCurrentTime
+                        (fromJust $ testItemId a) `shouldBe` (ai !! 0)
+                        (testItemName a) `shouldBe` "Test-1"
+                        (testItemGuid a) `shouldBe` "GUID-1"
+                        (testItemDescription a) `shouldBe` "Test 1 Description"
+                        (testItemSource a) `shouldBe` DI.Human
+                        (testItemState a) `shouldBe` DI.Online
+                        (testItemLevel a) `shouldBe` DI.L1
+                        (testItemModifier a) `shouldBe` DI.Static
+                        (testItemApproval a) `shouldBe` DI.Waiting
+                        ((testItemLongitude a) - 17.302273) `shouldSatisfy` lolaProximity
+                        ((testItemLatitude a) - 62.393406) `shouldSatisfy` lolaProximity
+                        diffUTCTime (testItemCreated a) now `shouldSatisfy` timeProximity
+
     where
 
-        -- |Retrieves the string array of graphql types from a JSON response
+        -- |Retrieve the response data
+        locateItem::(FromJSON a) => Text->Object -> Parser a
+        locateItem f o = do
+            next "data" o >>= next f
+            where
+                next::(FromJSON a)=>Text->Object->Parser a
+                next = flip (.:)
+
+        -- |Retrieves the string array of graphql types from a schema request
         locate::Object -> Parser [String]
         locate obj = do
             a <- next "data" obj >>= next "__schema" >>= next "types"

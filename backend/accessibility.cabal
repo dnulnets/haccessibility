@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: c8378b421dc51aa92bedc027bb838ac069b43aa474ff9f40db9060b4a66c146e
+-- hash: b4e6dd77ab037aa02f819b0851ed3e8416436258bf52e190ac066007b23596ce
 
 name:           accessibility
 version:        0.1.0.0
@@ -153,6 +153,7 @@ test-suite accessibility-test
     , hspec >=2.0.0
     , http-types
     , monad-logger
+    , morpheus-graphql
     , mtl
     , persistent
     , persistent-postgresql
