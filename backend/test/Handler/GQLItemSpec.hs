@@ -281,6 +281,29 @@ spec = withBaseDataAppOnce baseData $ do
                     Success (a::[Object]) -> do
                         (length a) `shouldBe` 3
 
+            it "Insert an item" $ do
+
+                -- Log in to get the token
+                request $ do
+                    setMethod "POST"
+                    addRequestHeader (mk "Content-Type","application/json")
+                    addRequestHeader (mk "Accept", "application/json")
+                    setUrl AuthenticateR
+                    setRequestBody "{ \"username\":\"test\",\"password\":\"test\"}"
+                token <- itoken <$> getJsonBody
+                statusIs 200
+
+                -- Retrieve the items using GQL
+                request $ do
+                    setMethod "POST"
+                    addRequestHeader (mk "Content-Type","application/json")
+                    addRequestHeader (mk "Accept", "application/json")
+                    addRequestHeader (mk "Authorization", encodeUtf8 $ "Bearer " <> token)
+                    setUrl GQLR
+                    setRequestBody $ fromStrict . encodeUtf8 $ "{\"query\":\"" <> (gqlQueryItemsD "80") <> 
+                        "\", \"operationName\":\"FetchThemAll\"}"                    
+                statusIs 200
+
     where
 
 

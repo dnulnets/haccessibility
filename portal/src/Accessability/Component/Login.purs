@@ -33,9 +33,8 @@ import Web.HTML.Navigator.Geolocation (NavigatorGeolocation,
   Position)
 
 -- Our own stuff
-import Accessability.Component.HTML.Utils (css, maybeElem, prop, style)
-import Accessability.Interface.Navigate (class ManageNavigation,
-                                gotoPage)
+import Accessability.Component.HTML.Utils (css, style)
+import Accessability.Interface.Navigate (class ManageNavigation)
 import Accessability.Interface.Authenticate (UserInfo(..),
                                     Authenticate(..),
                                     class ManageAuthentication,
@@ -62,7 +61,8 @@ initialState _ = { alert : Nothing,
                    position : Nothing }
 
 -- | Internal form actions
-data Action = Submit Event        -- ^ Submit of the user 
+data Action = Submit Event        -- ^ Submit of the user
+            | GPS
             | Input (State→State) -- ^ The text boxes has a value
 
 -- | The component definition
@@ -110,6 +110,7 @@ render state = HH.div
                     ],
                    HH.button [css "btn btn-lg btn-block btn-warning", HP.type_ HP.ButtonSubmit] [HH.text "Login"]
                    ],
+                   HH.button [css "btn btn-lg btn-block btn-warning", HP.type_ HP.ButtonButton, HE.onClick (\_->Just $ GPS)] [HH.text "Position"],
                    HH.p [] [HH.text $ show state.position]
                   ]
 
@@ -136,28 +137,17 @@ handleAction (Submit event) = do
       H.liftEffect $ log $ "Logged in user " <> val.username
       H.put state {alert = Nothing}
       H.raise (SetUserMessage $ Just ui)
---  new <- H.get
---  H.liftEffect $ log $ show new
---  loc <- asks _.geo
---  case loc of
---    Just x -> do
---      pos <- H.liftAff $ getCurrentPosition defaultOptions x
---      H.modify_ (\st -> st { position = Just pos})
---      H.liftEffect $ log $ "Position: " <> show pos
---    Nothing -> do
---     H.liftEffect $ log $ "No Position"
       
--- | Submit => Whenever the Login button is pressed, it will generate a submit message
--- handleAction (Submit event) = do
---  H.liftEffect $ Event.preventDefault event
---  loc <- asks _.geo
---  case loc of
---    Just x -> do
---      pos <- H.liftAff $ getCurrentPosition defaultOptions x
---      H.modify_ (\st -> st { position = Just pos})
---      H.liftEffect $ log $ "Position: " <> show pos
---    Nothing -> do
---      H.liftEffect $ log $ "No Position"
+-- | Submit => Whenever the Position button is pressed, it will get the GPS so it can be displayed
+handleAction GPS = do
+ loc <- asks _.geo
+ case loc of
+   Just x -> do
+      pos <- H.liftAff $ getCurrentPosition defaultOptions x
+      H.modify_ (\st -> st { position = Just pos})
+      H.liftEffect $ log $ "Position: " <> show pos
+   Nothing -> do
+      H.liftEffect $ log $ "No Position"
       
 -- | Input f => Whenever the textbox entry is done, i.e. by leaving the box or pressing another control it generates a
 -- | Input f message, where f is the function that operates on the state to save the new value. It is here we should

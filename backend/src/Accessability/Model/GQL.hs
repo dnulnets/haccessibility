@@ -73,9 +73,9 @@ instance GQLScalar UTCTime where
     parseValue (Int _) = Left "Wrong type for UTC timestamp"
     parseValue (Float _) = Left "Wrong type for UTC timestamp"
     parseValue (Boolean _) = Left "Wrong type for UTC timestamp"
-    parseValue (String s) = case DA.decode $ encodeUtf8 $ fromStrict s of
-                                (Just u) -> Right u
-                                Nothing  -> Left $ "Unable to parse " <> s
+    parseValue (String s) = case DA.eitherDecode $ encodeUtf8 $ fromStrict ("\"" <> s <> "\"") of
+                                (Right u) -> Right u
+                                (Left e)  -> Left $ pack $ "Unable to parse " <> e
 
 
     --serialize u = String $ pack $ show u
