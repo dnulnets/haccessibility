@@ -26,23 +26,28 @@ import Web.HTML.Navigator.Geolocation (NavigatorGeolocation)
 -- Our own stuff
 import Accessability.Data.Route (Page(..))
 import Accessability.Component.HTML.Utils (css,
+                                  style,
                                   prop,
                                   href)
                                   
 import Accessability.Component.Login as Login
+import Accessability.Component.Nearby as Nearby
 import Accessability.Interface.Navigate (class ManageNavigation)
 import Accessability.Interface.Authenticate (class ManageAuthentication, UserInfo (..))
 
-type State = { userInfo :: Maybe UserInfo }
+type State = {  userInfo :: Maybe UserInfo
+              , page :: Page }
 
 -- | The actions supported by the root page
 data Action = SetUserAction  (Maybe UserInfo)   -- ^Sets the user
             
 -- | The set of slots for the root container
-type ChildSlots = ( login ∷ Login.Slot Unit )
+type ChildSlots = ( login ∷ Login.Slot Unit,
+                    nearby :: Nearby.Slot Unit )
 
 _login = SProxy::SProxy "login"
-  
+_nearby = SProxy::SProxy "nearby"
+
 component ∷ ∀ r q i o m. MonadAff m
   => ManageAuthentication m
   => ManageNavigation m
@@ -56,7 +61,8 @@ component =
     }
 
 initialState ∷ ∀ i. i → State
-initialState _ = { userInfo: Nothing }
+initialState _ = {  userInfo: Nothing
+                  , page: Login }
 
 -- |The navigation bar for the page
 navbar∷forall p i . Array (HH.HTML p i) -> HH.HTML p i
@@ -98,7 +104,31 @@ render ∷ ∀ r m . MonadAff m
   => State → H.ComponentHTML Action ChildSlots m
 render state = HH.div [] [
   HH.header [] [navbar $ (navbarHeader "Accessability portal") <> [navbarLeft state, navbarRight state]],
-  HH.main [css "container", HPA.role "main"][HH.slot _login unit Login.component unit (Just <<< loginMessageConv)]]
+  HH.main [css "container", HPA.role "main"][view state.page]]
+
+-- | Render the main view of the page
+view ∷ ∀ r m. MonadAff m
+       ⇒ ManageAuthentication m
+       ⇒ ManageNavigation m
+       ⇒ MonadAsk { geo ∷ Maybe NavigatorGeolocation | r } m
+       ⇒ Page → H.ComponentHTML Action ChildSlots m
+view Login = HH.slot _login  unit Login.component  unit (Just <<< loginMessageConv)
+view Home =  HH.slot _nearby unit Nearby.component unit absurd
+view _ = HH.div
+             [css "container", style "margin-top:20px"]
+             [HH.div
+              [css "row"]
+              [HH.div
+               [css "col-md-12"]
+               [HH.div
+                [css "col-md-3 col-md-offset-1"]
+                [HH.h2
+                 []
+                 [HH.text "ERROR Unknown page"]
+                ]
+               ]
+              ]
+             ]
 
 -- |Converts login messages to root actions
 loginMessageConv::Login.Message->Action

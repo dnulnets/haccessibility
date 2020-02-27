@@ -7,6 +7,7 @@ module Accessability.Data.Route (Page(..), router, routeCodec) where
 
 -- Language specifics
 import Prelude hiding ((/))
+import Control.Alt ((<|>))
 
 -- Generics
 import Data.Generic.Rep (class Generic)
@@ -20,6 +21,7 @@ import Routing.Duplex.Generic.Syntax ((/))
 
 -- |All possible routes
 data Page = Home  -- ^ The Home page
+          | Login -- ^ The login page
           | Error -- ^ The Error page
 derive instance genericRoute :: Generic Page _
 derive instance eqRoute :: Eq Page
@@ -30,13 +32,15 @@ instance showPage :: Show Page where
 -- | Routing function that creates data types based on the URL, we only deal with home and
 -- login pages
 router :: Match Page -- ^ The router
-router = home
+router = home <|> login
   where
     home = Home <$ lit ""
+    login = Login <$ lit "login"
 
 -- | Bidirectional parsing and unparsing
 routeCodec :: RouteDuplex' Page -- ^ The router codec
 routeCodec = root $ sum
   { "Home": noArgs
+  , "Login": "login" / noArgs
   , "Error": "error" / noArgs
   }
