@@ -7,7 +7,7 @@ The readme for the backend is [here](https://github.com/dnulnets/haccessibility/
 
 The readme for the portal is [here](https://github.com/dnulnets/haccessibility/blob/master/portal/README.md)
 
-The github location of the Swedish IoT Hub Source code is [here](https://github.com/orgs/iot-for-tillgenglighet/dashboard).
+The github location of the Swedish IoT Hub Source code for the accesibility server is [here](https://github.com/orgs/iot-for-tillgenglighet/dashboard).
 
 ## Purpose and goal
 
