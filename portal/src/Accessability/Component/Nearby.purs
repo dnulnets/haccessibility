@@ -8,10 +8,12 @@ module Accessability.Component.Nearby where
 -- Language imports
 import Prelude
 import Data.Maybe (Maybe(..), fromMaybe, maybe)
+import Data.Either (Either(..))
 
 -- Control Monad
 import Control.Monad.Reader.Trans (class MonadAsk)
 import Control.Monad.Reader (asks)
+import Control.Monad.Error.Class (try)
 
 -- Effects
 import Effect.Aff.Class (class MonadAff)
@@ -74,9 +76,15 @@ nearbyAlert t = HH.b [css "", style $ ("color:red;visibility:" <> (maybe "hidden
 render ∷ ∀ m . MonadAff m ⇒ State -- ^ The state to render
   → H.ComponentHTML Action () m   -- ^ The components HTML
 render state = HH.div
-               []
-               [HH.button [css "btn btn-lg btn-block btn-warning", HP.type_ HP.ButtonButton, HE.onClick (\_->Just $ GPS)] [HH.text "Position"],
-                HH.p [] [HH.text $ show state.position]]
+               [css "container-fluid"]
+               [HH.div [css "row"]
+                 [ HH.div [css "col-sm"] [HH.button [css "btn btn-lg btn-block btn-warning", HP.type_ HP.ButtonButton, HE.onClick (\_->Just $ GPS)] [HH.text "Update position"]],
+                    HH.div [css "col-sm"] [HH.label [HP.for "longitude"] [HH.text "Longitude"],
+                      HH.input [HP.value (fromMaybe "?" (show <$> ((_.coords.longitude) <$> state.position))), HP.id_ "longitude", HP.type_ HP.InputText,
+                        HPA.label "longitude", HP.placeholder "Longitude"]],
+                    HH.div [css "col-sm"] [HH.label [HP.for "latitude"] [HH.text "Latitude"],
+                      HH.input [HP.value (fromMaybe "?" (show <$> ((_.coords.latitude) <$> state.position))), HP.id_ "latitude", HP.type_ HP.InputText,
+                        HPA.label "latitude", HP.placeholder "Latitude"]]],HH.text $ show state]
 
 -- | Handles all actions for the login component
 handleAction ∷ ∀ r o m . MonadAff m
@@ -90,8 +98,12 @@ handleAction GPS = do
  loc <- asks _.geo
  case loc of
    Just x -> do
-      pos <- H.liftAff $ getCurrentPosition defaultOptions x
-      H.modify_ (\st -> st { position = Just pos})
-      H.liftEffect $ log $ "Position: " <> show pos
+      pos <- H.liftAff $ try $ getCurrentPosition defaultOptions x
+      case pos of
+        Right p -> do
+          H.modify_ (\st -> st { position = Just p})
+          H.liftEffect $ log $ "Position: " <> show p
+        Left e -> do
+          H.liftEffect $ log $ "Position error: " <> (show e)
    Nothing -> do
-      H.liftEffect $ log $ "No Position"
+      H.liftEffect $ log $ "No Position device"

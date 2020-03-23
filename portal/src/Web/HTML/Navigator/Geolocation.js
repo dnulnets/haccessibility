@@ -14,6 +14,7 @@ exports._getCurrentPosition = function (options) {
             geolocation.getCurrentPosition(function (position) {
                 onSuccess(position);
             }, function (positionError) {
+                console.log ("Exception: " + positionError.message + "," + positionError.code)
                 onError(positionError);
             }, options);
             return function (cancelError, onCancelerError, onCancelerSuccess) {
@@ -32,6 +33,7 @@ exports._watchPosition = function(Tuple) {
                         var watchId = geolocation.watchPosition(function (position) {
                             watch (new Tuple(watchId, position));
                         }, function (positionError) {
+                            console.log ("Exception: " + watchID + "," + positionError.message + "," + positionError.code)
                             watchError (new Tuple(watchId, positionError));
                         }, options);            
                         onSuccess(watchId);

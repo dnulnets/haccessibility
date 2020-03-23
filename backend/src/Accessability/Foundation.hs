@@ -6,6 +6,7 @@
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE ViewPatterns          #-}
 {-# OPTIONS_GHC -Wwarn=unused-top-binds #-}
+{-# OPTIONS_GHC -fforce-recomp #-}
 
 -- |
 -- Module      : Accessability.Foundation

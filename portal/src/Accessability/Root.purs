@@ -3,7 +3,8 @@
 -- |
 -- | Written by Tomas Stenlund, Sundsvall, Sweden (c) 2019
 -- |
-module Accessability.Root (component) where
+module Accessability.Root (component,
+  Query (..)) where
 
 import Prelude
 
@@ -13,6 +14,7 @@ import Data.Symbol (SProxy(..))
 import Control.Monad.Reader.Trans (class MonadAsk)
 
 import Effect.Aff.Class (class MonadAff)
+import Effect.Console (log)
 
 import Halogen as H
 import Halogen.HTML as HH
@@ -35,8 +37,12 @@ import Accessability.Component.Nearby as Nearby
 import Accessability.Interface.Navigate (class ManageNavigation)
 import Accessability.Interface.Authenticate (class ManageAuthentication, UserInfo (..))
 
-type State = {  userInfo :: Maybe UserInfo
-              , page :: Page }
+-- | The state of the root page
+type State = {  userInfo :: Maybe UserInfo -- ^ User information of the logged in user
+              , page :: Page }             -- ^ What page to show in the root container
+
+-- | The query that allows us to change page of the root
+data Query a = GotoPageRequest Page a
 
 -- | The actions supported by the root page
 data Action = SetUserAction  (Maybe UserInfo)   -- ^Sets the user
@@ -48,18 +54,19 @@ type ChildSlots = ( login ∷ Login.Slot Unit,
 _login = SProxy::SProxy "login"
 _nearby = SProxy::SProxy "nearby"
 
-component ∷ ∀ r q i o m. MonadAff m
+component ∷ ∀ r i o m. MonadAff m
   => ManageAuthentication m
   => ManageNavigation m
   => MonadAsk { geo ∷ Maybe NavigatorGeolocation | r } m
-  => H.Component HH.HTML q i o m
+  => H.Component HH.HTML Query i o m
 component =
   H.mkComponent
     { initialState
     , render
-    , eval: H.mkEval $ H.defaultEval { handleAction = handleAction }
+    , eval: H.mkEval $ H.defaultEval { handleAction = handleAction, handleQuery = handleQuery }
     }
 
+-- | The root container initial state
 initialState ∷ ∀ i. i → State
 initialState _ = {  userInfo: Nothing
                   , page: Login }
@@ -134,6 +141,19 @@ view _ = HH.div
 loginMessageConv::Login.Message->Action
 loginMessageConv (Login.SetUserMessage ui) = SetUserAction ui
 
+-- | Handle the queries sent to the root page
+handleQuery ∷ ∀ r o m a .
+              MonadAff m ⇒ 
+              MonadAsk r m ⇒ 
+              Query a → H.HalogenM State Action ChildSlots o m (Maybe a)
+handleQuery = case _ of
+  GotoPageRequest newpage a → do
+    state ← H.get
+    H.liftEffect $ log $ "GotoPageRequest from " <> show state.page <> " to " <> show newpage
+    H.put $ state { page = newpage }
+    pure (Just a)
+
+-- | Handle the root containers actions
 handleAction ∷ ∀ r o m . MonadAff m 
   => MonadAsk { geo ∷ Maybe NavigatorGeolocation | r } m
   => Action → H.HalogenM State Action ChildSlots o m Unit

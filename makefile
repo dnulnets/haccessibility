@@ -9,7 +9,18 @@ build-portal:
 	
 build-backend:
 	cd backend;stack build
+	cd backend;stack install
 
+build-all:
+	cd portal;./generate.sh
+	cd portal;cat ./src/Version.purs
+	cd portal;spago build
+	cd portal;spago bundle-app
+	-rm -fR backend/static
+	cd portal;parcel build -d ../backend/static index.html	
+	cd backend;stack build
+	cd backend;stack install
+	
 build-certificate:
 	openssl req -nodes -newkey rsa:4096 -sha512 -x509 -days 365 -subj '/CN=haccsrv/O=IoT Hub for Accessability, Sweden./C=SE' -out deployment/tls.pem -keyout deployment/tls.key
 

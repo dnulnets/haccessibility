@@ -83,6 +83,8 @@ instance monadAskApplication ∷ TypeEquals e Environment ⇒ MonadAsk e Applica
 instance manageNavigationApplicationM ∷ ManageNavigation ApplicationM where
 
   -- |Navigates the app using hash based routing
+  --gotoPage newPage = do
+  --  H.liftEffect $ setHash $ print routeCodec newPage
   gotoPage newPage = do
     H.liftEffect $ setHash $ print routeCodec newPage
 
