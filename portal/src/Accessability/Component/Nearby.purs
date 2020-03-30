@@ -100,7 +100,7 @@ handleAction ∷ ∀ r o m . MonadAff m
 -- | Submit => Whenever the Position button is pressed, it will get the GPS so it can be displayed
 handleAction GPS = do
  loc <- asks _.geo
- olmap <- H.liftEffect $ toMaybe <$> createMap
+ olmap <- H.liftEffect $ toMaybe <$> (createMap "map" 17.3063 62.39129)
  state <- H.get
  H.put state {map = olmap}
  case loc of
