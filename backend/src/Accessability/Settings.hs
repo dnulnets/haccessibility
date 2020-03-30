@@ -34,7 +34,7 @@ data AppSettings = AppSettings {
 defaultSettings::AppSettings
 defaultSettings = AppSettings {
 
-  tokenSecret = "mandelmassa"   -- ^The default token secret
+  tokenSecret = "69fh)d#%fih"   -- ^The default token secret
   ,tokenExpiration = 60*60      -- ^The default token is only valid for 1 hour
   ,passwordCost = 10            -- ^The default password hashing cost
 

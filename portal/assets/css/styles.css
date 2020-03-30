@@ -15,3 +15,8 @@ main {
     padding: 15px;
     margin: 0 auto;
   }
+
+  #map {
+    width: 80%;
+    height: 250px;
+  }

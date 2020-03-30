@@ -9,6 +9,7 @@ module Accessability.Component.Nearby where
 import Prelude
 import Data.Maybe (Maybe(..), fromMaybe, maybe)
 import Data.Either (Either(..))
+import Data.Nullable (toMaybe)
 
 -- Control Monad
 import Control.Monad.Reader.Trans (class MonadAsk)
@@ -33,6 +34,7 @@ import Web.HTML.Navigator.Geolocation (NavigatorGeolocation,
   getCurrentPosition,
   defaultOptions,
   Position)
+import Web.OL.Map
 
 -- Our own stuff
 import Accessability.Component.HTML.Utils (css, style)
@@ -43,13 +45,15 @@ type Slot p = ∀ q . H.Slot q Void p
 
 -- | State for the component
 type State = {  alert::Maybe String,   -- ^ The alert text
-                position::Maybe Position}  -- ^ The GPS position of the user
+                position::Maybe Position,
+                map::Maybe OLMap}  -- ^ The GPS position of the user
 
 -- | Initial state is no logged in user
 initialState ∷ ∀ i. i   -- ^ Initial input
   → State               -- ^ The state
 initialState _ = { alert : Nothing,
-                   position : Nothing }
+                   position : Nothing,
+                   map : Nothing }
 
 -- | Internal form actions
 data Action = GPS
@@ -77,14 +81,14 @@ render ∷ ∀ m . MonadAff m ⇒ State -- ^ The state to render
   → H.ComponentHTML Action () m   -- ^ The components HTML
 render state = HH.div
                [css "container-fluid"]
-               [HH.div [css "row"]
+               [HH.div [HP.id_ "map"][], HH.div [css "row"]
                  [ HH.div [css "col-sm"] [HH.button [css "btn btn-lg btn-block btn-warning", HP.type_ HP.ButtonButton, HE.onClick (\_->Just $ GPS)] [HH.text "Update position"]],
                     HH.div [css "col-sm"] [HH.label [HP.for "longitude"] [HH.text "Longitude"],
                       HH.input [HP.value (fromMaybe "?" (show <$> ((_.coords.longitude) <$> state.position))), HP.id_ "longitude", HP.type_ HP.InputText,
                         HPA.label "longitude", HP.placeholder "Longitude"]],
                     HH.div [css "col-sm"] [HH.label [HP.for "latitude"] [HH.text "Latitude"],
                       HH.input [HP.value (fromMaybe "?" (show <$> ((_.coords.latitude) <$> state.position))), HP.id_ "latitude", HP.type_ HP.InputText,
-                        HPA.label "latitude", HP.placeholder "Latitude"]]],HH.text $ show state]
+                        HPA.label "latitude", HP.placeholder "Latitude"]]],HH.text $ show state.position]
 
 -- | Handles all actions for the login component
 handleAction ∷ ∀ r o m . MonadAff m
@@ -96,6 +100,9 @@ handleAction ∷ ∀ r o m . MonadAff m
 -- | Submit => Whenever the Position button is pressed, it will get the GPS so it can be displayed
 handleAction GPS = do
  loc <- asks _.geo
+ olmap <- H.liftEffect $ toMaybe <$> createMap
+ state <- H.get
+ H.put state {map = olmap}
  case loc of
    Just x -> do
       pos <- H.liftAff $ try $ getCurrentPosition defaultOptions x

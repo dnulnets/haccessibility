@@ -20,26 +20,14 @@ module Accessability.Data.User (User(..)) where
 --
 -- Import standard libs
 --
-import           Data.Text                (Text, pack)
-import           Data.Time.Clock          (UTCTime)
+import           Data.Text                (Text)
 import           GHC.Generics             (Generic (..))
-
---
--- Import for persistence
---
-import           Database.Persist.TH
 
 --
 -- JSON library
 --
 import           Data.Aeson
 import           Data.Aeson.TH
-
---
--- Imports for GQL
---
-import           Data.Morpheus.Kind       (ENUM)
-import           Data.Morpheus.Types      (GQLType (..))
 
 --
 -- Our own stuff
@@ -65,8 +53,8 @@ data User = User {
 --
 -- JSON Option
 --
-customOptions :: Options
-customOptions = defaultOptions
+-- customOptions :: Options
+-- customOptions = defaultOptions
 
 --
 -- JSON for User
