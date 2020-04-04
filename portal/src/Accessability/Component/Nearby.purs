@@ -74,7 +74,7 @@ component =
     }
 
 nearbyAlert::forall p i . Maybe String -> HH.HTML p i
-nearbyAlert t = HH.b [css "", style $ ("color:red;visibility:" <> (maybe "hidden" (\_->"visible") t))] 
+nearbyAlert t = HH.div [css "alert alert-danger", style $ ((maybe "hidden" (\_->"visible") t))] 
   [HH.text $ fromMaybe "" t]
 
 -- | Render the nearby page
@@ -82,12 +82,14 @@ render ∷ ∀ m . MonadAff m ⇒ State -- ^ The state to render
   → H.ComponentHTML Action () m   -- ^ The components HTML
 render state = HH.div
                [css "container-fluid"]
-               [HH.div [HP.id_ "map"][], HH.div [css "row"]
-                 [ HH.div [css "col-sm"] [HH.button [css "btn btn-lg btn-block btn-warning", HP.type_ HP.ButtonButton, HE.onClick (\_->Just $ GPS)] [HH.text "Update position"]],
-                    HH.div [css "col-sm"] [HH.label [HP.for "longitude"] [HH.text "Longitude"],
+               [HH.div [css "row"] [HH.div[css "col-xs-12 col-md-12"][nearbyAlert state.alert]],
+                HH.div [css "row"] [HH.div[css "col-xs-12 col-md-12"][HH.div [HP.id_ "map"][]]],
+                HH.div [css "row"]
+                 [  HH.div [css "col-xs-4 col-sm-4"] [HH.button [css "btn btn-lg btn-block btn-warning", HP.type_ HP.ButtonButton, HE.onClick (\_->Just $ GPS)] [HH.text "Update position"]],
+                    HH.div [css "col-xs-4 col-sm-4"] [HH.label [HP.for "longitude"] [HH.text "Longitude"],
                       HH.input [HP.value (fromMaybe "?" (show <$> ((_.coords.longitude) <$> state.position))), HP.id_ "longitude", HP.type_ HP.InputText,
                         HPA.label "longitude", HP.placeholder "Longitude"]],
-                    HH.div [css "col-sm"] [HH.label [HP.for "latitude"] [HH.text "Latitude"],
+                    HH.div [css "col-xs-4 col-sm-4"] [HH.label [HP.for "latitude"] [HH.text "Latitude"],
                       HH.input [HP.value (fromMaybe "?" (show <$> ((_.coords.latitude) <$> state.position))), HP.id_ "latitude", HP.type_ HP.InputText,
                         HPA.label "latitude", HP.placeholder "Latitude"]]],HH.text $ show state.position]
 
@@ -111,17 +113,17 @@ handleAction Initialize = do
           H.liftEffect $ log $ "Position: " <> show p
           olmap <- H.liftEffect $ toMaybe <$> (createMap "map" p.coords.longitude p.coords.latitude 10)
           state <- H.get
-          H.put state {map = olmap}
+          H.put state {map = olmap, alert = Nothing}
         Left e -> do
           H.liftEffect $ log $ "Position error: " <> (show e)
           olmap <- H.liftEffect $ toMaybe <$> (createMap "map" 17.3063 62.39129 10)
           state <- H.get
-          H.put state {map = olmap}
+          H.put state {map = olmap, alert = Just "Unable to get position!"}
    Nothing -> do
       H.liftEffect $ log $ "No Position device"
       olmap <- H.liftEffect $ toMaybe <$> (createMap "map" 17.3063 62.39129 10)
       state <- H.get
-      H.put state {map = olmap}
+      H.put state {map = olmap, alert = Just "No GPS functionality!"}
 
 -- | Finalize action
 handleAction Finalize = do
@@ -130,10 +132,10 @@ handleAction Finalize = do
   case state.map of
     Just x -> do
       H.liftEffect $ removeTarget x
-      H.put state { map = Nothing }
       H.liftEffect $ log "Removed target"
     Nothing -> do
       H.liftEffect $ log "Nothing to remove"
+  H.put state { map = Nothing, alert = Nothing }
 
 -- | GPS Update position set
 handleAction GPS = do
@@ -148,10 +150,13 @@ handleAction GPS = do
           Right p -> do
               H.liftEffect $ log $ "Got position " <> show p
               H.liftEffect $ setCenter map p.coords.longitude p.coords.latitude
+              H.put state {alert = Nothing }
           Left e -> do
               H.liftEffect $ setCenter map 20.95279 64.75067
               H.liftEffect $ log $ "Unable to get position " <> show e
+              H.put state {alert = Just "Unable to get position!" }
       Nothing -> do
         H.liftEffect $ log "Unable to get position, no gps"
+        H.put state {alert = Just "No GPS functionality!"}
   Nothing -> do
     H.liftEffect $ log "No map available"
