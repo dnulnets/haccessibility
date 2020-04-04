@@ -56,27 +56,28 @@ initialState _ = { alert : Nothing,
                    map : Nothing }
 
 -- | Internal form actions
-data Action = GPS
+data Action = Initialize | Finalize | GPS
 
 -- | The component definition
 component ∷ ∀ r q i o m . MonadAff m
             ⇒ ManageNavigation m
             ⇒ MonadAsk { geo ∷ Maybe NavigatorGeolocation | r } m
             ⇒ H.Component HH.HTML q i o m
-component =
+component = 
   H.mkComponent
     { initialState
     , render
-    , eval: H.mkEval $ H.defaultEval { handleAction = handleAction }
+    , eval: H.mkEval $ H.defaultEval { handleAction = handleAction,
+      initialize = Just Initialize,
+      finalize = Just Finalize
+     }
     }
 
 nearbyAlert::forall p i . Maybe String -> HH.HTML p i
 nearbyAlert t = HH.b [css "", style $ ("color:red;visibility:" <> (maybe "hidden" (\_->"visible") t))] 
   [HH.text $ fromMaybe "" t]
 
---loginAlert t = HH.div [css "alert alert-danger alert-signin", HPA.role "alert", style "visibility: hidden"] [HH.text t]
-
--- | Render the alert
+-- | Render the nearby page
 render ∷ ∀ m . MonadAff m ⇒ State -- ^ The state to render
   → H.ComponentHTML Action () m   -- ^ The components HTML
 render state = HH.div
@@ -96,13 +97,11 @@ handleAction ∷ ∀ r o m . MonadAff m
             => MonadAsk { geo ∷ Maybe NavigatorGeolocation | r } m
   ⇒ Action -- ^ The action to handle
   → H.HalogenM State Action () o m Unit -- ^ The handled action
-      
--- | Submit => Whenever the Position button is pressed, it will get the GPS so it can be displayed
-handleAction GPS = do
+
+-- | Initialize action
+handleAction Initialize = do
  loc <- asks _.geo
- olmap <- H.liftEffect $ toMaybe <$> (createMap "map" 17.3063 62.39129)
- state <- H.get
- H.put state {map = olmap}
+ H.liftEffect $ log "Initialize Nearby Component"
  case loc of
    Just x -> do
       pos <- H.liftAff $ try $ getCurrentPosition defaultOptions x
@@ -110,7 +109,49 @@ handleAction GPS = do
         Right p -> do
           H.modify_ (\st -> st { position = Just p})
           H.liftEffect $ log $ "Position: " <> show p
+          olmap <- H.liftEffect $ toMaybe <$> (createMap "map" p.coords.longitude p.coords.latitude 10)
+          state <- H.get
+          H.put state {map = olmap}
         Left e -> do
           H.liftEffect $ log $ "Position error: " <> (show e)
+          olmap <- H.liftEffect $ toMaybe <$> (createMap "map" 17.3063 62.39129 10)
+          state <- H.get
+          H.put state {map = olmap}
    Nothing -> do
       H.liftEffect $ log $ "No Position device"
+      olmap <- H.liftEffect $ toMaybe <$> (createMap "map" 17.3063 62.39129 10)
+      state <- H.get
+      H.put state {map = olmap}
+
+-- | Finalize action
+handleAction Finalize = do
+  H.liftEffect $ log "Finalize Nearby Component"
+  state <- H.get
+  case state.map of
+    Just x -> do
+      H.liftEffect $ removeTarget x
+      H.put state { map = Nothing }
+      H.liftEffect $ log "Removed target"
+    Nothing -> do
+      H.liftEffect $ log "Nothing to remove"
+
+-- | GPS Update position set
+handleAction GPS = do
+ loc <- asks _.geo
+ state <- H.get
+ case state.map of
+  Just map -> do
+    case loc of
+      Just gps -> do
+        pos <- H.liftAff $ try $ getCurrentPosition defaultOptions gps
+        case pos of
+          Right p -> do
+              H.liftEffect $ log $ "Got position " <> show p
+              H.liftEffect $ setCenter map p.coords.longitude p.coords.latitude
+          Left e -> do
+              H.liftEffect $ setCenter map 20.95279 64.75067
+              H.liftEffect $ log $ "Unable to get position " <> show e
+      Nothing -> do
+        H.liftEffect $ log "Unable to get position, no gps"
+  Nothing -> do
+    H.liftEffect $ log "No map available"

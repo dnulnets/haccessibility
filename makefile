@@ -18,7 +18,7 @@ build-all:
 	cd portal;spago bundle-app
 	-rm -fR backend/static
 	cd portal;parcel build -d ../backend/static index.html	
-	cd backend;stack build
+	cd backend;stack build --force-dirty
 	cd backend;stack install
 	
 build-certificate:

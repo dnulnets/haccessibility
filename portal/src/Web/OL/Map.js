@@ -12,20 +12,41 @@ var fromLonLat = require ('ol/proj').fromLonLat;
 exports.createMap = function (element) {
   return function (lon) {
     return function (lat) {
+      return function (z) {
+        return function() {
+          return new Map({
+            target: element,
+            layers: [
+              new TileLayer({
+                source: new OSM()
+              })
+            ],
+            view: new View({
+              center: fromLonLat([lon, lat]),
+              zoom: z
+            })            
+          });
+        }
+      }
+    }
+  } 
+};
+
+// Adjust the center of the map
+exports.setCenter = function (map) {
+  return function (lon) {
+    return function (lat) {
       return function () {
-        return new Map({
-          target: element,
-          layers: [
-            new TileLayer({
-              source: new OSM()
-            })
-          ],
-          view: new View({
-            center: fromLonLat([lon, lat]),
-            zoom: 8
-          })
-        });
+        var v = map.getView();
+        v.setCenter (fromLonLat([lon, lat]));
       }
     }
   }
-};
+}
+
+// Removes the target from the map
+exports.removeTarget = function (map) {
+  return function () {
+      map.setTarget (undefined);
+  }
+}
