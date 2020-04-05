@@ -84,7 +84,7 @@ rootComponent env = H.hoist (runApplication env) Root.component
 main ∷ Effect Unit -- ^ Default return value
 main = do
   currentUserInfo <- liftEffect $ Ref.new Nothing
-  navloc <- window >>= navigator >>= geolocation
+  -- navloc <- window >>= navigator >>= geolocation
   loc <- window >>= location >>= origin
   log $ "Origin = " <> loc
   log $ "Build = " <> build
@@ -92,7 +92,7 @@ main = do
     body <- HA.awaitBody
     let
       env ∷ Environment
-      env = { geo : toMaybe navloc
+      env = { geo : Nothing -- toMaybe navloc
         , baseURL : BaseURL loc
         , userInfo : currentUserInfo}
     io <- runUI (rootComponent env) unit body

@@ -18,6 +18,7 @@ import Data.Tuple (Tuple)
 -- The foreign functions and types
 --
 foreign import data OLMap :: Type
+foreign import data OLGeolocation :: Type
 
 foreign import createMap  :: String -- ^Name of the element where it should be rendered
                           ->Number  -- ^Longitude
@@ -31,4 +32,11 @@ foreign import removeTarget :: OLMap -- ^The Map
 foreign import setCenter  :: OLMap -- ^The map
                           ->Number  -- ^Longitude
                           ->Number  -- ^Latitude
-                          ->Effect Unit -- ^Nothing to return
+                          ->Effect Unit
+
+foreign import addGeolocationToMap :: OLMap -- ^The map
+                            -> Effect (Nullable OLGeolocation) -- ^The geolocation device attached to the map
+
+foreign import setTracking :: OLGeolocation -- ^The geolocation device
+                            -> Boolean      -- ^Turn tracking on (true) or off (false)
+                            -> Effect Unit
