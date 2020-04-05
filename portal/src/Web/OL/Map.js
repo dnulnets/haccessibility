@@ -90,8 +90,6 @@ function changePosition (geo, positionFeature) {
 exports.addGeolocationToMap = function (map) {
   return function () {
 
-    console.log ("Add the geolocation!");
-
     // Create the geolocation device
     var v = map.getView();
     var geo = new ol.Geolocation({

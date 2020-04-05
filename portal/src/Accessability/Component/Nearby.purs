@@ -32,7 +32,13 @@ import Web.HTML.Navigator.Geolocation (NavigatorGeolocation,
   getCurrentPosition,
   defaultOptions,
   Position)
-import Web.OL.Map (OLMap, OLGeolocation, createMap, removeTarget, setCenter, addGeolocationToMap, setTracking)
+import Web.OL.Map (OLMap,
+  OLGeolocation,
+  createMap,
+  removeTarget,
+  setCenter,
+  addGeolocationToMap,
+  setTracking)
 
 -- Our own stuff
 import Accessability.Component.HTML.Utils (css, style)
@@ -56,7 +62,9 @@ initialState _ = { alert : Nothing,
                    map : Nothing }
 
 -- | Internal form actions
-data Action = Initialize | Finalize | GPS
+data Action = Initialize
+  | Finalize
+  | Tracking Boolean
 
 -- | The component definition
 component ∷ ∀ r q i o m . MonadAff m
@@ -85,7 +93,11 @@ render state = HH.div
                [HH.div [css "row"] [HH.div[css "col-xs-12 col-md-12"][nearbyAlert state.alert]],
                 HH.div [css "row"] [HH.div[css "col-xs-12 col-md-12"][HH.div [HP.id_ "map"][]]],
                 HH.div [css "row"]
-                 [  HH.div [css "col-xs-2 col-sm-2"] [HH.button [css "btn btn-lg btn-block btn-warning", HP.type_ HP.ButtonButton, HE.onClick (\_->Just $ GPS)] [HH.text "Update"]],
+                 [  HH.div [css "col-xs-2 col-sm-2"] [ HH.div [css "form-check"] [
+                      HH.input [css "form-check-input", HP.id_ "update", HP.type_ HP.InputCheckbox, HE.onChecked (\b->Just $ Tracking b)],
+                      HH.label [css "form-check-label", HP.for "update"] [HH.text "Update"]
+                      ]
+                    ],
                     HH.div [css "col-xs-5 col-sm-5"] [HH.label [HP.for "longitude"] [HH.text "Longitude"],
                       HH.input [HP.value (fromMaybe "?" (show <$> ((_.coords.longitude) <$> state.position))), HP.id_ "longitude", HP.type_ HP.InputText,
                         HPA.label "longitude", HP.placeholder "Longitude"]],
@@ -127,11 +139,11 @@ handleAction Finalize = do
   H.put state { map = Nothing, geo = Nothing, alert = Nothing }
 
 -- | GPS Update position set
-handleAction GPS = do
+handleAction (Tracking b) = do
  state <- H.get
  case state.geo of
   Just g -> do
-    H.liftEffect $ setTracking g true
-    H.liftEffect $ log "Geo location tracking enabled"
+    H.liftEffect $ setTracking g b
+    H.liftEffect $ log "Geo location tracking pressed"
   Nothing -> do
     H.liftEffect $ log "No geo location device available"

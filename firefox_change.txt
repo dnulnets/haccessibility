@@ -1,4 +1,9 @@
 Go to URL: about:config
+
+Change:
+
+geo.wifi.uri
+
 From:
 
 https://www.googleapis.com/geolocation/v1/geolocate?key=%GOOGLE_LOCATION_SERVICE_API_KEY%
