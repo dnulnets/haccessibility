@@ -29,10 +29,6 @@ import Halogen.HTML.Events as HE
 -- Web imports
 import Web.Event.Event (Event)
 import Web.Event.Event as Event
-import Web.HTML.Navigator.Geolocation (NavigatorGeolocation,
-  getCurrentPosition,
-  defaultOptions,
-  Position)
 
 -- Our own stuff
 import Accessability.Data.Route (Page(..))
@@ -52,16 +48,15 @@ data Message = SetUserMessage (Maybe UserInfo)   -- | A login or logout event
 -- | State for the component
 type State = {  alert::Maybe String,   -- ^ The alert text
                 username∷Maybe String, -- ^ The username as entered
-                password∷Maybe String, -- ^ The password as entered
-                position::Maybe Position}  -- ^ The GPS position of the user
+                password∷Maybe String -- ^ The password as entered
+              }
 
 -- | Initial state is no logged in user
 initialState ∷ ∀ i. i   -- ^ Initial input
   → State               -- ^ The state
 initialState _ = { alert : Nothing,
                    username : Nothing,
-                   password : Nothing,
-                   position : Nothing }
+                   password : Nothing}
 
 -- | Internal form actions
 data Action = Submit Event        -- ^ Submit of the user
@@ -71,7 +66,7 @@ data Action = Submit Event        -- ^ Submit of the user
 component ∷ ∀ r q i m . MonadAff m
             ⇒ ManageAuthentication m
             ⇒ ManageNavigation m
-            ⇒ MonadAsk { geo ∷ Maybe NavigatorGeolocation | r } m
+            ⇒ MonadAsk r m
             ⇒ H.Component HH.HTML q i Message m
 component =
   H.mkComponent
@@ -118,7 +113,7 @@ render state = HH.div
 handleAction ∷ ∀ r m . MonadAff m
             ⇒ ManageAuthentication m
             ⇒ ManageNavigation m
-            => MonadAsk { geo ∷ Maybe NavigatorGeolocation | r } m
+            => MonadAsk r m
   ⇒ Action -- ^ The action to handle
   → H.HalogenM State Action () Message m Unit -- ^ The handled action
 

@@ -27,6 +27,11 @@ data UserInfo = UserInfo { userid ∷ String,
                            username :: String,
                            email ∷ String }
 
+
+instance showUserInfo :: Show UserInfo where
+  show (UserInfo ui) = "UserInfo { userid=\"" <> ui.userid <> "\", token=\"" <> ui.token 
+    <> "\"username=\"" <> ui.username <> "\", email=\"" <> ui.email <> "\"}"
+
 instance decodeJsonUserInfo :: DecodeJson UserInfo where
   decodeJson json = do
     obj ← decodeJson json

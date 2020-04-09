@@ -23,7 +23,6 @@ import Halogen.HTML.Properties.ARIA as HPA
 
 -- DOM import
 import DOM.HTML.Indexed.ButtonType (ButtonType(..))
-import Web.HTML.Navigator.Geolocation (NavigatorGeolocation)
 
 -- Our own stuff
 import Accessability.Data.Route (Page(..))
@@ -34,7 +33,7 @@ import Accessability.Component.HTML.Utils (css,
                                   
 import Accessability.Component.Login as Login
 import Accessability.Component.Nearby as Nearby
-import Accessability.Interface.Navigate (class ManageNavigation)
+import Accessability.Interface.Navigate (class ManageNavigation, gotoPage)
 import Accessability.Interface.Authenticate (class ManageAuthentication, UserInfo (..))
 
 -- | The state of the root page
@@ -57,7 +56,7 @@ _nearby = SProxy::SProxy "nearby"
 component ∷ ∀ r i o m. MonadAff m
   => ManageAuthentication m
   => ManageNavigation m
-  => MonadAsk { geo ∷ Maybe NavigatorGeolocation | r } m
+  => MonadAsk r m
   => H.Component HH.HTML Query i o m
 component =
   H.mkComponent
@@ -107,7 +106,7 @@ navbarRight state = HH.a [css "navbar-text", href Home]
 render ∷ ∀ r m . MonadAff m
   => ManageAuthentication m
   => ManageNavigation m
-  => MonadAsk { geo ∷ Maybe NavigatorGeolocation | r } m
+  => MonadAsk r m
   => State → H.ComponentHTML Action ChildSlots m
 render state = HH.div [] [
   HH.header [] [navbar $ (navbarHeader "Accessability portal") <> [navbarLeft state, navbarRight state]],
@@ -117,7 +116,7 @@ render state = HH.div [] [
 view ∷ ∀ r m. MonadAff m
        ⇒ ManageAuthentication m
        ⇒ ManageNavigation m
-       ⇒ MonadAsk { geo ∷ Maybe NavigatorGeolocation | r } m
+       ⇒ MonadAsk r m
        ⇒ Page → H.ComponentHTML Action ChildSlots m
 view Login = HH.slot _login  unit Login.component  unit (Just <<< loginMessageConv)
 view Home =  HH.slot _nearby unit Nearby.component unit absurd
@@ -144,19 +143,26 @@ loginMessageConv (Login.SetUserMessage ui) = SetUserAction ui
 -- | Handle the queries sent to the root page
 handleQuery ∷ ∀ r o m a .
               MonadAff m ⇒ 
-              MonadAsk r m ⇒ 
+              MonadAsk r m ⇒
+              ManageNavigation m =>
               Query a → H.HalogenM State Action ChildSlots o m (Maybe a)
 handleQuery = case _ of
   GotoPageRequest newpage a → do
     state ← H.get
-    H.liftEffect $ log $ "GotoPageRequest from " <> show state.page <> " to " <> show newpage
-    H.put $ state { page = newpage }
+    H.liftEffect $ log $ "GotoPageRequest to " <> show newpage
+    decided <- pure $ maybe Login (const newpage) state.userInfo
+    H.liftEffect $ log $ "GotoPageRequest was decided to be " <> show decided
+    if decided /= newpage
+      then do
+        gotoPage Login
+      else do
+        H.put $ state { page = decided }
     pure (Just a)
 
 -- | Handle the root containers actions
 handleAction ∷ ∀ r o m . MonadAff m 
-  => MonadAsk { geo ∷ Maybe NavigatorGeolocation | r } m
+  => MonadAsk r m
   => Action → H.HalogenM State Action ChildSlots o m Unit
-handleAction = case _ of
-  SetUserAction ui →
+handleAction (SetUserAction ui) = do
+    H.liftEffect $ log $ "Logged in user " <> show ui
     H.modify_ \st → st { userInfo = ui }

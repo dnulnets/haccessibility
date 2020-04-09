@@ -28,10 +28,6 @@ import Halogen.HTML.Properties.ARIA as HPA
 import Halogen.HTML.Events as HE
 
 -- Web imports
-import Web.HTML.Navigator.Geolocation (NavigatorGeolocation,
-  getCurrentPosition,
-  defaultOptions,
-  Position)
 import Web.OL.Map (OLMap,
   OLGeolocation,
   createMap,
@@ -49,7 +45,6 @@ type Slot p = ∀ q . H.Slot q Void p
 
 -- | State for the component
 type State = {  alert::Maybe String,   -- ^ The alert text
-                position::Maybe Position,
                 geo::Maybe OLGeolocation,
                 map::Maybe OLMap}  -- ^ The GPS position of the user
 
@@ -58,7 +53,6 @@ initialState ∷ ∀ i. i   -- ^ Initial input
   → State               -- ^ The state
 initialState _ = { alert : Nothing,
                    geo : Nothing,
-                   position : Nothing,
                    map : Nothing }
 
 -- | Internal form actions
@@ -69,7 +63,7 @@ data Action = Initialize
 -- | The component definition
 component ∷ ∀ r q i o m . MonadAff m
             ⇒ ManageNavigation m
-            ⇒ MonadAsk { geo ∷ Maybe NavigatorGeolocation | r } m
+            ⇒ MonadAsk r m
             ⇒ H.Component HH.HTML q i o m
 component = 
   H.mkComponent
@@ -82,8 +76,8 @@ component =
     }
 
 nearbyAlert::forall p i . Maybe String -> HH.HTML p i
-nearbyAlert t = HH.div [css "alert alert-danger", style $ ((maybe "hidden" (\_->"visible") t))] 
-  [HH.text $ fromMaybe "" t]
+nearbyAlert (Just t) = HH.div [css "alert alert-danger"] [HH.text $ t]
+nearbyAlert Nothing = HH.div [] []
 
 -- | Render the nearby page
 render ∷ ∀ m . MonadAff m ⇒ State -- ^ The state to render
@@ -95,20 +89,15 @@ render state = HH.div
                 HH.div [css "row"]
                  [  HH.div [css "col-xs-2 col-sm-2"] [ HH.div [css "form-check"] [
                       HH.input [css "form-check-input", HP.id_ "update", HP.type_ HP.InputCheckbox, HE.onChecked (\b->Just $ Tracking b)],
-                      HH.label [css "form-check-label", HP.for "update"] [HH.text "Update"]
+                      HH.label [css "form-check-label", HP.for "update"] [HH.text "Continuous update"]
                       ]
                     ],
-                    HH.div [css "col-xs-5 col-sm-5"] [HH.label [HP.for "longitude"] [HH.text "Longitude"],
-                      HH.input [HP.value (fromMaybe "?" (show <$> ((_.coords.longitude) <$> state.position))), HP.id_ "longitude", HP.type_ HP.InputText,
-                        HPA.label "longitude", HP.placeholder "Longitude"]],
-                    HH.div [css "col-xs-5 col-sm-5"] [HH.label [HP.for "latitude"] [HH.text "Latitude"],
-                      HH.input [HP.value (fromMaybe "?" (show <$> ((_.coords.latitude) <$> state.position))), HP.id_ "latitude", HP.type_ HP.InputText,
-                        HPA.label "latitude", HP.placeholder "Latitude"]]],HH.text $ show state.position]
+                    HH.div [css "col-xs-12 col-sm-12"] [HH.text $ show state.alert]]]
 
 -- | Handles all actions for the login component
 handleAction ∷ ∀ r o m . MonadAff m
             ⇒ ManageNavigation m
-            => MonadAsk { geo ∷ Maybe NavigatorGeolocation | r } m
+            => MonadAsk r m
   ⇒ Action -- ^ The action to handle
   → H.HalogenM State Action () o m Unit -- ^ The handled action
 

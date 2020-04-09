@@ -31,7 +31,6 @@ import Halogen.VDom.Driver (runUI)
 
 -- Web imports
 import Web.HTML (window)
-import Web.HTML.Navigator.Geolocation (geolocation) 
 import Web.HTML.Window (navigator, location, toEventTarget)
 import Web.HTML.Location (origin)
 import Web.HTML.Event.HashChangeEvent as HCE
@@ -84,7 +83,6 @@ rootComponent env = H.hoist (runApplication env) Root.component
 main ∷ Effect Unit -- ^ Default return value
 main = do
   currentUserInfo <- liftEffect $ Ref.new Nothing
-  -- navloc <- window >>= navigator >>= geolocation
   loc <- window >>= location >>= origin
   log $ "Origin = " <> loc
   log $ "Build = " <> build
@@ -92,12 +90,12 @@ main = do
     body <- HA.awaitBody
     let
       env ∷ Environment
-      env = { geo : Nothing -- toMaybe navloc
-        , baseURL : BaseURL loc
+      env = { baseURL : BaseURL loc
         , userInfo : currentUserInfo}
     io <- runUI (rootComponent env) unit body
 
     void $ liftEffect $ matchesWith (parse routeCodec) \old new -> do
-      liftEffect $ log $ "Router change from " <> show old <> " to " <> show new
+      liftEffect $ log $ "Router at " <> show old
+      liftEffect $ log $ "Router change to " <> show new
       when (old /= Just new) do
-        launchAff_ $ io.query $ H.tell $ Root.GotoPageRequest new    
+        launchAff_ $ io.query $ H.tell $ Root.GotoPageRequest new
