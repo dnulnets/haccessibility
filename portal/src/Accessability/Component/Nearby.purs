@@ -39,6 +39,7 @@ import Web.OL.Map (OLMap,
 -- Our own stuff
 import Accessability.Component.HTML.Utils (css, style)
 import Accessability.Interface.Navigate (class ManageNavigation)
+import Accessability.Interface.Item (class ManageItem, queryItems)
 
 -- | Slot type for the Login component
 type Slot p = ∀ q . H.Slot q Void p
@@ -59,11 +60,13 @@ initialState _ = { alert : Nothing,
 data Action = Initialize
   | Finalize
   | Tracking Boolean
+  | Lookup
 
 -- | The component definition
 component ∷ ∀ r q i o m . MonadAff m
             ⇒ ManageNavigation m
             ⇒ MonadAsk r m
+            => ManageItem m
             ⇒ H.Component HH.HTML q i o m
 component = 
   H.mkComponent
@@ -92,11 +95,14 @@ render state = HH.div
                       HH.label [css "form-check-label", HP.for "update"] [HH.text "Continuous update"]
                       ]
                     ],
-                    HH.div [css "col-xs-12 col-sm-12"] [HH.text $ show state.alert]]]
+                    HH.div [css "col-xs-12 col-sm-12"] [
+                      HH.button [css "btn btn-lg btn-block btn-warning", HP.type_ HP.ButtonButton, HE.onClick \_ -> Just Lookup ] [HH.text "Lookup"]
+                    ]]]
 
 -- | Handles all actions for the login component
 handleAction ∷ ∀ r o m . MonadAff m
             ⇒ ManageNavigation m
+            => ManageItem m
             => MonadAsk r m
   ⇒ Action -- ^ The action to handle
   → H.HalogenM State Action () o m Unit -- ^ The handled action
@@ -136,3 +142,9 @@ handleAction (Tracking b) = do
     H.liftEffect $ log "Geo location tracking pressed"
   Nothing -> do
     H.liftEffect $ log "No geo location device available"
+
+-- | Find the items
+handleAction Lookup = do
+  H.liftEffect $ log "Make an items lookup"
+  items <- queryItems {longitude: Just 0.0, latitude: Just 0.0, distance: Nothing, limit: Nothing, text: Nothing}
+  H.liftEffect $ log $ show items

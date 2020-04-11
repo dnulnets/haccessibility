@@ -35,6 +35,8 @@ import Accessability.Component.Login as Login
 import Accessability.Component.Nearby as Nearby
 import Accessability.Interface.Navigate (class ManageNavigation, gotoPage)
 import Accessability.Interface.Authenticate (class ManageAuthentication, UserInfo (..))
+import Accessability.Interface.Item (class ManageItem)
+
 
 -- | The state of the root page
 type State = {  userInfo :: Maybe UserInfo -- ^ User information of the logged in user
@@ -56,6 +58,7 @@ _nearby = SProxy::SProxy "nearby"
 component ∷ ∀ r i o m. MonadAff m
   => ManageAuthentication m
   => ManageNavigation m
+  => ManageItem m
   => MonadAsk r m
   => H.Component HH.HTML Query i o m
 component =
@@ -106,6 +109,7 @@ navbarRight state = HH.a [css "navbar-text", href Home]
 render ∷ ∀ r m . MonadAff m
   => ManageAuthentication m
   => ManageNavigation m
+  => ManageItem m
   => MonadAsk r m
   => State → H.ComponentHTML Action ChildSlots m
 render state = HH.div [] [
@@ -116,6 +120,7 @@ render state = HH.div [] [
 view ∷ ∀ r m. MonadAff m
        ⇒ ManageAuthentication m
        ⇒ ManageNavigation m
+       => ManageItem m
        ⇒ MonadAsk r m
        ⇒ Page → H.ComponentHTML Action ChildSlots m
 view Login = HH.slot _login  unit Login.component  unit (Just <<< loginMessageConv)

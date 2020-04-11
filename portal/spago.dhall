@@ -2,6 +2,7 @@
 Welcome to a Spago project!
 You can edit this file as you like.
 -}
+
 { name = "my-project"
 , dependencies =
     [ "affjax"
@@ -17,6 +18,7 @@ You can edit this file as you like.
     , "routing-duplex"
     , "coroutines"
     , "aff-coroutines"
+    , "datetime-iso"
     ]
 , packages = ./packages.dhall
 , sources = [ "src/**/*.purs", "test/**/*.purs" ]

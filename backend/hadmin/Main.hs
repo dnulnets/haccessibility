@@ -120,7 +120,7 @@ addItems file = do
                 itemSource = postItemSource body,
                 itemState = postItemState body,
                 itemPosition = Position $ PointXY (realToFrac $ postItemLongitude body) (realToFrac $ postItemLatitude body)}
-            liftIO $ putStrLn $ "Added item with key " <> (show $ fromSqlKey key)
+            liftIO $ putStrLn $ "Added item with id " <> (show $ keyToText key)
 
 -- |Adds a user to the database
 deleteUser::(MonadIO m) => String -- ^ Username
@@ -214,7 +214,7 @@ handleDelItem database args = do
                 flip runSqlPersistMPool pool $ do
                     deleteItem (args!!1)
         _ -> do
-            putStrLn "Usage: hadmin delitem <key>"
+            putStrLn "Usage: hadmin delitem <id>"
     where
         -- |Adds a user to the database
         deleteItem::(MonadIO m) => String -- ^ The key
@@ -224,7 +224,7 @@ handleDelItem database args = do
             liftIO $ putStrLn $ "Item deleted!"
             where
                 toKey::String->Key Item
-                toKey s = toSqlKey (read s)
+                toKey s = textToKey $ DT.pack s
 
 -- |Handles the delitem command
 handleListItems:: String  -- ^ The database URL
@@ -252,12 +252,12 @@ usage = do
     putStrLn "adduser   <username> <email> <password>"
     putStrLn "deluser   <username>"
     putStrLn "chapw     <username> <new password>"
-    putStrLn "lsitems"
+    putStrLn "lsusers"
     putStrLn ""
     putStrLn "Item commands:"
     putStrLn ""
     putStrLn "additems  <JSON-file with array of items>"
-    putStrLn "delitem   <key>"
+    putStrLn "delitem   <id>"
     putStrLn "lsitems"
     putStrLn ""
     putStrLn "Format of data:"
@@ -269,6 +269,7 @@ usage = do
     putStrLn $ "Modifier: " <> (show [ADI.Static, ADI.Transient])
     putStrLn $ "Approval: " <> (show [ADI.Waiting, ADI.Approved, ADI.Denied])
     putStrLn $ "State: " <> (show [ADI.Unknown, ADI.Online, ADI.Offline])
+    putStrLn $ "Id: 0000000000003af5"
     putStrLn ""
 
 -- Example HAPI_DATABASE "postgresql://heatserver:heatserver@yolo.com:5432/heat"

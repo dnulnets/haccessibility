@@ -23,6 +23,7 @@ module Accessability.Handler.REST.Item (
 -- Import standard libs
 --
 import           Data.Text                      (Text, pack, splitOn)
+import           Data.Aeson (encode)
 import qualified UnliftIO.Exception             as UIOE
 
 --
@@ -129,5 +130,9 @@ postItemsR = do
             (postItemsLimit queryBody)))
         (pure . Left . show)
     case result of
-        Left e -> invalidArgs $ ["Unable to find any items in the database"] <> splitOn "\n" (pack e)
-        Right items -> sendStatusJSON status200 items
+        Left e -> do
+            liftIO $ putStrLn "Unable to find any items"
+            invalidArgs $ ["Unable to find any items in the database"] <> splitOn "\n" (pack e)
+        Right items -> do
+            liftIO $ putStrLn $ show $ encode items
+            sendStatusJSON status200 items

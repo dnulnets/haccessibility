@@ -50,7 +50,7 @@ import Accessability.Interface.Endpoint (Endpoint,
 import Accessability.Interface.Authenticate (UserInfo(..))
 
 -- |type of Authorization 
-newtype Authorization = Bearer String -- ^The constructor for "Authroization: Bearer <token>
+newtype Authorization = Bearer String -- ^The constructor for "Authorization: Bearer <token>
 
 -- |The request type
 data RequestMethod a

@@ -25,6 +25,7 @@ instance showBaseURL :: Show BaseURL where
 -- |The nedpoint needed from the backend server
 data Endpoint = Authenticate
                 | Item (Maybe String)
+                | Items
 
 derive instance genericEndpoint :: Generic Endpoint _
 
@@ -35,4 +36,5 @@ instance showEndpoint :: Show Endpoint where
 endpointCodec :: RouteDuplex' Endpoint
 endpointCodec = root $ sum
   { "Authenticate": path "api/authenticate" noArgs
+  , "Items": path "api/items" noArgs
   , "Item": path "api/item" (optional (string segment)) }

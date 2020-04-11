@@ -41,9 +41,11 @@ import Accessability.Interface.Endpoint (BaseURL)
 import Accessability.Interface.Endpoint as EP
 import Accessability.Interface.Authenticate (UserInfo,
   class ManageAuthentication)
-import Accessability.Utils.Request (mkRequest,
-                           RequestMethod (..))
+import Accessability.Utils.Request (mkRequest, 
+  mkAuthRequest,
+  RequestMethod (..))
 import Accessability.Interface.Navigate (class ManageNavigation)
+import Accessability.Interface.Item (class ManageItem)
 import Accessability.Data.Route (routeCodec, Page(..))
 
 import Web.HTML (window)
@@ -97,7 +99,7 @@ instance manageNavigationApplicationM ∷ ManageNavigation ApplicationM where
         H.liftEffect $ setHash $ newHash
       else do
         H.liftEffect $ log $ "Reload hash with " <> oldHash
-        H.liftEffect $ reload
+        -- H.liftEffect $ reload
     where
       newHash :: String
       newHash = print routeCodec newPage
@@ -132,3 +134,19 @@ instance manageAuthenticationApplicationM :: ManageAuthentication ApplicationM w
   logout = do
     ref <- asks _.userInfo
     H.liftEffect $ REF.write Nothing ref
+
+--
+--  Add the set of functions that handles items
+--
+instance manageItemApplicationM :: ManageItem ApplicationM where
+
+  -- |Tries to login the user and get a token from the backend that can be used for future
+  -- calls
+  queryItems filter = do
+    response <- mkAuthRequest EP.Items (Post (Just filter))    
+    case response of
+      Left err -> do
+        H.liftEffect $ log $ "Error: " <> err
+        pure Nothing
+      Right (Tuple _ items) -> do
+        pure items
