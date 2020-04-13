@@ -16,60 +16,95 @@ var olp = require ('ol/proj');
 var olst = require ('ol/style');
 var olg = require ('ol/geom');
 
-// Create a map to test with
-exports.createMap = function (element) {
-  return function (lon) {
-    return function (lat) {
-      return function (z) {
-        return function() {
-          return new ol.Map({
-            target: element,
-            layers: [
-              new oll.Tile({
-                source: new ols.OSM()
-              })
-            ],
-            view: new ol.View({
-              center: olp.fromLonLat([lon, lat]),
-              zoom: z
-            })            
-          });
-        }
-      }
-    }
-  } 
+// The projection we are using
+var projection = 'EPSG:3857';
+
+// Create a map and add it to a DOM element and center it around a longitude and latitude
+// and set initial zoom
+exports.createMapImpl = function (element,lon, lat, z) {
+  return function() {
+    return new ol.Map({
+      target: element,
+      layers: [
+        new oll.Tile({
+          source: new ols.OSM()
+        })
+      ],
+      view: new ol.View({
+        projection: projection ,
+        center: [lon, lat],
+        center: olp.fromLonLat([lon, lat], projection),
+        zoom: z
+      })            
+    });
+  }
 };
 
-// Adjust the center of the map
-exports.setCenter = function (map) {
-  return function (lon) {
-    return function (lat) {
-      return function () {
-        var v = map.getView();
-        v.setCenter (olp.fromLonLat([lon, lat]));
-      }
-    }
+// Adjust the center of the map around the logitude and latitude.
+exports.setCenterImpl = function (map, lon, lat) {
+  return function () {
+    var v = map.getView();
+    v.setCenter (olp.fromLonLat([lon, lat]));
   }
 }
 
 // Removes the target from the map, so it does not display anymore and can be
-// garbage collected
-exports.removeTarget = function (map) {
+// garbage collected.
+exports.removeTargetImpl = function (map) {
   return function () {
       map.setTarget (undefined);
   }
 }
 
 // Sets the tracking on or off
-exports.setTracking = function (geo) {
-  return function (onoff) {
-    return function () {
-      geo.setTracking (onoff);  
-    }
+exports.setTrackingImpl = function (geo, onoff) {
+  return function () {
+    geo.setTracking (onoff);  
   }
 }
 
-// Update the geometry of the accuracy on change
+// Gets the current coordinates
+exports.getCoordinatesImpl = function (just, nothing, geo) {
+  return function () {
+    var px, py, pax, hx,hax
+    var p = geo.getPosition();
+    if (p==null) {
+      px = nothing
+      py = nothing
+    } else {
+      p = olp.toLonLat (p, geo.getProjection());
+      px = just(p[0])
+      py = just(p[1])
+    }
+
+    var pa = geo.getAccuracy();
+    if (pa==null) {
+      pax = nothing;
+    } else {
+      pax = just(pa);
+    }
+    var h = geo.getAltitude();
+    if (h==null) {
+      hx = nothing;
+    } else {
+      hx = just(h);
+    }
+    var ha = geo.getAltitudeAccuracy();
+    if (ha==null) {
+      hax = nothing;
+    } else {
+      hax = just(ha);
+    }
+    var c = { longitude: px, latitude: py, accuracy: pax, altitude: hx, altitudeAccuracy: hax };
+    return (c);
+  }
+}
+
+//
+// Functions for openlayers geolocation added to a map with a cursor
+//
+
+// Update the geometry when the accuracy changes
 function changeAccuracyGeometry (geo, accuracyFeature) {
   return function () {
     var g = geo.getAccuracyGeometry();
@@ -77,7 +112,7 @@ function changeAccuracyGeometry (geo, accuracyFeature) {
   }
 }
 
-// Update the position on change
+// Update the position when it changes
 function changePosition (geo, positionFeature) {
   return function() {
     var coordinates = geo.getPosition();
@@ -87,7 +122,7 @@ function changePosition (geo, positionFeature) {
 }
 
 // Initiate the geolocation mapping
-exports.addGeolocationToMap = function (map) {
+exports.addGeolocationToMapImpl = function (map) {
   return function () {
 
     // Create the geolocation device

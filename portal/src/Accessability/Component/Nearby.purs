@@ -34,7 +34,8 @@ import Web.OL.Map (OLMap,
   removeTarget,
   setCenter,
   addGeolocationToMap,
-  setTracking)
+  setTracking,
+  getCoordinates)
 
 -- Our own stuff
 import Accessability.Component.HTML.Utils (css, style)
@@ -90,12 +91,12 @@ render state = HH.div
                [HH.div [css "row"] [HH.div[css "col-xs-12 col-md-12"][nearbyAlert state.alert]],
                 HH.div [css "row"] [HH.div[css "col-xs-12 col-md-12"][HH.div [HP.id_ "map"][]]],
                 HH.div [css "row"]
-                 [  HH.div [css "col-xs-2 col-sm-2"] [ HH.div [css "form-check"] [
+                 [  HH.div [css "col-xs-4 col-sm-4"] [ HH.div [css "form-check"] [
                       HH.input [css "form-check-input", HP.id_ "update", HP.type_ HP.InputCheckbox, HE.onChecked (\b->Just $ Tracking b)],
-                      HH.label [css "form-check-label", HP.for "update"] [HH.text "Continuous update"]
+                      HH.label [css "form-check-label", HP.for "update"] [HH.text "Turn on GPS tracking"]
                       ]
                     ],
-                    HH.div [css "col-xs-12 col-sm-12"] [
+                    HH.div [css "col-xs-8 col-sm-8"] [
                       HH.button [css "btn btn-lg btn-block btn-warning", HP.type_ HP.ButtonButton, HE.onClick \_ -> Just Lookup ] [HH.text "Lookup"]
                     ]]]
 
@@ -148,3 +149,11 @@ handleAction Lookup = do
   H.liftEffect $ log "Make an items lookup"
   items <- queryItems {longitude: Just 0.0, latitude: Just 0.0, distance: Nothing, limit: Nothing, text: Nothing}
   H.liftEffect $ log $ show items
+  state <- H.get
+  case state.geo of
+    Just g -> do
+      cord <- H.liftEffect $ getCoordinates g
+      H.liftEffect $ log $ show cord
+    Nothing -> do
+      H.liftEffect $ log "No geolocation device"
+

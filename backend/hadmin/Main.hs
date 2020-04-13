@@ -269,7 +269,7 @@ usage = do
     putStrLn $ "Modifier: " <> (show [ADI.Static, ADI.Transient])
     putStrLn $ "Approval: " <> (show [ADI.Waiting, ADI.Approved, ADI.Denied])
     putStrLn $ "State: " <> (show [ADI.Unknown, ADI.Online, ADI.Offline])
-    putStrLn $ "Id: 0000000000003af5"
+    putStrLn $ "Id: Hexadecimal 64 bits 16 characters 0000000000003af5"
     putStrLn ""
 
 -- Example HAPI_DATABASE "postgresql://heatserver:heatserver@yolo.com:5432/heat"
