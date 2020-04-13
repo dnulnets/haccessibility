@@ -2,7 +2,7 @@ Go to URL: about:config
 
 Change:
 
-geo.wifi.uri
+geo.wifi.uri or if that do not exist geo.provider.network.url
 
 From:
 
@@ -11,4 +11,6 @@ https://www.googleapis.com/geolocation/v1/geolocate?key=%GOOGLE_LOCATION_SERVICE
 To:
 
 https://location.services.mozilla.com/v1/geolocate?key=test
+
+
 
