@@ -107,3 +107,12 @@ foreign import getCoordinatesImpl::forall a. Fn3 (a -> Maybe a) (Maybe a) OLGeol
 getCoordinates  :: OLGeolocation        -- ^The geolocation device
                 -> Effect Coordinates   -- ^The coordinates
 getCoordinates gl = runFn3 getCoordinatesImpl Just Nothing gl
+
+--
+-- Debug writer
+--
+foreign import debugWriteImpl:: Fn1 OLMap (Effect Unit)
+
+debugWrite  ::OLMap
+            -> Effect Unit
+debugWrite m = runFn1 debugWriteImpl m

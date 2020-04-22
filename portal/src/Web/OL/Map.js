@@ -44,7 +44,7 @@ exports.createMapImpl = function (element,lon, lat, z) {
 exports.setCenterImpl = function (map, lon, lat) {
   return function () {
     var v = map.getView();
-    v.setCenter (olp.fromLonLat([lon, lat]));
+    v.setCenter (olp.fromLonLat([lon, lat], projection));
   }
 }
 
@@ -168,5 +168,13 @@ exports.addGeolocationToMapImpl = function (map) {
 
     // Return with the geolocator
     return geo;
+  }
+}
+
+exports.debugWriteImpl = function (map) {
+  return function () {
+    console.log (map);
+    var v = map.getView();
+    console.log (v);    
   }
 }

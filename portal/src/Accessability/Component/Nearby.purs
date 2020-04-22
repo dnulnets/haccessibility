@@ -10,11 +10,14 @@ import Prelude
 import Data.Maybe (Maybe(..), fromMaybe, maybe)
 import Data.Either (Either(..))
 import Data.Nullable (toMaybe)
+import Data.Foldable (sequence_)
+import Data.Traversable (sequence, traverse)
 
 -- Control Monad
 import Control.Monad.Reader.Trans (class MonadAsk)
 import Control.Monad.Reader (asks)
 import Control.Monad.Error.Class (try)
+import Control.Monad (join)
 
 -- Effects
 import Effect.Aff.Class (class MonadAff)
@@ -30,17 +33,19 @@ import Halogen.HTML.Events as HE
 -- Web imports
 import Web.OL.Map (OLMap,
   OLGeolocation,
+  Coordinates(..),
   createMap,
   removeTarget,
   setCenter,
   addGeolocationToMap,
   setTracking,
-  getCoordinates)
+  getCoordinates,
+  debugWrite)
 
 -- Our own stuff
 import Accessability.Component.HTML.Utils (css, style)
 import Accessability.Interface.Navigate (class ManageNavigation)
-import Accessability.Interface.Item (class ManageItem, queryItems)
+import Accessability.Interface.Item (class ManageItem, queryItems, QueryItems(..), Item(..))
 
 -- | Slot type for the Login component
 type Slot p = ∀ q . H.Slot q Void p
@@ -60,8 +65,8 @@ initialState _ = { alert : Nothing,
 -- | Internal form actions
 data Action = Initialize
   | Finalize
-  | Tracking Boolean
   | Lookup
+  | Center
 
 -- | The component definition
 component ∷ ∀ r q i o m . MonadAff m
@@ -89,16 +94,17 @@ render ∷ ∀ m . MonadAff m ⇒ State -- ^ The state to render
 render state = HH.div
                [css "container-fluid"]
                [HH.div [css "row"] [HH.div[css "col-xs-12 col-md-12"][nearbyAlert state.alert]],
+                HH.div [css "row"] [HH.div[css "col-xs-12 col-md-12"][HH.h2 [][HH.text "Point of interests"]]],
                 HH.div [css "row"] [HH.div[css "col-xs-12 col-md-12"][HH.div [HP.id_ "map"][]]],
                 HH.div [css "row"]
-                 [  HH.div [css "col-xs-4 col-sm-4"] [ HH.div [css "form-check"] [
-                      HH.input [css "form-check-input", HP.id_ "update", HP.type_ HP.InputCheckbox, HE.onChecked (\b->Just $ Tracking b)],
-                      HH.label [css "form-check-label", HP.for "update"] [HH.text "Turn on GPS tracking"]
-                      ]
-                    ],
-                    HH.div [css "col-xs-8 col-sm-8"] [
+                 [  HH.div [css "col-xs-6 col-sm-2"] [
                       HH.button [css "btn btn-lg btn-block btn-warning", HP.type_ HP.ButtonButton, HE.onClick \_ -> Just Lookup ] [HH.text "Lookup"]
-                    ]]]
+                    ],
+                    HH.div [css "col-xs-6 col-sm-2"] [ 
+                      HH.button [css "btn btn-lg btn-block btn-warning", HP.type_ HP.ButtonButton, HE.onClick \_ -> Just Center ] [HH.text "Center"]
+                    ],
+                    HH.div [css "col-sm-8"] [ ]
+                    ]]
 
 -- | Handles all actions for the login component
 handleAction ∷ ∀ r o m . MonadAff m
@@ -112,11 +118,12 @@ handleAction ∷ ∀ r o m . MonadAff m
 handleAction Initialize = do
   state <- H.get
   H.liftEffect $ log "Initialize Nearby Component"
-  olmap <- H.liftEffect $ toMaybe <$> (createMap "map" 0.0 0.0 10)
+  olmap <- H.liftEffect $ toMaybe <$> (createMap "map" 0.0 0.0 18)
   case olmap of
     Just map -> do
       g <- H.liftEffect $ toMaybe <$> (addGeolocationToMap map)
       H.put state {map = olmap, geo = g, alert = Nothing}
+      H.liftEffect $ sequence_ $ setTracking <$> g <*> (Just true)
       H.liftEffect $ log "Got a geo location"
     Nothing -> do
       H.liftEffect $ log "Failed to get a map"
@@ -126,34 +133,26 @@ handleAction Initialize = do
 handleAction Finalize = do
   H.liftEffect $ log "Finalize Nearby Component"
   state <- H.get
-  case state.map of
-    Just x -> do
-      H.liftEffect $ removeTarget x
-      H.liftEffect $ log "Removed target"
-    Nothing -> do
-      H.liftEffect $ log "Nothing to remove"
+  H.liftEffect $ sequence_ $ setTracking <$> state.geo <*> (Just false)
+  H.liftEffect $ sequence_ $ removeTarget <$> state.map
   H.put state { map = Nothing, geo = Nothing, alert = Nothing }
-
--- | GPS Update position set
-handleAction (Tracking b) = do
- state <- H.get
- case state.geo of
-  Just g -> do
-    H.liftEffect $ setTracking g b
-    H.liftEffect $ log "Geo location tracking pressed"
-  Nothing -> do
-    H.liftEffect $ log "No geo location device available"
 
 -- | Find the items
 handleAction Lookup = do
   H.liftEffect $ log "Make an items lookup"
-  items <- queryItems {longitude: Just 0.0, latitude: Just 0.0, distance: Nothing, limit: Nothing, text: Nothing}
-  H.liftEffect $ log $ show items
   state <- H.get
-  case state.geo of
-    Just g -> do
-      cord <- H.liftEffect $ getCoordinates g
-      H.liftEffect $ log $ show cord
-    Nothing -> do
-      H.liftEffect $ log "No geolocation device"
+  tmp <- H.liftEffect $ traverse getCoordinates state.geo
+  items <- queryItems {
+    longitude : join $ _.longitude <$> tmp, 
+    latitude: join $ _.latitude <$> tmp, 
+    distance: Just 200.0,
+    limit: Nothing,
+    text: Nothing }
+  H.liftEffect $ log $ show items
 
+-- | Find the items
+handleAction Center = do
+  H.liftEffect $ log "Center the map around the GPS location"
+  state <- H.get
+  tmp <- H.liftEffect $ traverse getCoordinates state.geo
+  H.liftEffect $ sequence_ $ setCenter <$> state.map <*> (join $ _.longitude <$> tmp) <*> (join $ _.latitude <$> tmp)
