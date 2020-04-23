@@ -113,7 +113,7 @@ render ∷ ∀ r m . MonadAff m
   => MonadAsk r m
   => State → H.ComponentHTML Action ChildSlots m
 render state = HH.div [] [
-  HH.header [] [navbar $ (navbarHeader "Accessability portal") <> [navbarLeft state, navbarRight state]],
+  HH.header [] [navbar $ (navbarHeader "Case 3 Prototype") <> [navbarLeft state, navbarRight state]],
   HH.main [css "container", HPA.role "main"][view state.page]]
 
 -- | Render the main view of the page

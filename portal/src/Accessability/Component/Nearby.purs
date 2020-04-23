@@ -10,7 +10,7 @@ import Prelude
 import Data.Maybe (Maybe(..), fromMaybe, maybe)
 import Data.Either (Either(..))
 import Data.Nullable (toMaybe)
-import Data.Foldable (sequence_)
+import Data.Foldable (sequence_, traverse_)
 import Data.Traversable (sequence, traverse)
 
 -- Control Monad
@@ -98,10 +98,10 @@ render state = HH.div
                 HH.div [css "row"] [HH.div[css "col-xs-12 col-md-12"][HH.div [HP.id_ "map"][]]],
                 HH.div [css "row"]
                  [  HH.div [css "col-xs-6 col-sm-2"] [
-                      HH.button [css "btn btn-lg btn-block btn-warning", HP.type_ HP.ButtonButton, HE.onClick \_ -> Just Lookup ] [HH.text "Lookup"]
+                      HH.button [css "btn btn-lg btn-block btn-warning", style "margin-bottom:5px;", HP.type_ HP.ButtonButton, HE.onClick \_ -> Just Lookup ] [HH.text "Lookup"]
                     ],
                     HH.div [css "col-xs-6 col-sm-2"] [ 
-                      HH.button [css "btn btn-lg btn-block btn-warning", HP.type_ HP.ButtonButton, HE.onClick \_ -> Just Center ] [HH.text "Center"]
+                      HH.button [css "btn btn-lg btn-block btn-warning", style "margin-bottom:5px;", HP.type_ HP.ButtonButton, HE.onClick \_ -> Just Center ] [HH.text "Center"]
                     ],
                     HH.div [css "col-sm-8"] [ ]
                     ]]
@@ -133,8 +133,8 @@ handleAction Initialize = do
 handleAction Finalize = do
   H.liftEffect $ log "Finalize Nearby Component"
   state <- H.get
-  H.liftEffect $ sequence_ $ setTracking <$> state.geo <*> (Just false)
-  H.liftEffect $ sequence_ $ removeTarget <$> state.map
+  H.liftEffect $ traverse_ (flip setTracking false) state.geo
+  H.liftEffect $ traverse_ removeTarget state.map
   H.put state { map = Nothing, geo = Nothing, alert = Nothing }
 
 -- | Find the items

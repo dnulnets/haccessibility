@@ -10,7 +10,6 @@ import Version (build)
 
 -- Standard imports
 import Prelude
-import Data.Nullable (toMaybe)
 import Data.Maybe (Maybe(..))
 import Data.Foldable (traverse_)
 import Data.String.CodeUnits as Str
@@ -31,7 +30,7 @@ import Halogen.VDom.Driver (runUI)
 
 -- Web imports
 import Web.HTML (window)
-import Web.HTML.Window (navigator, location, toEventTarget)
+import Web.HTML.Window (location, toEventTarget)
 import Web.HTML.Location (origin)
 import Web.HTML.Event.HashChangeEvent as HCE
 import Web.HTML.Event.HashChangeEvent.EventTypes as HCET
