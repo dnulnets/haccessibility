@@ -10,7 +10,7 @@ import Prelude
 import Data.Maybe (Maybe(..))
 import Data.Nullable (toMaybe)
 import Data.Foldable (sequence_, traverse_)
-import Data.Traversable (traverse)
+import Data.Traversable (traverse, sequence)
 
 -- Control Monad
 import Control.Monad.Reader.Trans (class MonadAsk)
@@ -28,6 +28,7 @@ import Halogen.HTML.Events as HE
 -- Web imports
 import Web.OL.Map (OLMap,
   OLGeolocation,
+  OLLayer,
   createMap,
   createPOILayer,
   removeTarget,
@@ -35,6 +36,7 @@ import Web.OL.Map (OLMap,
   addGeolocationToMap,
   setTracking,
   getCoordinate,
+  removeLayerFromMap,
   addLayerToMap)
 
 -- Our own stuff
@@ -46,16 +48,20 @@ import Accessability.Interface.Item (class ManageItem, queryItems)
 type Slot p = ∀ q . H.Slot q Void p
 
 -- | State for the component
-type State = {  alert::Maybe String,   -- ^ The alert text
-                geo::Maybe OLGeolocation,
-                map::Maybe OLMap}  -- ^ The GPS position of the user
+type State = {  alert::Maybe String         -- ^ The alert text
+                , geo::Maybe OLGeolocation  -- ^ The GeoLocator device
+                , map::Maybe OLMap          -- ^ The Map on the page
+                , poi::Maybe OLLayer        -- ^ The POI Layer
+                , distance::Number }        -- ^ The max search distance
 
 -- | Initial state is no logged in user
 initialState ∷ ∀ i. i   -- ^ Initial input
   → State               -- ^ The state
 initialState _ = { alert : Nothing,
                    geo : Nothing,
-                   map : Nothing }
+                   map : Nothing,
+                   poi : Nothing,
+                   distance : 300.0 }
 
 -- | Internal form actions
 data Action = Initialize
@@ -132,7 +138,7 @@ handleAction Finalize = do
   H.liftEffect $ traverse_ removeTarget state.map
   H.put state { map = Nothing, geo = Nothing, alert = Nothing }
 
--- | Find the items
+-- | Find the items and create a layer and display it
 handleAction Lookup = do
   H.liftEffect $ log "Make an items lookup"
   state <- H.get
@@ -140,16 +146,13 @@ handleAction Lookup = do
   items <- queryItems {
     longitude : join $ _.longitude <$> tmp, 
     latitude: join $ _.latitude <$> tmp, 
-    distance: Just 2000.0,
+    distance: Just state.distance,
     limit: Nothing,
     text: Nothing }
-  case (createPOILayer "guid-1") <$> (join $ _.longitude <$> tmp) <*> (join $ _.latitude <$> tmp) <*> (Just 1345.0) <*> items of
-    Just l -> do
-      H.liftEffect $ sequence_ $ addLayerToMap <$> state.map <*> Just l
-      H.liftEffect $ log "Added layer"
-    Nothing -> do
-      H.liftEffect $ log "No layer"
-  H.liftEffect $ log $ show items
+  H.liftEffect $ sequence_ $ removeLayerFromMap <$> state.map <*> state.poi
+  layer <- H.liftEffect $ sequence $ (createPOILayer "guid-1") <$> (join $ _.longitude <$> tmp) <*> (join $ _.latitude <$> tmp) <*> (Just (state.distance*2.0)) <*> items
+  H.liftEffect $ sequence_ $ addLayerToMap <$> state.map <*> layer
+  H.put state { poi = layer }
 
 -- | Find the items
 handleAction Center = do

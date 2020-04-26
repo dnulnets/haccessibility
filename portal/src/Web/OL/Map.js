@@ -212,44 +212,43 @@ function stylePOI (feature, resolution) {
     });
 }
 
+// Create the POI layer
 exports.createPOILayerImpl = function (lid, lon, lat, d, pois) {
 
-  // Create a feature that has the distance and lo/la of the search area
-  console.log (lon, lat, d);
-  console.log (olp.fromLonLat([lon, lat], projection));
-  //var circle = olgp.circular (olp.fromLonLat([lon, lat], projection), d);
-  //var circle = olgp.circular ([lon, lat], d);
-  var circle = new olg.Circle (olp.fromLonLat([lon, lat], projection), d);
-  var searchArea = new ol.Feature(circle);
-  searchArea.setStyle (new olst.Style ({
-      stroke: new olst.Stroke({
-        color: '#000',
-        width: 1,
-        lineDash: [4,8],
-      }),
-      fill: new olst.Fill({
-        color: 'rgba(0, 0, 0, 0.1)'
+  return function () {
+
+    // Create a feature that has the distance and lo/la of the search area
+    var circle = new olg.Circle (olp.fromLonLat([lon, lat], projection), d);
+    var searchArea = new ol.Feature(circle);
+    searchArea.setStyle (new olst.Style ({
+        stroke: new olst.Stroke({
+          color: '#000',
+          width: 1,
+          lineDash: [4,8],
+        })
+      }));
+
+    // Create a feature that has the Case 3 area marked
+    
+    // Create the list of features
+    var i;
+    var lofFeatures = new Array (pois.length+1);
+    for (i = 0; i<pois.length; i++) {
+      lofFeatures[i] = new ol.Feature({name: pois[i].name,
+        geometry: new olg.Point(olp.fromLonLat([pois[i].longitude, pois[i].latitude], projection))});
+    }
+    lofFeatures[pois.length] = searchArea;
+
+    // Add the features to a layer
+    var v = new oll.Vector ({
+      guid: lid,
+      source: new ols.Vector({
+        features: lofFeatures
       })
-    }));
-
-  // Create the list of features
-  var i;
-  var lofFeatures = new Array (pois.length+1);
-  for (i = 0; i<pois.length; i++) {
-    lofFeatures[i] = new ol.Feature({name: pois[i].name,
-      geometry: new olg.Point(olp.fromLonLat([pois[i].longitude, pois[i].latitude], projection))});
+    });
+    v.setStyle (stylePOI);
+    return v;
   }
-  lofFeatures[pois.length] = searchArea;
-
-  // Add the features to a layer
-  var v = new oll.Vector ({
-    guid: lid,
-    source: new ols.Vector({
-      features: lofFeatures
-    })
-  });
-  v.setStyle (stylePOI);
-  return v;
 }
 
 // Add a layer to the map

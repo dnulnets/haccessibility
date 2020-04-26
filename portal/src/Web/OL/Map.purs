@@ -10,12 +10,9 @@ import Prelude (Unit)
 import Data.Function.Uncurried (Fn1, Fn2, Fn3, Fn4, Fn5, runFn1, runFn2, runFn3, runFn4, runFn5)
 
 import Effect (Effect)
-import Effect.Aff (Aff)
-import Effect.Aff.Compat (EffectFnAff, fromEffectFnAff)
 
 import Data.Nullable (Nullable)
 import Data.Maybe (Maybe(..))
-import Data.Tuple (Tuple)
 
 --
 -- A coordinate
@@ -146,7 +143,7 @@ removeLayerFromMap m l = runFn2 removeLayerFromMapImpl m l
 -- Create the POI Layer
 --
 
-foreign import createPOILayerImpl :: forall p . Fn5 String Number Number Number (Array { longitude::Number,latitude::Number,name::String | p }) OLLayer
+foreign import createPOILayerImpl :: forall p . Fn5 String Number Number Number (Array { longitude::Number,latitude::Number,name::String | p }) (Effect OLLayer)
 
 -- |Removes the DOM element id as target for the map.
 createPOILayer  :: forall p . String         -- ^The map guid
@@ -154,5 +151,5 @@ createPOILayer  :: forall p . String         -- ^The map guid
                 -> Number   -- ^Latitude
                 -> Number   -- ^Distance
                 -> Array { longitude::Number,latitude::Number,name::String | p }        -- ^The list of POI:s
-                -> OLLayer          -- ^The returned layer
+                -> Effect OLLayer          -- ^The returned layer
 createPOILayer guid lon lat d pois = runFn5 createPOILayerImpl guid lon lat d pois
