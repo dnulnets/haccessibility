@@ -38,7 +38,7 @@ exports.createMapImpl = function (element,lon, lat, z) {
       })            
     });
   }
-};
+}
 
 // Adjust the center of the map around the logitude and latitude.
 exports.setCenterImpl = function (map, lon, lat) {
@@ -64,7 +64,7 @@ exports.setTrackingImpl = function (geo, onoff) {
 }
 
 // Gets the current coordinates
-exports.getCoordinatesImpl = function (just, nothing, geo) {
+exports.getCoordinateImpl = function (just, nothing, geo) {
   return function () {
     var px, py, pax, hx,hax
     var p = geo.getPosition();
@@ -126,12 +126,11 @@ exports.addGeolocationToMapImpl = function (map) {
   return function () {
 
     // Create the geolocation device
-    var v = map.getView();
     var geo = new ol.Geolocation({
       trackingOptions: {
         enableHighAccuracy: true
       },
-      projection: v.getProjection()
+      projection: map.getView().getProjection()
     });
 
     // handle geolocation error.
@@ -159,15 +158,83 @@ exports.addGeolocationToMapImpl = function (map) {
     geo.on('change:position', changePosition (geo, positionFeature));
 
     // Add a vector layer whith these features
-    new oll.Vector({
-      map: map,
+    var vl = new oll.Vector({
+      // map: map,
       source: new ols.Vector({
         features: [accuracyFeature, positionFeature]
       })
     });
 
+    // Add the layer to the map
+    map.addLayer(vl);
+
     // Return with the geolocator
     return geo;
+  }
+}
+
+//
+// Styles for the point of interests
+//
+
+// Circle, size 6, green and a black circle
+const circlePOI = new olst.Circle({
+  radius: 6,
+  fill: new olst.Fill({color: "#32CD32"}),
+  stroke: new olst.Stroke({color: "#000000",width: 2
+  })
+})
+
+// Text, must be updated depending on the name of the feature
+function textPOI (name) {
+  return new olst.Text({
+    text: name,
+    offsetY: 15,
+    font: "12px Calibri, sans-serif"
+  });
+}
+
+// The final POI style
+function stylePOI (feature, resolution) {
+  console.log ("StylePOI");
+  return new olst.Style ({
+    image: circlePOI,
+    text: textPOI (feature.get("name"))
+    });
+}
+
+exports.createPOILayerImpl = function (lid, pois) {
+
+  // Create the list of features
+  var i;
+  var lofFeatures = new Array (pois.length);
+  for (i = 0; i<pois.length; i++) {
+    lofFeatures[i] = new ol.Feature({name: pois[i].name,
+      geometry: new olg.Point(olp.fromLonLat([pois[i].longitude, pois[i].latitude], projection))});
+  }
+
+  // Add the features to a layer
+  var v = new oll.Vector ({
+    guid: lid,
+    source: new ols.Vector({
+      features: lofFeatures
+    })
+  });
+  v.setStyle (stylePOI);
+  return v;
+}
+
+// Add a layer to the map
+exports.addLayerToMapImpl = function (map, layer) {
+  return function () {
+    map.addLayer (layer);
+  }
+}
+
+// Remove a layer from the map
+exports.removeLayerFromMapImpl = function (map, layer) {
+  return function () {
+    map.removeLayer (layer);
   }
 }
 

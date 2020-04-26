@@ -22,7 +22,7 @@ import Data.Tuple (Tuple)
 --
 
 -- |The coordinate for a position with altitude and accuracy.
-type Coordinates = {
+type Coordinate = {
     latitude         :: Maybe Number    -- ^The latitude
     , longitude        :: Maybe Number  -- ^The logitude
     , altitude         :: Maybe Number  -- ^The altidude in meters
@@ -35,6 +35,7 @@ type Coordinates = {
 --
 foreign import data OLMap :: Type
 foreign import data OLGeolocation :: Type
+foreign import data OLLayer :: Type
 
 --
 -- Create Map
@@ -98,15 +99,15 @@ setTracking :: OLGeolocation    -- ^The geolocation device
 setTracking gl b = runFn2 setTrackingImpl gl b
 
 --
--- Get the current coordinates
+-- Get the current Coordinate
 --
 
-foreign import getCoordinatesImpl::forall a. Fn3 (a -> Maybe a) (Maybe a) OLGeolocation (Effect Coordinates)
+foreign import getCoordinateImpl::forall a. Fn3 (a -> Maybe a) (Maybe a) OLGeolocation (Effect Coordinate)
 
 -- |Returns with the current position of the geolocation device.
-getCoordinates  :: OLGeolocation        -- ^The geolocation device
-                -> Effect Coordinates   -- ^The coordinates
-getCoordinates gl = runFn3 getCoordinatesImpl Just Nothing gl
+getCoordinate  :: OLGeolocation        -- ^The geolocation device
+                -> Effect Coordinate   -- ^The Coordinate
+getCoordinate gl = runFn3 getCoordinateImpl Just Nothing gl
 
 --
 -- Debug writer
@@ -116,3 +117,39 @@ foreign import debugWriteImpl:: Fn1 OLMap (Effect Unit)
 debugWrite  ::OLMap
             -> Effect Unit
 debugWrite m = runFn1 debugWriteImpl m
+
+--
+-- Add one additional layer
+--
+
+foreign import addLayerToMapImpl :: Fn2 OLMap OLLayer (Effect Unit)
+
+-- |Adds a layer to the map
+addLayerToMap    :: OLMap        -- ^The Map
+                -> OLLayer       -- ^The layer to add to the map
+                ->Effect Unit   -- ^Nothing to return
+addLayerToMap m l = runFn2 addLayerToMapImpl m l 
+
+--
+-- Remove a layer
+--
+
+foreign import removeLayerFromMapImpl :: Fn2 OLMap OLLayer (Effect Unit)
+
+-- |Removes the layer from the map
+removeLayerFromMap    :: OLMap    -- ^The Map
+                -> OLLayer      -- ^The layer to remove from the map
+                ->Effect Unit   -- ^Nothing to return
+removeLayerFromMap m l = runFn2 removeLayerFromMapImpl m l 
+
+--
+-- Create the POI Layer
+--
+
+foreign import createPOILayerImpl :: forall p . Fn2 String (Array { longitude::Number,latitude::Number,name::String | p }) OLLayer
+
+-- |Removes the DOM element id as target for the map.
+createPOILayer  :: forall p . String         -- ^The map guid
+                -> Array { longitude::Number,latitude::Number,name::String | p }        -- ^The list of POI:s
+                -> OLLayer          -- ^The returned layer
+createPOILayer guid pois = runFn2 createPOILayerImpl guid pois

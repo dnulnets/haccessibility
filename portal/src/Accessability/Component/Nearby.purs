@@ -7,17 +7,13 @@ module Accessability.Component.Nearby where
 
 -- Language imports
 import Prelude
-import Data.Maybe (Maybe(..), fromMaybe, maybe)
-import Data.Either (Either(..))
+import Data.Maybe (Maybe(..))
 import Data.Nullable (toMaybe)
 import Data.Foldable (sequence_, traverse_)
-import Data.Traversable (sequence, traverse)
+import Data.Traversable (traverse)
 
 -- Control Monad
 import Control.Monad.Reader.Trans (class MonadAsk)
-import Control.Monad.Reader (asks)
-import Control.Monad.Error.Class (try)
-import Control.Monad (join)
 
 -- Effects
 import Effect.Aff.Class (class MonadAff)
@@ -27,25 +23,24 @@ import Effect.Console (log)
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Properties as HP
-import Halogen.HTML.Properties.ARIA as HPA
 import Halogen.HTML.Events as HE
 
 -- Web imports
 import Web.OL.Map (OLMap,
   OLGeolocation,
-  Coordinates(..),
   createMap,
+  createPOILayer,
   removeTarget,
   setCenter,
   addGeolocationToMap,
   setTracking,
-  getCoordinates,
-  debugWrite)
+  getCoordinate,
+  addLayerToMap)
 
 -- Our own stuff
 import Accessability.Component.HTML.Utils (css, style)
 import Accessability.Interface.Navigate (class ManageNavigation)
-import Accessability.Interface.Item (class ManageItem, queryItems, QueryItems(..), Item(..))
+import Accessability.Interface.Item (class ManageItem, queryItems)
 
 -- | Slot type for the Login component
 type Slot p = ∀ q . H.Slot q Void p
@@ -141,18 +136,24 @@ handleAction Finalize = do
 handleAction Lookup = do
   H.liftEffect $ log "Make an items lookup"
   state <- H.get
-  tmp <- H.liftEffect $ traverse getCoordinates state.geo
+  tmp <- H.liftEffect $ traverse getCoordinate state.geo
   items <- queryItems {
     longitude : join $ _.longitude <$> tmp, 
     latitude: join $ _.latitude <$> tmp, 
-    distance: Just 200.0,
+    distance: Just 2000.0,
     limit: Nothing,
     text: Nothing }
+  case (createPOILayer "guid-1") <$> items of
+    Just l -> do
+      H.liftEffect $ sequence_ $ addLayerToMap <$> state.map <*> Just l
+      H.liftEffect $ log "Added layer"
+    Nothing -> do
+      H.liftEffect $ log "No layer"
   H.liftEffect $ log $ show items
 
 -- | Find the items
 handleAction Center = do
   H.liftEffect $ log "Center the map around the GPS location"
   state <- H.get
-  tmp <- H.liftEffect $ traverse getCoordinates state.geo
+  tmp <- H.liftEffect $ traverse getCoordinate state.geo
   H.liftEffect $ sequence_ $ setCenter <$> state.map <*> (join $ _.longitude <$> tmp) <*> (join $ _.latitude <$> tmp)
