@@ -143,7 +143,7 @@ handleAction Lookup = do
     distance: Just 2000.0,
     limit: Nothing,
     text: Nothing }
-  case (createPOILayer "guid-1") <$> items of
+  case (createPOILayer "guid-1") <$> (join $ _.longitude <$> tmp) <*> (join $ _.latitude <$> tmp) <*> (Just 1345.0) <*> items of
     Just l -> do
       H.liftEffect $ sequence_ $ addLayerToMap <$> state.map <*> Just l
       H.liftEffect $ log "Added layer"

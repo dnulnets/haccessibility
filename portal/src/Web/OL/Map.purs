@@ -7,7 +7,7 @@ module Web.OL.Map where
 
 import Prelude (Unit)
 
-import Data.Function.Uncurried (Fn1, Fn2, Fn3, Fn4, runFn1, runFn2, runFn3, runFn4)
+import Data.Function.Uncurried (Fn1, Fn2, Fn3, Fn4, Fn5, runFn1, runFn2, runFn3, runFn4, runFn5)
 
 import Effect (Effect)
 import Effect.Aff (Aff)
@@ -146,10 +146,13 @@ removeLayerFromMap m l = runFn2 removeLayerFromMapImpl m l
 -- Create the POI Layer
 --
 
-foreign import createPOILayerImpl :: forall p . Fn2 String (Array { longitude::Number,latitude::Number,name::String | p }) OLLayer
+foreign import createPOILayerImpl :: forall p . Fn5 String Number Number Number (Array { longitude::Number,latitude::Number,name::String | p }) OLLayer
 
 -- |Removes the DOM element id as target for the map.
 createPOILayer  :: forall p . String         -- ^The map guid
+                -> Number   -- ^Longitude
+                -> Number   -- ^Latitude
+                -> Number   -- ^Distance
                 -> Array { longitude::Number,latitude::Number,name::String | p }        -- ^The list of POI:s
                 -> OLLayer          -- ^The returned layer
-createPOILayer guid pois = runFn2 createPOILayerImpl guid pois
+createPOILayer guid lon lat d pois = runFn5 createPOILayerImpl guid lon lat d pois

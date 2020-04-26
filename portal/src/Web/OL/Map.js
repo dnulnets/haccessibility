@@ -15,6 +15,7 @@ var ols = require ('ol/source');
 var olp = require ('ol/proj');
 var olst = require ('ol/style');
 var olg = require ('ol/geom');
+var olgp = require ('ol/geom/Polygon');
 
 // The projection we are using
 var projection = 'EPSG:3857';
@@ -185,6 +186,14 @@ const circlePOI = new olst.Circle({
   })
 })
 
+// Circle of search area, size 6, green and a black circle
+const circlePOISearch = new olst.Circle({
+  radius: 6,
+  fill: new olst.Fill({color: "#32CD32"}),
+  stroke: new olst.Stroke({color: "#000000",width: 2
+  })
+})
+
 // Text, must be updated depending on the name of the feature
 function textPOI (name) {
   return new olst.Text({
@@ -203,15 +212,34 @@ function stylePOI (feature, resolution) {
     });
 }
 
-exports.createPOILayerImpl = function (lid, pois) {
+exports.createPOILayerImpl = function (lid, lon, lat, d, pois) {
+
+  // Create a feature that has the distance and lo/la of the search area
+  console.log (lon, lat, d);
+  console.log (olp.fromLonLat([lon, lat], projection));
+  //var circle = olgp.circular (olp.fromLonLat([lon, lat], projection), d);
+  //var circle = olgp.circular ([lon, lat], d);
+  var circle = new olg.Circle (olp.fromLonLat([lon, lat], projection), d);
+  var searchArea = new ol.Feature(circle);
+  searchArea.setStyle (new olst.Style ({
+      stroke: new olst.Stroke({
+        color: '#000',
+        width: 1,
+        lineDash: [4,8],
+      }),
+      fill: new olst.Fill({
+        color: 'rgba(0, 0, 0, 0.1)'
+      })
+    }));
 
   // Create the list of features
   var i;
-  var lofFeatures = new Array (pois.length);
+  var lofFeatures = new Array (pois.length+1);
   for (i = 0; i<pois.length; i++) {
     lofFeatures[i] = new ol.Feature({name: pois[i].name,
       geometry: new olg.Point(olp.fromLonLat([pois[i].longitude, pois[i].latitude], projection))});
   }
+  lofFeatures[pois.length] = searchArea;
 
   // Add the features to a layer
   var v = new oll.Vector ({
