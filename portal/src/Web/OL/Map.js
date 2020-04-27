@@ -65,6 +65,53 @@ exports.setTrackingImpl = function (geo, onoff) {
 }
 
 // Gets the current coordinates
+exports._getCoordinateImpl = function (just, nothing, geo) {
+
+  return function (onError, onSuccess) {
+
+    geo.once ('change:position', function () {
+
+      console.log ("Fired!!!")
+      var px, py, pax, hx,hax
+      var p = geo.getPosition();
+      if (p==null) {
+        px = nothing
+        py = nothing
+      } else {
+        p = olp.toLonLat (p, geo.getProjection());
+        px = just(p[0])
+        py = just(p[1])
+      }
+  
+      var pa = geo.getAccuracy();
+      if (pa==null) {
+        pax = nothing;
+      } else {
+        pax = just(pa);
+      }
+      var h = geo.getAltitude();
+      if (h==null) {
+        hx = nothing;
+      } else {
+        hx = just(h);
+      }
+      var ha = geo.getAltitudeAccuracy();
+      if (ha==null) {
+        hax = nothing;
+      } else {
+        hax = just(ha);
+      }
+      var c = { longitude: px, latitude: py, accuracy: pax, altitude: hx, altitudeAccuracy: hax };
+      onSuccess (c);
+    });
+
+    return function (cancelError, onCancelerError, onCancelerSuccess) {
+      onCancelerSuccess();
+    };
+  }
+}
+
+// Gets the current coordinates
 exports.getCoordinateImpl = function (just, nothing, geo) {
   return function () {
     var px, py, pax, hx,hax

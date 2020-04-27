@@ -7,10 +7,9 @@ module Accessability.Component.Nearby where
 
 -- Language imports
 import Prelude
-import Data.Maybe (Maybe(..))
-import Data.Nullable (toMaybe)
-import Data.Foldable (sequence_, traverse_)
-import Data.Traversable (traverse, sequence)
+import Data.Maybe (Maybe(..), maybe)
+import Data.Foldable (sequence_)
+import Data.Traversable (sequence)
 
 -- Control Monad
 import Control.Monad.Reader.Trans (class MonadAsk)
@@ -36,6 +35,7 @@ import Web.OL.Map (OLMap,
   addGeolocationToMap,
   setTracking,
   getCoordinate,
+  _getCoordinate,
   removeLayerFromMap,
   addLayerToMap)
 
@@ -119,30 +119,36 @@ handleAction ∷ ∀ r o m . MonadAff m
 handleAction Initialize = do
   state <- H.get
   H.liftEffect $ log "Initialize Nearby Component"
-  olmap <- H.liftEffect $ toMaybe <$> (createMap "map" 0.0 0.0 18)
-  case olmap of
-    Just map -> do
-      g <- H.liftEffect $ toMaybe <$> (addGeolocationToMap map)
-      H.put state {map = olmap, geo = g, alert = Nothing}
-      H.liftEffect $ sequence_ $ setTracking <$> g <*> (Just true)
-      H.liftEffect $ log "Got a geo location"
-    Nothing -> do
-      H.liftEffect $ log "Failed to get a map"
-      H.put state {map = Nothing, geo = Nothing, alert = Just "Unable to create map"}
+  olmap <- H.liftEffect $ createMap "map" 0.0 0.0 18
+  g <- H.liftEffect $ join <$> (sequence $ addGeolocationToMap <$> olmap)
+  H.liftEffect $ sequence_ $ setTracking <$> g <*> (Just true)
+  pos <- H.liftAff $ sequence $ _getCoordinate <$> g
+  H.liftEffect $ log $ "Got it finally " <> (show pos)
+  items <- queryItems {
+    longitude : join $ _.longitude <$> pos, 
+    latitude: join $ _.latitude <$> pos, 
+    distance: Just state.distance,
+    limit: Nothing,
+    text: Nothing }
+  H.liftEffect $ log $ show items
+  layer <- H.liftEffect $ sequence $ (createPOILayer "guid-1") <$> (join $ _.longitude <$> pos) <*> (join $ _.latitude <$> pos) <*> (Just (state.distance*2.0)) <*> items
+  H.liftEffect $ sequence_ $ addLayerToMap <$> olmap <*> layer
+  H.put state { poi = layer, map = olmap, geo = g, alert = maybe (Just "Unable to get a geolocation device") (const Nothing) g}
 
 -- | Finalize action
 handleAction Finalize = do
   H.liftEffect $ log "Finalize Nearby Component"
   state <- H.get
-  H.liftEffect $ traverse_ (flip setTracking false) state.geo
-  H.liftEffect $ traverse_ removeTarget state.map
+  H.liftEffect $ sequence_ $ (flip setTracking false) <$> state.geo
+  H.liftEffect $ sequence_ $ removeLayerFromMap <$> state.map <*> state.poi
+  H.liftEffect $ sequence_ $ removeTarget <$> state.map
   H.put state { map = Nothing, geo = Nothing, alert = Nothing }
 
 -- | Find the items and create a layer and display it
 handleAction Lookup = do
   H.liftEffect $ log "Make an items lookup"
   state <- H.get
-  tmp <- H.liftEffect $ traverse getCoordinate state.geo
+  tmp <- H.liftEffect $ sequence $ getCoordinate <$> state.geo
   items <- queryItems {
     longitude : join $ _.longitude <$> tmp, 
     latitude: join $ _.latitude <$> tmp, 
@@ -158,5 +164,5 @@ handleAction Lookup = do
 handleAction Center = do
   H.liftEffect $ log "Center the map around the GPS location"
   state <- H.get
-  tmp <- H.liftEffect $ traverse getCoordinate state.geo
+  tmp <- H.liftEffect $ sequence $ getCoordinate <$> state.geo
   H.liftEffect $ sequence_ $ setCenter <$> state.map <*> (join $ _.longitude <$> tmp) <*> (join $ _.latitude <$> tmp)

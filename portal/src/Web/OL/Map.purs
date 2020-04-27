@@ -5,13 +5,15 @@
 -- |
 module Web.OL.Map where
 
-import Prelude (Unit)
+import Prelude
 
 import Data.Function.Uncurried (Fn1, Fn2, Fn3, Fn4, Fn5, runFn1, runFn2, runFn3, runFn4, runFn5)
 
 import Effect (Effect)
+import Effect.Aff (Aff)
+import Effect.Aff.Compat (EffectFnAff, fromEffectFnAff)
 
-import Data.Nullable (Nullable)
+import Data.Nullable (Nullable, toMaybe)
 import Data.Maybe (Maybe(..))
 
 --
@@ -44,8 +46,8 @@ createMap   :: String   -- ^The element identity where the map is shown
             ->Number    -- ^Longitude
             ->Number    -- ^Latitude
             ->Int       -- ^Zoom level
-            ->Effect (Nullable OLMap)   -- ^The map object            
-createMap n lo la z = runFn4 createMapImpl n lo la z
+            ->Effect (Maybe OLMap)   -- ^The map object            
+createMap n lo la z = toMaybe <$> runFn4 createMapImpl n lo la z
 
 --
 -- Remove Target
@@ -80,8 +82,8 @@ foreign import addGeolocationToMapImpl :: Fn1 OLMap (Effect (Nullable OLGeolocat
 -- |Adds a geolocation device and automatic update of a position icon on the map.
 -- |It needs to be activated with a call to setTracking.
 addGeolocationToMap :: OLMap                            -- ^The map
-                    -> Effect (Nullable OLGeolocation)  -- ^The geolocation device attached to the map
-addGeolocationToMap m = runFn1 addGeolocationToMapImpl m
+                    -> Effect (Maybe OLGeolocation)  -- ^The geolocation device attached to the map
+addGeolocationToMap m = toMaybe <$> runFn1 addGeolocationToMapImpl m
 
 --
 -- Set the tracking on or off
@@ -105,6 +107,17 @@ foreign import getCoordinateImpl::forall a. Fn3 (a -> Maybe a) (Maybe a) OLGeolo
 getCoordinate  :: OLGeolocation        -- ^The geolocation device
                 -> Effect Coordinate   -- ^The Coordinate
 getCoordinate gl = runFn3 getCoordinateImpl Just Nothing gl
+
+--
+-- Get the current Coordinate Asynch
+--
+
+foreign import _getCoordinateImpl::forall a. Fn3 (a -> Maybe a) (Maybe a) OLGeolocation (EffectFnAff Coordinate)
+
+-- |Returns with the current position of the geolocation device.
+_getCoordinate  :: OLGeolocation        -- ^The geolocation device
+                -> Aff Coordinate   -- ^The Coordinate
+_getCoordinate gl = fromEffectFnAff $ runFn3 _getCoordinateImpl Just Nothing gl
 
 --
 -- Debug writer
