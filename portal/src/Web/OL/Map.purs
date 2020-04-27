@@ -156,13 +156,20 @@ removeLayerFromMap m l = runFn2 removeLayerFromMapImpl m l
 -- Create the POI Layer
 --
 
-foreign import createPOILayerImpl :: forall p . Fn5 String Number Number Number (Array { longitude::Number,latitude::Number,name::String | p }) (Effect OLLayer)
+foreign import createPOILayerImpl :: forall p . Fn4 Number Number Number (Array { longitude::Number,latitude::Number,name::String | p }) (Effect OLLayer)
 
 -- |Removes the DOM element id as target for the map.
-createPOILayer  :: forall p . String         -- ^The map guid
-                -> Number   -- ^Longitude
+createPOILayer  :: forall p . Number   -- ^Longitude
                 -> Number   -- ^Latitude
                 -> Number   -- ^Distance
                 -> Array { longitude::Number,latitude::Number,name::String | p }        -- ^The list of POI:s
                 -> Effect OLLayer          -- ^The returned layer
-createPOILayer guid lon lat d pois = runFn5 createPOILayerImpl guid lon lat d pois
+createPOILayer lon lat d pois = runFn4 createPOILayerImpl lon lat d pois
+
+--
+-- Sets the test mode of the GPS
+--
+foreign import setTestModeImpl :: Fn2 OLMap Boolean (Effect Unit)
+
+setTestMode::OLMap->Boolean->Effect Unit
+setTestMode m b = runFn2 setTestModeImpl m b

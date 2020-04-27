@@ -37,7 +37,8 @@ import Web.OL.Map (OLMap,
   getCoordinate,
   _getCoordinate,
   removeLayerFromMap,
-  addLayerToMap)
+  addLayerToMap,
+  setTestMode)
 
 -- Our own stuff
 import Accessability.Component.HTML.Utils (css, style)
@@ -52,6 +53,7 @@ type State = {  alert::Maybe String         -- ^ The alert text
                 , geo::Maybe OLGeolocation  -- ^ The GeoLocator device
                 , map::Maybe OLMap          -- ^ The Map on the page
                 , poi::Maybe OLLayer        -- ^ The POI Layer
+                , mock::Boolean             -- ^ Mock of GPS, always at Storgaten, Sundsvall
                 , distance::Number }        -- ^ The max search distance
 
 -- | Initial state is no logged in user
@@ -61,6 +63,7 @@ initialState _ = { alert : Nothing,
                    geo : Nothing,
                    map : Nothing,
                    poi : Nothing,
+                   mock : false,
                    distance : 300.0 }
 
 -- | Internal form actions
@@ -68,6 +71,7 @@ data Action = Initialize
   | Finalize
   | Lookup
   | Center
+  | Mock Boolean
 
 -- | The component definition
 component ∷ ∀ r q i o m . MonadAff m
@@ -98,13 +102,17 @@ render state = HH.div
                 HH.div [css "row"] [HH.div[css "col-xs-12 col-md-12"][HH.h2 [][HH.text "Point of interests"]]],
                 HH.div [css "row"] [HH.div[css "col-xs-12 col-md-12"][HH.div [HP.id_ "map"][]]],
                 HH.div [css "row"]
-                 [  HH.div [css "col-xs-6 col-sm-2"] [
+                 [  HH.div [css "col-xs-4 col-sm-2"] [
                       HH.button [css "btn btn-lg btn-block btn-warning", style "margin-bottom:5px;", HP.type_ HP.ButtonButton, HE.onClick \_ -> Just Lookup ] [HH.text "Lookup"]
                     ],
-                    HH.div [css "col-xs-6 col-sm-2"] [ 
+                    HH.div [css "col-xs-4 col-sm-2"] [ 
                       HH.button [css "btn btn-lg btn-block btn-warning", style "margin-bottom:5px;", HP.type_ HP.ButtonButton, HE.onClick \_ -> Just Center ] [HH.text "Center"]
                     ],
-                    HH.div [css "col-sm-8"] [ ]
+                    HH.div [css "col-xs-4 col-sm-2"] [ 
+                      HH.input [css "form-check-input", style "margin-bottom:5px;", HP.type_ HP.InputCheckbox, HE.onChecked \b -> Just (Mock b)],                      
+                      HH.label [css "form-check-label"] [HH.text "Test mode"]
+                    ],                    
+                    HH.div [css "col-sm-6"] [ ]
                     ]]
 
 -- | Handles all actions for the login component
@@ -131,7 +139,7 @@ handleAction Initialize = do
     limit: Nothing,
     text: Nothing }
   H.liftEffect $ log $ show items
-  layer <- H.liftEffect $ sequence $ (createPOILayer "guid-1") <$> (join $ _.longitude <$> pos) <*> (join $ _.latitude <$> pos) <*> (Just (state.distance*2.0)) <*> items
+  layer <- H.liftEffect $ sequence $ createPOILayer <$> (join $ _.longitude <$> pos) <*> (join $ _.latitude <$> pos) <*> (Just (state.distance*2.0)) <*> items
   H.liftEffect $ sequence_ $ addLayerToMap <$> olmap <*> layer
   H.put state { poi = layer, map = olmap, geo = g, alert = maybe (Just "Unable to get a geolocation device") (const Nothing) g}
 
@@ -156,7 +164,7 @@ handleAction Lookup = do
     limit: Nothing,
     text: Nothing }
   H.liftEffect $ sequence_ $ removeLayerFromMap <$> state.map <*> state.poi
-  layer <- H.liftEffect $ sequence $ (createPOILayer "guid-1") <$> (join $ _.longitude <$> tmp) <*> (join $ _.latitude <$> tmp) <*> (Just (state.distance*2.0)) <*> items
+  layer <- H.liftEffect $ sequence $ createPOILayer <$> (join $ _.longitude <$> tmp) <*> (join $ _.latitude <$> tmp) <*> (Just (state.distance*2.0)) <*> items
   H.liftEffect $ sequence_ $ addLayerToMap <$> state.map <*> layer
   H.put state { poi = layer }
 
@@ -166,3 +174,13 @@ handleAction Center = do
   state <- H.get
   tmp <- H.liftEffect $ sequence $ getCoordinate <$> state.geo
   H.liftEffect $ sequence_ $ setCenter <$> state.map <*> (join $ _.longitude <$> tmp) <*> (join $ _.latitude <$> tmp)
+
+-- | Find the items
+handleAction (Mock b) = do
+  state <- H.get
+  H.liftEffect $ log "Test mode on/off"
+  H.liftEffect $ sequence_ $ setTracking <$> state.geo <*> (Just $ not b)  
+  H.liftEffect $ sequence_ $ (flip setTestMode b) <$> state.map
+  tmp <- H.liftEffect $ sequence $ getCoordinate <$> state.geo
+  H.liftEffect $ sequence_ $ setCenter <$> state.map <*> (join $ _.longitude <$> tmp) <*> (join $ _.latitude <$> tmp)
+  H.put state { mock = b}

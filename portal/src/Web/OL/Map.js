@@ -20,6 +20,12 @@ var olgp = require ('ol/geom/Polygon');
 // The projection we are using
 var projection = 'EPSG:3857';
 
+// If we are running a mock GPS
+var mock = false;
+const mock_lat = 62.391409; // Storgatan in Sundsvall
+const mock_lon = 17.304742;
+const mock_accuracy = 10.0; // 10 meters accuracy
+
 // Create a map and add it to a DOM element and center it around a longitude and latitude
 // and set initial zoom
 exports.createMapImpl = function (element,lon, lat, z) {
@@ -64,7 +70,7 @@ exports.setTrackingImpl = function (geo, onoff) {
   }
 }
 
-// Gets the current coordinates
+// Gets the current coordinates asynchronous
 exports._getCoordinateImpl = function (just, nothing, geo) {
 
   return function (onError, onSuccess) {
@@ -72,6 +78,60 @@ exports._getCoordinateImpl = function (just, nothing, geo) {
     geo.once ('change:position', function () {
 
       console.log ("Fired!!!")
+
+      var c;
+      if (mock == false) {
+        var px, py, pax, hx,hax
+        var p = geo.getPosition();
+        if (p==null) {
+          px = nothing
+          py = nothing
+        } else {
+          p = olp.toLonLat (p, geo.getProjection());
+          px = just(p[0])
+          py = just(p[1])
+        }
+    
+        var pa = geo.getAccuracy();
+        if (pa==null) {
+          pax = nothing;
+        } else {
+          pax = just(pa);
+        }
+        var h = geo.getAltitude();
+        if (h==null) {
+          hx = nothing;
+        } else {
+          hx = just(h);
+        }
+        var ha = geo.getAltitudeAccuracy();
+        if (ha==null) {
+          hax = nothing;
+        } else {
+          hax = just(ha);
+        }
+        c = { longitude: px, latitude: py, accuracy: pax, altitude: hx, altitudeAccuracy: hax };
+        onSuccess (c);
+      } else {
+        c = { longitude: just(mock_lon), latitude: just(mock_lat), accuracy: just(mock_accuracy), altitude: nothing, altitudeAccuracy: nothing}
+        onSuccess (c);
+      }
+    });
+
+    return function (cancelError, onCancelerError, onCancelerSuccess) {
+      onCancelerSuccess();
+    };
+  }
+}
+
+// Gets the current coordinates
+exports.getCoordinateImpl = function (just, nothing, geo) {
+  return function () {
+
+    var c;
+
+    if (mock == false) {
+
       var px, py, pax, hx,hax
       var p = geo.getPosition();
       if (p==null) {
@@ -100,50 +160,11 @@ exports._getCoordinateImpl = function (just, nothing, geo) {
         hax = nothing;
       } else {
         hax = just(ha);
-      }
-      var c = { longitude: px, latitude: py, accuracy: pax, altitude: hx, altitudeAccuracy: hax };
-      onSuccess (c);
-    });
-
-    return function (cancelError, onCancelerError, onCancelerSuccess) {
-      onCancelerSuccess();
-    };
-  }
-}
-
-// Gets the current coordinates
-exports.getCoordinateImpl = function (just, nothing, geo) {
-  return function () {
-    var px, py, pax, hx,hax
-    var p = geo.getPosition();
-    if (p==null) {
-      px = nothing
-      py = nothing
+      }  
+      c = { longitude: px, latitude: py, accuracy: pax, altitude: hx, altitudeAccuracy: hax };
     } else {
-      p = olp.toLonLat (p, geo.getProjection());
-      px = just(p[0])
-      py = just(p[1])
+      c = { longitude: just(mock_lon), latitude: just(mock_lat), accuracy: just(mock_accuracy), altitude: nothing, altitudeAccuracy: nothing}
     }
-
-    var pa = geo.getAccuracy();
-    if (pa==null) {
-      pax = nothing;
-    } else {
-      pax = just(pa);
-    }
-    var h = geo.getAltitude();
-    if (h==null) {
-      hx = nothing;
-    } else {
-      hx = just(h);
-    }
-    var ha = geo.getAltitudeAccuracy();
-    if (ha==null) {
-      hax = nothing;
-    } else {
-      hax = just(ha);
-    }
-    var c = { longitude: px, latitude: py, accuracy: pax, altitude: hx, altitudeAccuracy: hax };
     return (c);
   }
 }
@@ -155,17 +176,26 @@ exports.getCoordinateImpl = function (just, nothing, geo) {
 // Update the geometry when the accuracy changes
 function changeAccuracyGeometry (geo, accuracyFeature) {
   return function () {
-    var g = geo.getAccuracyGeometry();
-    accuracyFeature.setGeometry(g);
+    var g;
+    if (mock == false) {
+      g = geo.getAccuracyGeometry();
+      accuracyFeature.setGeometry(g);
+    } else {
+      g = new olg.Circle (olp.fromLonLat([mock_lon, mock_lat], projection), mock_accuracy);
+      accuracyFeature.setGeometry(g);
+    }
   }
 }
 
 // Update the position when it changes
 function changePosition (geo, positionFeature) {
   return function() {
-    var coordinates = geo.getPosition();
-    positionFeature.setGeometry(coordinates ?
-      new olg.Point(coordinates) : null);
+    if (mock == false) {
+      var coordinates = geo.getPosition();
+      positionFeature.setGeometry(coordinates ? new olg.Point(coordinates) : null);
+    } else {
+      positionFeature.setGeometry(new olg.Point(olp.fromLonLat([mock_lon, mock_lat], mock_accuracy)));
+    }
   }
 }
 
@@ -189,6 +219,7 @@ exports.addGeolocationToMapImpl = function (map) {
     // Adjust to change on accuracy
     var accuracyFeature = new ol.Feature();
     geo.on('change:accuracyGeometry', changeAccuracyGeometry(geo, accuracyFeature));
+    accuracyFeature.setProperties ({ "guid": "guid-accuracy"});
     
     var positionFeature = new ol.Feature();
     positionFeature.setStyle(new olst.Style({
@@ -203,15 +234,17 @@ exports.addGeolocationToMapImpl = function (map) {
         })
       })
     }));
+    positionFeature.setProperties ({ "guid": "guid-position"});
+
     geo.on('change:position', changePosition (geo, positionFeature));
 
     // Add a vector layer whith these features
     var vl = new oll.Vector({
-      // map: map,
       source: new ols.Vector({
         features: [accuracyFeature, positionFeature]
       })
     });
+    vl.setProperties({ "guid": "guid-gps"});
 
     // Add the layer to the map
     map.addLayer(vl);
@@ -260,7 +293,7 @@ function stylePOI (feature, resolution) {
 }
 
 // Create the POI layer
-exports.createPOILayerImpl = function (lid, lon, lat, d, pois) {
+exports.createPOILayerImpl = function (lon, lat, d, pois) {
 
   return function () {
 
@@ -288,12 +321,13 @@ exports.createPOILayerImpl = function (lid, lon, lat, d, pois) {
 
     // Add the features to a layer
     var v = new oll.Vector ({
-      guid: lid,
       source: new ols.Vector({
         features: lofFeatures
       })
     });
     v.setStyle (stylePOI);
+    v.setProperties({ "guid": "guid-poi"});
+
     return v;
   }
 }
@@ -317,5 +351,29 @@ exports.debugWriteImpl = function (map) {
     console.log (map);
     var v = map.getView();
     console.log (v);    
+  }
+}
+
+exports.setTestModeImpl = function (map, b) {
+  return function() {
+
+    // Find the GPS layer
+    mock = b;
+    if (b == true) {
+      var lcoll = map.getLayers();
+      lcoll.forEach(function (l) {
+        if (l.getProperties().guid == "guid-gps") {
+          l.getSource().forEachFeature(function(feature) {
+              var fp = feature.getProperties();
+              if (fp.guid == "guid-position") {
+                feature.setGeometry(new olg.Point(olp.fromLonLat([mock_lon, mock_lat], projection)));                
+              }
+              if (fp.guid == "guid-accuracy") {
+                feature.setGeometry(new olg.Circle (olp.fromLonLat([mock_lon, mock_lat], projection), mock_accuracy));        
+              }
+          });
+        }
+      });
+    }    
   }
 }
