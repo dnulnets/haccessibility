@@ -7,7 +7,7 @@ module Web.OL.Map where
 
 import Prelude
 
-import Data.Function.Uncurried (Fn1, Fn2, Fn3, Fn4, Fn5, runFn1, runFn2, runFn3, runFn4, runFn5)
+import Data.Function.Uncurried (Fn1, Fn2, Fn3, Fn4, runFn1, runFn2, runFn3, runFn4)
 
 import Effect (Effect)
 import Effect.Aff (Aff)
@@ -118,15 +118,6 @@ foreign import _getCoordinateImpl::forall a. Fn3 (a -> Maybe a) (Maybe a) OLGeol
 _getCoordinate  :: OLGeolocation        -- ^The geolocation device
                 -> Aff Coordinate   -- ^The Coordinate
 _getCoordinate gl = fromEffectFnAff $ runFn3 _getCoordinateImpl Just Nothing gl
-
---
--- Debug writer
---
-foreign import debugWriteImpl:: Fn1 OLMap (Effect Unit)
-
-debugWrite  ::OLMap
-            -> Effect Unit
-debugWrite m = runFn1 debugWriteImpl m
 
 --
 -- Add one additional layer

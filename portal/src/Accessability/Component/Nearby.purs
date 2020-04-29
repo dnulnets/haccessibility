@@ -131,16 +131,18 @@ handleAction Initialize = do
   g <- H.liftEffect $ join <$> (sequence $ addGeolocationToMap <$> olmap)
   H.liftEffect $ sequence_ $ setTracking <$> g <*> (Just true)
   pos <- H.liftAff $ sequence $ _getCoordinate <$> g
-  H.liftEffect $ log $ "Got it finally " <> (show pos)
   items <- queryItems {
     longitude : join $ _.longitude <$> pos, 
     latitude: join $ _.latitude <$> pos, 
     distance: Just state.distance,
     limit: Nothing,
     text: Nothing }
-  H.liftEffect $ log $ show items
   layer <- H.liftEffect $ sequence $ createPOILayer <$> (join $ _.longitude <$> pos) <*> (join $ _.latitude <$> pos) <*> (Just (state.distance*2.0)) <*> items
-  H.liftEffect $ sequence_ $ addLayerToMap <$> olmap <*> layer
+  H.liftEffect do
+    sequence_ $ addLayerToMap <$> olmap <*> layer
+    sequence_ $ setCenter <$> olmap <*> (join $ _.longitude <$> pos) <*> (join $ _.latitude <$> pos)  
+--  H.liftEffect $ sequence_ $ addLayerToMap <$> olmap <*> layer
+--  H.liftEffect $ sequence_ $ setCenter <$> olmap <*> (join $ _.longitude <$> pos) <*> (join $ _.latitude <$> pos)  
   H.put state { poi = layer, map = olmap, geo = g, alert = maybe (Just "Unable to get a geolocation device") (const Nothing) g}
 
 -- | Finalize action
@@ -175,12 +177,22 @@ handleAction Center = do
   tmp <- H.liftEffect $ sequence $ getCoordinate <$> state.geo
   H.liftEffect $ sequence_ $ setCenter <$> state.map <*> (join $ _.longitude <$> tmp) <*> (join $ _.latitude <$> tmp)
 
--- | Find the items
+-- | Activate or deactivate the test mode of the mobile
 handleAction (Mock b) = do
   state <- H.get
   H.liftEffect $ log "Test mode on/off"
   H.liftEffect $ sequence_ $ setTracking <$> state.geo <*> (Just $ not b)  
   H.liftEffect $ sequence_ $ (flip setTestMode b) <$> state.map
   tmp <- H.liftEffect $ sequence $ getCoordinate <$> state.geo
+  items <- queryItems {
+    longitude : join $ _.longitude <$> tmp, 
+    latitude: join $ _.latitude <$> tmp, 
+    distance: Just state.distance,
+    limit: Nothing,
+    text: Nothing }
+  H.liftEffect $ sequence_ $ removeLayerFromMap <$> state.map <*> state.poi
+  layer <- H.liftEffect $ sequence $ createPOILayer <$> (join $ _.longitude <$> tmp) <*> (join $ _.latitude <$> tmp) <*> (Just (state.distance*2.0)) <*> items
+  H.liftEffect $ sequence_ $ removeLayerFromMap <$> state.map <*> state.poi
+  H.liftEffect $ sequence_ $ addLayerToMap <$> state.map <*> layer
   H.liftEffect $ sequence_ $ setCenter <$> state.map <*> (join $ _.longitude <$> tmp) <*> (join $ _.latitude <$> tmp)
-  H.put state { mock = b}
+  H.put state { mock = b, poi = layer }

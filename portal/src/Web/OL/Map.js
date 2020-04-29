@@ -70,52 +70,52 @@ exports.setTrackingImpl = function (geo, onoff) {
   }
 }
 
+// Converts coordinates
+function convertCoordinate (just, nothing, geo)
+{
+  if (mock == false) {
+    var px, py, pax, hx,hax
+    var p = geo.getPosition();
+    if (p==null) {
+      px = nothing
+      py = nothing
+    } else {
+      p = olp.toLonLat (p, geo.getProjection());
+      px = just(p[0])
+      py = just(p[1])
+    }
+
+    var pa = geo.getAccuracy();
+    if (pa==null) {
+      pax = nothing;
+    } else {
+      pax = just(pa);
+    }
+    var h = geo.getAltitude();
+    if (h==null) {
+      hx = nothing;
+    } else {
+      hx = just(h);
+    }
+    var ha = geo.getAltitudeAccuracy();
+    if (ha==null) {
+      hax = nothing;
+    } else {
+      hax = just(ha);
+    }
+    return ({ longitude: px, latitude: py, accuracy: pax, altitude: hx, altitudeAccuracy: hax });
+  } else {
+    return ({ longitude: just(mock_lon), latitude: just(mock_lat), accuracy: just(mock_accuracy), altitude: nothing, altitudeAccuracy: nothing});
+  }
+}
+
 // Gets the current coordinates asynchronous
 exports._getCoordinateImpl = function (just, nothing, geo) {
 
   return function (onError, onSuccess) {
 
     geo.once ('change:position', function () {
-
-      console.log ("Fired!!!")
-
-      var c;
-      if (mock == false) {
-        var px, py, pax, hx,hax
-        var p = geo.getPosition();
-        if (p==null) {
-          px = nothing
-          py = nothing
-        } else {
-          p = olp.toLonLat (p, geo.getProjection());
-          px = just(p[0])
-          py = just(p[1])
-        }
-    
-        var pa = geo.getAccuracy();
-        if (pa==null) {
-          pax = nothing;
-        } else {
-          pax = just(pa);
-        }
-        var h = geo.getAltitude();
-        if (h==null) {
-          hx = nothing;
-        } else {
-          hx = just(h);
-        }
-        var ha = geo.getAltitudeAccuracy();
-        if (ha==null) {
-          hax = nothing;
-        } else {
-          hax = just(ha);
-        }
-        c = { longitude: px, latitude: py, accuracy: pax, altitude: hx, altitudeAccuracy: hax };
-        onSuccess (c);
-      } else {
-        c = { longitude: just(mock_lon), latitude: just(mock_lat), accuracy: just(mock_accuracy), altitude: nothing, altitudeAccuracy: nothing}
-        onSuccess (c);
-      }
+      onSuccess (convertCoordinate(just, nothing, geo));
     });
 
     return function (cancelError, onCancelerError, onCancelerSuccess) {
@@ -127,45 +127,7 @@ exports._getCoordinateImpl = function (just, nothing, geo) {
 // Gets the current coordinates
 exports.getCoordinateImpl = function (just, nothing, geo) {
   return function () {
-
-    var c;
-
-    if (mock == false) {
-
-      var px, py, pax, hx,hax
-      var p = geo.getPosition();
-      if (p==null) {
-        px = nothing
-        py = nothing
-      } else {
-        p = olp.toLonLat (p, geo.getProjection());
-        px = just(p[0])
-        py = just(p[1])
-      }
-  
-      var pa = geo.getAccuracy();
-      if (pa==null) {
-        pax = nothing;
-      } else {
-        pax = just(pa);
-      }
-      var h = geo.getAltitude();
-      if (h==null) {
-        hx = nothing;
-      } else {
-        hx = just(h);
-      }
-      var ha = geo.getAltitudeAccuracy();
-      if (ha==null) {
-        hax = nothing;
-      } else {
-        hax = just(ha);
-      }  
-      c = { longitude: px, latitude: py, accuracy: pax, altitude: hx, altitudeAccuracy: hax };
-    } else {
-      c = { longitude: just(mock_lon), latitude: just(mock_lat), accuracy: just(mock_accuracy), altitude: nothing, altitudeAccuracy: nothing}
-    }
-    return (c);
+    return (convertCoordinate(just, nothing, geo));
   }
 }
 
@@ -346,15 +308,9 @@ exports.removeLayerFromMapImpl = function (map, layer) {
   }
 }
 
-exports.debugWriteImpl = function (map) {
-  return function () {
-    console.log (map);
-    var v = map.getView();
-    console.log (v);    
-  }
-}
-
+// Sets the test mode for the GPS-locator, then we always ends at mock position.
 exports.setTestModeImpl = function (map, b) {
+
   return function() {
 
     // Find the GPS layer
@@ -374,6 +330,6 @@ exports.setTestModeImpl = function (map, b) {
           });
         }
       });
-    }    
+    }
   }
 }

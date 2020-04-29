@@ -20,6 +20,7 @@ import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Properties as HP
 import Halogen.HTML.Properties.ARIA as HPA
+import Halogen.HTML.Events as HE
 
 -- DOM import
 import DOM.HTML.Indexed.ButtonType (ButtonType(..))
@@ -47,7 +48,8 @@ data Query a = GotoPageRequest Page a
 
 -- | The actions supported by the root page
 data Action = SetUserAction  (Maybe UserInfo)   -- ^Sets the user
-            
+            | Logout -- ^Logs out the user
+
 -- | The set of slots for the root container
 type ChildSlots = ( login ∷ Login.Slot Unit,
                     nearby :: Nearby.Slot Unit )
@@ -103,8 +105,8 @@ navbarLeft state = HH.div [css "collapse navbar-collapse", HP.id_ "navbarCollaps
 
 -- |The right navigation bar
 navbarRight∷forall p . State -> HH.HTML p Action
-navbarRight state = HH.a [css "navbar-text", href Home]
-                      [HH.text $ maybe "Not logged in" (\(UserInfo v)->v.username) state.userInfo]
+navbarRight state = HH.a [css "navbar-text", HE.onClick \_ -> Just Logout]
+                      [HH.text $ maybe "Not logged in" (\(UserInfo v)->"Logout " <> v.username) state.userInfo]
 
 render ∷ ∀ r m . MonadAff m
   => ManageAuthentication m
@@ -167,7 +169,19 @@ handleQuery = case _ of
 -- | Handle the root containers actions
 handleAction ∷ ∀ r o m . MonadAff m 
   => MonadAsk r m
+  => ManageNavigation m
   => Action → H.HalogenM State Action ChildSlots o m Unit
 handleAction (SetUserAction ui) = do
     H.liftEffect $ log $ "Logged in user " <> show ui
     H.modify_ \st → st { userInfo = ui }
+
+handleAction Logout = do
+  state <- H.get
+  H.liftEffect $ log "Trying to logout"
+  case state.userInfo of
+    Just (UserInfo ui) -> do
+      H.liftEffect $ log "Logged out!"
+      gotoPage Login
+    Nothing -> do
+      H.liftEffect $ log "Nothing to logout!"
+  H.put state { userInfo = Nothing }
