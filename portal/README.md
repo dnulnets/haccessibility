@@ -6,10 +6,10 @@ It is written in Purescript and the declarative, type-safe UI library Halogen. I
 ## Build
 To be able to build the portal you need the following (version is just indicative):
 
-1. node.js 12.4.0
-2. npm 6.13.4
-3. purs 0.13.5
-4. spago 0.13.0
+1. node.js 12.16.3
+2. npm 6.14.4
+3. purs 0.13.6
+4. spago 0.15.2
 5. parcel 1.12.4
 
 Install node.js according to its [Homepage](https://nodejs.org/en/) and set up npm to use a local global store and install purescript, spago and parcel. Note that purescript requires libtinfo5 to be installed.
