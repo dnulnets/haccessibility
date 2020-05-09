@@ -43,9 +43,11 @@ import Accessability.Interface.Authenticate (UserInfo,
   class ManageAuthentication)
 import Accessability.Utils.Request (mkRequest, 
   mkAuthRequest,
+  mkIOTHUBRequest,
   RequestMethod (..))
 import Accessability.Interface.Navigate (class ManageNavigation)
 import Accessability.Interface.Item (class ManageItem)
+import Accessability.Interface.Entity(class ManageEntity)
 import Accessability.Data.Route (routeCodec, Page(..))
 
 import Web.HTML (window)
@@ -53,8 +55,9 @@ import Web.HTML.Window (location)
 import Web.HTML.Location as L
 
 -- | The application environment
-type Environment = { baseURL :: BaseURL                -- ^ The base URL for the API
-  , userInfo :: Ref (Maybe UserInfo)  -- ^ The user info when logged in
+type Environment = { baseURL :: BaseURL -- ^The base URL for the API
+  , userInfo :: Ref (Maybe UserInfo)    -- ^The user info when logged in
+  , iothubURL :: BaseURL                -- ^The url to the IoT Hub in Sundsvall
   }
 
 -- | The application monad
@@ -150,3 +153,19 @@ instance manageItemApplicationM :: ManageItem ApplicationM where
         pure Nothing
       Right (Tuple _ items) -> do
         pure items
+
+--
+--  Add the set of functions that handles entities from the IoT Hub
+--
+instance manageEntityApplicationM :: ManageEntity ApplicationM where
+
+  -- |Tries to login the user and get a token from the backend that can be used for future
+  -- calls
+  queryEntities et ea = do
+    response <- mkIOTHUBRequest (EP.IOTHUBEntities {type: et, attrs: ea }) (Get::RequestMethod Void)
+    case response of
+      Left err -> do
+        H.liftEffect $ log $ "Error: " <> err
+        pure Nothing
+      Right (Tuple _ entities) -> do
+        pure entities

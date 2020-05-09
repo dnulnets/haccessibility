@@ -90,6 +90,7 @@ main = do
     let
       env ∷ Environment
       env = { baseURL : BaseURL loc
+        , iothubURL : BaseURL "https://iotsundsvall.se/ngsi-ld/v1"
         , userInfo : currentUserInfo}
     io <- runUI (rootComponent env) unit body
 

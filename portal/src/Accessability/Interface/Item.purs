@@ -1,5 +1,5 @@
 -- |
--- | The authenticate interface
+-- | The items interface
 -- |
 -- | Written by Tomas Stenlund, Sundsvall, Sweden (c) 2019
 -- |

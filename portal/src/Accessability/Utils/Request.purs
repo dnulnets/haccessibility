@@ -5,6 +5,7 @@
 -- |
 module Accessability.Utils.Request(RequestMethod(..),
                           mkRequest,
+                          mkIOTHUBRequest,
                           mkRequest_,
                           mkAuthRequest,
                           mkAuthRequest_) where
@@ -94,6 +95,21 @@ mkRequest ∷ ∀ a m r v. MonadAff m
             → m (Either String (Tuple AXS.StatusCode v))
 mkRequest ep rm = do
   baseURL <- asks _.baseURL
+  response <- liftAff $ AX.request $ defaultRequest baseURL ep rm Nothing
+  pure case response of
+    Left err → Left $ AX.printError err -- Make a string out of affjax errors
+    Right val → (Tuple val.status) <$> (decodeJson val.body)
+
+-- |Makes a request to the IoT Hub and return with status and result
+mkIOTHUBRequest ∷ ∀ a m r v. MonadAff m
+            ⇒ MonadAsk {iothubURL :: BaseURL | r } m
+            ⇒ DecodeJson v
+            ⇒ EncodeJson a
+            ⇒ Endpoint
+            → RequestMethod a
+            → m (Either String (Tuple AXS.StatusCode v))
+mkIOTHUBRequest ep rm = do
+  baseURL <- asks _.iothubURL
   response <- liftAff $ AX.request $ defaultRequest baseURL ep rm Nothing
   pure case response of
     Left err → Left $ AX.printError err -- Make a string out of affjax errors

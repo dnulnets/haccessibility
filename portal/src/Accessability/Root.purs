@@ -37,6 +37,7 @@ import Accessability.Component.Nearby as Nearby
 import Accessability.Interface.Navigate (class ManageNavigation, gotoPage)
 import Accessability.Interface.Authenticate (class ManageAuthentication, UserInfo (..))
 import Accessability.Interface.Item (class ManageItem)
+import Accessability.Interface.Entity (class ManageEntity)
 
 
 -- | The state of the root page
@@ -61,6 +62,7 @@ component ∷ ∀ r i o m. MonadAff m
   => ManageAuthentication m
   => ManageNavigation m
   => ManageItem m
+  => ManageEntity m
   => MonadAsk r m
   => H.Component HH.HTML Query i o m
 component =
@@ -111,6 +113,7 @@ navbarRight state = HH.a [css "navbar-text", HE.onClick \_ -> Just Logout]
 render ∷ ∀ r m . MonadAff m
   => ManageAuthentication m
   => ManageNavigation m
+  => ManageEntity m
   => ManageItem m
   => MonadAsk r m
   => State → H.ComponentHTML Action ChildSlots m
@@ -122,6 +125,7 @@ render state = HH.div [] [
 view ∷ ∀ r m. MonadAff m
        ⇒ ManageAuthentication m
        ⇒ ManageNavigation m
+       => ManageEntity m
        => ManageItem m
        ⇒ MonadAsk r m
        ⇒ Page → H.ComponentHTML Action ChildSlots m

@@ -44,6 +44,7 @@ import Web.OL.Map (OLMap,
 import Accessability.Component.HTML.Utils (css, style)
 import Accessability.Interface.Navigate (class ManageNavigation)
 import Accessability.Interface.Item (class ManageItem, queryItems)
+import Accessability.Interface.Entity (class ManageEntity, queryEntities)
 
 -- | Slot type for the Login component
 type Slot p = ∀ q . H.Slot q Void p
@@ -76,7 +77,8 @@ data Action = Initialize
 -- | The component definition
 component ∷ ∀ r q i o m . MonadAff m
             ⇒ ManageNavigation m
-            ⇒ MonadAsk r m
+            => MonadAsk r m
+            => ManageEntity m
             => ManageItem m
             ⇒ H.Component HH.HTML q i o m
 component = 
@@ -118,6 +120,7 @@ render state = HH.div
 -- | Handles all actions for the login component
 handleAction ∷ ∀ r o m . MonadAff m
             ⇒ ManageNavigation m
+            => ManageEntity m
             => ManageItem m
             => MonadAsk r m
   ⇒ Action -- ^ The action to handle
@@ -159,6 +162,8 @@ handleAction Lookup = do
   H.liftEffect $ log "Make an items lookup"
   state <- H.get
   tmp <- H.liftEffect $ sequence $ getCoordinate <$> state.geo
+  entities <- queryEntities "WeatherObserved" (Just "temperature")
+  H.liftEffect $ log $ show entities
   items <- queryItems {
     longitude : join $ _.longitude <$> tmp, 
     latitude: join $ _.latitude <$> tmp, 
