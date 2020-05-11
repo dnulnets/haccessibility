@@ -7,7 +7,7 @@ module Web.OL.Map where
 
 import Prelude
 
-import Data.Function.Uncurried (Fn1, Fn2, Fn3, Fn4, runFn1, runFn2, runFn3, runFn4)
+import Data.Function.Uncurried (Fn1, Fn2, Fn3, Fn4, Fn5, runFn1, runFn2, runFn3, runFn4, runFn5)
 
 import Effect (Effect)
 import Effect.Aff (Aff)
@@ -28,6 +28,25 @@ type Coordinate = {
     , accuracy         :: Maybe Number  -- ^The accuracy of the position
     , altitudeAccuracy :: Maybe Number  -- ^The accuracy of the altitude
 }
+
+--
+-- A POI
+--
+
+-- |The atributes for a POI
+data POIType = Point | Weather | Information
+type POI = {
+    latitude        :: Number   -- ^The latitude of the POI
+    , longitude     :: Number   -- ^The longitude of the POI
+    , name          :: String   -- ^The name of the POI
+    , type          :: POIType  -- ^The type of the POI
+}
+
+-- |Marshalling from POIType to Int
+intPOIType::POIType->Int
+intPOIType Point = 1
+intPOIType Weather = 2
+intPOIType Information = 3
 
 --
 -- The foreign functions and types
@@ -147,15 +166,20 @@ removeLayerFromMap m l = runFn2 removeLayerFromMapImpl m l
 -- Create the POI Layer
 --
 
-foreign import createPOILayerImpl :: forall p . Fn4 Number Number Number (Array { longitude::Number,latitude::Number,name::String | p }) (Effect OLLayer)
+foreign import createPOILayerImpl :: forall p . Fn5 (POIType->Int) Number Number Number (Array { longitude::Number,latitude::Number,name::String | p }) (Effect OLLayer)
 
 -- |Removes the DOM element id as target for the map.
 createPOILayer  :: forall p . Number   -- ^Longitude
                 -> Number   -- ^Latitude
                 -> Number   -- ^Distance
-                -> Array { longitude::Number,latitude::Number,name::String | p }        -- ^The list of POI:s
+                -> Array {
+                    longitude::Number,
+                    latitude::Number,
+                    name::String,
+                    type::POIType | p 
+                    }        -- ^The list of POI:s
                 -> Effect OLLayer          -- ^The returned layer
-createPOILayer lon lat d pois = runFn4 createPOILayerImpl lon lat d pois
+createPOILayer lon lat d pois = runFn5 createPOILayerImpl intPOIType lon lat d pois
 
 --
 -- Sets the test mode of the GPS

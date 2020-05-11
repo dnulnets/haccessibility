@@ -7,12 +7,15 @@ module Accessability.Component.Nearby where
 
 -- Language imports
 import Prelude
-import Data.Maybe (Maybe(..), maybe)
+import Data.Array((!!), concat)
+import Data.Maybe (Maybe(..), maybe, fromMaybe)
 import Data.Foldable (sequence_)
 import Data.Traversable (sequence)
 
 -- Control Monad
 import Control.Monad.Reader.Trans (class MonadAsk)
+import Control.Parallel (parSequence)
+import Control.Alt ((<|>))
 
 -- Effects
 import Effect.Aff.Class (class MonadAff)
@@ -38,13 +41,14 @@ import Web.OL.Map (OLMap,
   _getCoordinate,
   removeLayerFromMap,
   addLayerToMap,
-  setTestMode)
+  setTestMode,
+  POI, POIType(..))
 
 -- Our own stuff
 import Accessability.Component.HTML.Utils (css, style)
 import Accessability.Interface.Navigate (class ManageNavigation)
-import Accessability.Interface.Item (class ManageItem, queryItems)
-import Accessability.Interface.Entity (class ManageEntity, queryEntities)
+import Accessability.Interface.Item (class ManageItem, queryItems, Item)
+import Accessability.Interface.Entity (class ManageEntity, queryEntities, Entity(..))
 
 -- | Slot type for the Login component
 type Slot p = ∀ q . H.Slot q Void p
@@ -73,6 +77,27 @@ data Action = Initialize
   | Lookup
   | Center
   | Mock Boolean
+
+-- | Convert an Item to a POI
+itemToPOI::Item -- ^The item to be converted
+  ->POI         -- ^The POI
+itemToPOI i = { latitude: i.latitude,
+  longitude: i.longitude,
+  name: i.name, type: Point}
+
+-- | Convert an Entity to a POI
+entityToPOI::Entity -- ^The entity to be converted
+  ->POI             -- ^The POI
+entityToPOI (Entity e) = {
+  latitude: fromMaybe 0.0 $ e.location.value.coordinates!!1, 
+  longitude: fromMaybe 0.0 $ e.location.value.coordinates!!0,
+  name: fromMaybe "?" $ (entityNameTemperature e) <|> (entityNameSnowHeight e),
+  type: Weather}
+
+  where
+
+    entityNameTemperature e = ((append "T:") <<< show <<< _.value) <$> e.temperature
+    entityNameSnowHeight e  = ((append "d:") <<< show <<< _.value) <$> e.snowHeight
 
 -- | The component definition
 component ∷ ∀ r q i o m . MonadAff m
@@ -140,12 +165,10 @@ handleAction Initialize = do
     distance: Just state.distance,
     limit: Nothing,
     text: Nothing }
-  layer <- H.liftEffect $ sequence $ createPOILayer <$> (join $ _.longitude <$> pos) <*> (join $ _.latitude <$> pos) <*> (Just (state.distance*2.0)) <*> items
+  layer <- H.liftEffect $ sequence $ createPOILayer <$> (join $ _.longitude <$> pos) <*> (join $ _.latitude <$> pos) <*> (Just (state.distance*2.0)) <*> (map (map itemToPOI) items)
   H.liftEffect do
     sequence_ $ addLayerToMap <$> olmap <*> layer
     sequence_ $ setCenter <$> olmap <*> (join $ _.longitude <$> pos) <*> (join $ _.latitude <$> pos)  
---  H.liftEffect $ sequence_ $ addLayerToMap <$> olmap <*> layer
---  H.liftEffect $ sequence_ $ setCenter <$> olmap <*> (join $ _.longitude <$> pos) <*> (join $ _.latitude <$> pos)  
   H.put state { poi = layer, map = olmap, geo = g, alert = maybe (Just "Unable to get a geolocation device") (const Nothing) g}
 
 -- | Finalize action
@@ -157,12 +180,15 @@ handleAction Finalize = do
   H.liftEffect $ sequence_ $ removeTarget <$> state.map
   H.put state { map = Nothing, geo = Nothing, alert = Nothing }
 
+
 -- | Find the items and create a layer and display it
 handleAction Lookup = do
   H.liftEffect $ log "Make an items lookup"
   state <- H.get
   tmp <- H.liftEffect $ sequence $ getCoordinate <$> state.geo
-  entities <- queryEntities "WeatherObserved" (Just "temperature")
+  entities <- map (map concat) (sequence <$> parSequence [
+    queryEntities "WeatherObserved" (Just "temperature")
+    ])
   H.liftEffect $ log $ show entities
   items <- queryItems {
     longitude : join $ _.longitude <$> tmp, 
@@ -171,7 +197,7 @@ handleAction Lookup = do
     limit: Nothing,
     text: Nothing }
   H.liftEffect $ sequence_ $ removeLayerFromMap <$> state.map <*> state.poi
-  layer <- H.liftEffect $ sequence $ createPOILayer <$> (join $ _.longitude <$> tmp) <*> (join $ _.latitude <$> tmp) <*> (Just (state.distance*2.0)) <*> items
+  layer <- H.liftEffect $ sequence $ createPOILayer <$> (join $ _.longitude <$> tmp) <*> (join $ _.latitude <$> tmp) <*> (Just (state.distance*2.0)) <*> (append <$> (map (map itemToPOI) items) <*> (map (map entityToPOI) entities))
   H.liftEffect $ sequence_ $ addLayerToMap <$> state.map <*> layer
   H.put state { poi = layer }
 
@@ -196,7 +222,7 @@ handleAction (Mock b) = do
     limit: Nothing,
     text: Nothing }
   H.liftEffect $ sequence_ $ removeLayerFromMap <$> state.map <*> state.poi
-  layer <- H.liftEffect $ sequence $ createPOILayer <$> (join $ _.longitude <$> tmp) <*> (join $ _.latitude <$> tmp) <*> (Just (state.distance*2.0)) <*> items
+  layer <- H.liftEffect $ sequence $ createPOILayer <$> (join $ _.longitude <$> tmp) <*> (join $ _.latitude <$> tmp) <*> (Just (state.distance*2.0)) <*> (map (map itemToPOI) items)
   H.liftEffect $ sequence_ $ removeLayerFromMap <$> state.map <*> state.poi
   H.liftEffect $ sequence_ $ addLayerToMap <$> state.map <*> layer
   H.liftEffect $ sequence_ $ setCenter <$> state.map <*> (join $ _.longitude <$> tmp) <*> (join $ _.latitude <$> tmp)

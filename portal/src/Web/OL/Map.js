@@ -228,6 +228,13 @@ const circlePOI = new olst.Circle({
   })
 })
 
+const circlePOIWeather = new olst.Circle({
+  radius: 6,
+  fill: new olst.Fill({color: "#0080FF"}),
+  stroke: new olst.Stroke({color: "#000000",width: 2
+  })
+})
+
 // Circle of search area, size 6, green and a black circle
 const circlePOISearch = new olst.Circle({
   radius: 6,
@@ -247,15 +254,17 @@ function textPOI (name) {
 
 // The final POI style
 function stylePOI (feature, resolution) {
-  console.log ("StylePOI");
+  var ip = circlePOI; // Local POI
+  if (feature.get("type") == 2) // Weather POI
+    ip = circlePOIWeather;
   return new olst.Style ({
-    image: circlePOI,
+    image: ip,
     text: textPOI (feature.get("name"))
     });
 }
 
 // Create the POI layer
-exports.createPOILayerImpl = function (lon, lat, d, pois) {
+exports.createPOILayerImpl = function (npoi, lon, lat, d, pois) {
 
   return function () {
 
@@ -276,7 +285,7 @@ exports.createPOILayerImpl = function (lon, lat, d, pois) {
     var i;
     var lofFeatures = new Array (pois.length+1);
     for (i = 0; i<pois.length; i++) {
-      lofFeatures[i] = new ol.Feature({name: pois[i].name,
+      lofFeatures[i] = new ol.Feature({name: pois[i].name, type: npoi (pois[i].type),
         geometry: new olg.Point(olp.fromLonLat([pois[i].longitude, pois[i].latitude], projection))});
     }
     lofFeatures[pois.length] = searchArea;

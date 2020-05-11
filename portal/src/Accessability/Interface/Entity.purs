@@ -16,8 +16,11 @@ import Data.Argonaut (class DecodeJson,
                       class EncodeJson,
                       decodeJson, encodeJson, jsonEmptyObject,
                       (.:),
+                      (.:?),
                       (:=),
                       (~>))
+
+import Control.Alt ((<|>))
 
 -- Halogen imports
 import Halogen (HalogenM, lift)
@@ -26,33 +29,68 @@ import Halogen (HalogenM, lift)
 -- Entity
 --
 
--- | Definition of the entity
-type Entity = {
-    "dateObserved" :: {
+-- |The date the entity was last observed
+type DateObserved = {
         "type" :: String,
         "value" :: {
             "@type" :: String,
             "@value":: String
         }
-    },
-    "id" :: String,
-    "location" :: {
+    }
+
+-- |The location of the entity
+type Location = {
         "type" :: String,
         "value" :: {
             "coordinates":: Array Number,
             "type" :: String
         }
-    },
-    "refDevice" :: {
+    }
+
+-- |The device connected to this entity
+type RefDevice = {
         "object" :: String,
         "type" :: String
-    },
-    "temperature" :: {
+    }
+
+-- |The value associated with this entity
+type Value = {
         "type" :: String,
         "value" :: Number
-    },
-    "type" :: String
+    }
+
+-- | Definition of the entity
+newtype Entity = Entity {
+    "id" :: String,
+    "type" :: String,
+    "dateObserved" :: DateObserved,
+    "location" :: Location,
+    "refDevice" :: RefDevice,
+    "temperature" :: Maybe Value,
+    "snowHeight" :: Maybe Value
   }
+
+instance decodeJsonEntity :: DecodeJson Entity where
+
+    decodeJson json = do
+      x <- decodeJson json
+      _id <- x .: "id"
+      _type <- x .: "type"
+      _dateObserved <- x .: "dateObserved"
+      _location <- x .: "location"
+      _refDevice <- x .: "refDevice"
+      _temperature <- x .:? "temperature"
+      _snowHeight <- x .:? "snowHeight"
+      pure $ Entity {id: _id, 
+        "type": _type, 
+        dateObserved: _dateObserved,
+        location: _location,
+        refDevice: _refDevice,
+        temperature: _temperature,
+        snowHeight: _snowHeight}
+
+instance showEntity :: Show Entity where
+  show (Entity e) = show e
 
 -- |The class for Items management
 class Monad m ⇐ ManageEntity m where
