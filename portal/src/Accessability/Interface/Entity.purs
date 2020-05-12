@@ -20,6 +20,8 @@ import Data.Argonaut (class DecodeJson,
                       (:=),
                       (~>))
 
+import Effect.Aff.Class (class MonadAff)
+
 import Control.Alt ((<|>))
 
 -- Halogen imports
@@ -93,13 +95,13 @@ instance showEntity :: Show Entity where
   show (Entity e) = show e
 
 -- |The class for Items management
-class Monad m ⇐ ManageEntity m where
+class MonadAff m ⇐ ManageEntity m where
 
   -- |Fetches a list of items based on the query parameters
   queryEntities::String             -- ^Type of entities
-    -> Maybe String                       -- ^Type of attributes to return
+    -> Maybe String                 -- ^Type of attributes to return
     -> m (Maybe (Array Entity))     -- ^List of Entities
-  
+
 -- |Avoid lift in the components
 instance manageEntityHalogenM :: ManageEntity m => ManageEntity (HalogenM st act slots msg m) where
   queryEntities t a = lift $ queryEntities t a

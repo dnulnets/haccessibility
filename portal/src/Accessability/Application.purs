@@ -6,7 +6,8 @@
 module Accessability.Application(
     Environment,
     runApplication,
-    ApplicationM) where
+    ApplicationM,
+    _queryEntities) where
 
 -- Language imports
 import Prelude
@@ -44,10 +45,11 @@ import Accessability.Interface.Authenticate (UserInfo,
 import Accessability.Utils.Request (mkRequest, 
   mkAuthRequest,
   mkIOTHUBRequest,
+  _mkIOTHUBRequest,
   RequestMethod (..))
 import Accessability.Interface.Navigate (class ManageNavigation)
 import Accessability.Interface.Item (class ManageItem)
-import Accessability.Interface.Entity(class ManageEntity)
+import Accessability.Interface.Entity(class ManageEntity, Entity(..))
 import Accessability.Data.Route (routeCodec, Page(..))
 
 import Web.HTML (window)
@@ -169,3 +171,13 @@ instance manageEntityApplicationM :: ManageEntity ApplicationM where
         pure Nothing
       Right (Tuple _ entities) -> do
         pure entities
+
+_queryEntities::String->Maybe String->Aff (Maybe (Array Entity))
+_queryEntities et ea = do
+  response <- _mkIOTHUBRequest (EP.BaseURL "https://iotsundsvall.se/ngsi-ld/v1") (EP.IOTHUBEntities {type: et, attrs: ea }) (Get::RequestMethod Void)
+  case response of
+    Left err -> do
+      H.liftEffect $ log $ "Error: " <> err
+      pure Nothing
+    Right (Tuple _ entities) -> do
+      pure entities

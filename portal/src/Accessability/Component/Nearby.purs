@@ -11,14 +11,17 @@ import Data.Array((!!), concat)
 import Data.Maybe (Maybe(..), maybe, fromMaybe)
 import Data.Foldable (sequence_)
 import Data.Traversable (sequence)
+import Data.Time.Duration (Milliseconds(..))
 
 -- Control Monad
 import Control.Monad.Reader.Trans (class MonadAsk)
-import Control.Parallel (parSequence)
+import Control.Parallel (parSequence, parOneOf)
 import Control.Alt ((<|>))
+import Control.Alternative (class Alternative)
 
 -- Effects
-import Effect.Aff.Class (class MonadAff)
+import Effect.Aff (delay, Aff)
+import Effect.Aff.Class (class MonadAff, liftAff)
 import Effect.Console (log)
 
 -- Halogen import
@@ -49,6 +52,13 @@ import Accessability.Component.HTML.Utils (css, style)
 import Accessability.Interface.Navigate (class ManageNavigation)
 import Accessability.Interface.Item (class ManageItem, queryItems, Item)
 import Accessability.Interface.Entity (class ManageEntity, queryEntities, Entity(..))
+
+import Accessability.Application (_queryEntities)
+
+import Accessability.Utils.Request
+import Accessability.Interface.Endpoint as EP
+import Data.Either (Either(..))
+import Data.Tuple (Tuple(..))
 
 -- | Slot type for the Login component
 type Slot p = ∀ q . H.Slot q Void p
@@ -180,15 +190,34 @@ handleAction Finalize = do
   H.liftEffect $ sequence_ $ removeTarget <$> state.map
   H.put state { map = Nothing, geo = Nothing, alert = Nothing }
 
-
 -- | Find the items and create a layer and display it
 handleAction Lookup = do
   H.liftEffect $ log "Make an items lookup"
   state <- H.get
   tmp <- H.liftEffect $ sequence $ getCoordinate <$> state.geo
-  entities <- map (map concat) (sequence <$> parSequence [
-    queryEntities "WeatherObserved" (Just "temperature")
+--  entities <- liftAff $ map (map concat) (sequence <$> parSequence [
+--    _queryEntities "WeatherObserved" (Just "temperature")
+--    ])
+--  _entities <- map (map concat) (sequence <$> parSequence [
+--    queryEntities "WeatherObserved" (Just "temperature")
+--    ])
+--  _entities <- (map concat) <$> (parOneOf [
+--    sequence <$> (parSequence [
+--      queryEntities "WeatherObserved" (Just "temperature")
+--      ]),
+--      liftAff $ Nothing <$ (delay (Milliseconds 500.0))
+--    ])
+--  H.liftEffect $ log $ show _entities
+  entities <- liftAff $ (map concat) <$> (parOneOf [
+    sequence <$> (parSequence [
+      _queryEntities "WeatherObserved" (Just "temperature"),
+      _queryEntities "WeatherObserved" (Just "snowHeight")
+      ]),
+    Nothing <$ (delay (Milliseconds 2000.0))
     ])
+
+-- Aff (Maybe (Array Entity))
+
   H.liftEffect $ log $ show entities
   items <- queryItems {
     longitude : join $ _.longitude <$> tmp, 

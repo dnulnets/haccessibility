@@ -6,6 +6,7 @@
 module Accessability.Utils.Request(RequestMethod(..),
                           mkRequest,
                           mkIOTHUBRequest,
+                          _mkIOTHUBRequest,
                           mkRequest_,
                           mkAuthRequest,
                           mkAuthRequest_) where
@@ -27,6 +28,7 @@ import Data.Argonaut (Json,
 import Control.Monad.Reader (asks)
 import Control.Monad.Reader.Class (class MonadAsk)
 
+import Effect.Aff (Aff)
 import Effect.Aff.Class (class MonadAff,
                          liftAff)
 import Effect.Class (liftEffect)
@@ -101,9 +103,22 @@ mkRequest ep rm = do
     Right val → (Tuple val.status) <$> (decodeJson val.body)
 
 -- |Makes a request to the IoT Hub and return with status and result
-mkIOTHUBRequest ∷ ∀ a m r v. MonadAff m
-            ⇒ MonadAsk {iothubURL :: BaseURL | r } m
-            ⇒ DecodeJson v
+_mkIOTHUBRequest ∷ ∀ a v.
+            DecodeJson v
+            ⇒ EncodeJson a
+            ⇒ BaseURL -> Endpoint
+            → RequestMethod a
+            → Aff (Either String (Tuple AXS.StatusCode v))
+_mkIOTHUBRequest burl ep rm = do
+  response <- AX.request $ defaultRequest burl ep rm Nothing
+  pure case response of
+    Left err → Left $ AX.printError err -- Make a string out of affjax errors
+    Right val → (Tuple val.status) <$> (decodeJson val.body)
+
+-- |Makes a request to the IoT Hub and return with status and result
+mkIOTHUBRequest ∷ ∀ a v r m. MonadAff m
+            => MonadAsk {iothubURL :: BaseURL | r } m
+            => DecodeJson v
             ⇒ EncodeJson a
             ⇒ Endpoint
             → RequestMethod a
