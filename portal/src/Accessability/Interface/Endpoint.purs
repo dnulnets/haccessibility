@@ -6,17 +6,19 @@
 module Accessability.Interface.Endpoint where
 
 -- | Language imports
-import Prelude hiding ((/))
+import Prelude (class Show, ($), (<<<))
 
 import Data.Maybe (Maybe)
+
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
---import Routing.Duplex.Generic.Syntax
---import Routing.Duplex.Generic (noArgs, sum)
-import Routing.Duplex.Generic
-import Routing.Duplex.Generic.Syntax
---import Routing.Duplex (RouteDuplex', path, root, param, segment, string, optional, (?))
-import Routing.Duplex
+
+import Control.Monad.Reader (asks)
+import Control.Monad.Reader.Class (class MonadAsk)
+
+import Routing.Duplex.Generic (noArgs, sum)
+import Routing.Duplex.Generic.Syntax ((/), (?))
+import Routing.Duplex (RouteDuplex', optional, root, segment, string)
 
 -- |The base URL for the api
 newtype BaseURL = BaseURL String
@@ -29,12 +31,19 @@ instance showBaseURL :: Show BaseURL where
 data Endpoint = Authenticate
                 | Item (Maybe String)
                 | Items
-                | IOTHUBEntities { type::String, attrs::Maybe String }
+                | Entities { type::String, attrs::Maybe String }
 
 derive instance genericEndpoint :: Generic Endpoint _
 
 instance showEndpoint :: Show Endpoint where
   show = genericShow
+
+-- |Determine what backend it is that handles this endpoint
+backend::forall r m . MonadAsk { baseURL :: BaseURL, iothubURL::BaseURL | r } m => Endpoint->m BaseURL
+backend Authenticate = asks _.baseURL
+backend (Item _) = asks _.baseURL
+backend Items = asks _.baseURL
+backend (Entities _) = asks _.iothubURL
 
 -- |The endpoint codec
 endpointCodec :: RouteDuplex' Endpoint
@@ -42,4 +51,4 @@ endpointCodec = root $ sum
   { "Authenticate": "api" / "authenticate" / noArgs
   , "Items": "api" / "items" / noArgs
   , "Item": "api" / "item" / (optional (string segment)) 
-  , "IOTHUBEntities": "entities" ? { type : string, attrs : optional <<< string} }
+  , "Entities": "entities" ? { type : string, attrs : optional <<< string} }

@@ -17,7 +17,6 @@ import Data.Tuple (Tuple(..))
 import Type.Equality (class TypeEquals, from)
 
 -- Effects
-import Effect (Effect)
 import Effect.Aff (Aff)
 import Effect.Aff.Class (class MonadAff)
 import Effect.Class (class MonadEffect)
@@ -40,21 +39,18 @@ import Routing.Hash (setHash, getHash)
 -- Our own imports
 import Accessability.Interface.Endpoint (BaseURL)
 import Accessability.Interface.Endpoint as EP
-import Accessability.Interface.Authenticate (UserInfo,
-  class ManageAuthentication)
-import Accessability.Utils.Request (mkRequest, 
-  mkAuthRequest,
-  mkIOTHUBRequest,
-  _mkIOTHUBRequest,
-  RequestMethod (..))
+import Accessability.Interface.Authenticate (UserInfo,class ManageAuthentication)
 import Accessability.Interface.Navigate (class ManageNavigation)
 import Accessability.Interface.Item (class ManageItem)
-import Accessability.Interface.Entity(class ManageEntity, Entity(..))
+import Accessability.Interface.Entity(class ManageEntity, Entity)
+
 import Accessability.Data.Route (routeCodec, Page(..))
 
-import Web.HTML (window)
-import Web.HTML.Window (location)
-import Web.HTML.Location as L
+import Accessability.Utils.Request (
+  mkRequest, 
+  mkAuthRequest,
+  _mkRequest,
+  RequestMethod (..))
 
 -- | The application environment
 type Environment = { baseURL :: BaseURL -- ^The base URL for the API
@@ -85,8 +81,8 @@ instance monadAskApplication ∷ TypeEquals e Environment ⇒ MonadAsk e Applica
   ask = ApplicationM $ asks from
 
 -- | Reload the current page
-reload :: Effect Unit
-reload = window >>= location >>= L.reload
+--reload :: Effect Unit
+--reload = window >>= location >>= L.reload
 
 --
 -- Add the set of functions that handles navigation in the app
@@ -112,8 +108,8 @@ instance manageNavigationApplicationM ∷ ManageNavigation ApplicationM where
       page :: String->Page
       page h = either (const Error) identity $ parse routeCodec h
 
-      reload :: Effect Unit
-      reload = window >>= location >>= L.reload
+--      reload :: Effect Unit
+--      reload = window >>= location >>= L.reload
 
 --
 --  Add the set of functions that handles login and logout of a user
@@ -164,7 +160,7 @@ instance manageEntityApplicationM :: ManageEntity ApplicationM where
   -- |Tries to login the user and get a token from the backend that can be used for future
   -- calls
   queryEntities et ea = do
-    response <- mkIOTHUBRequest (EP.IOTHUBEntities {type: et, attrs: ea }) (Get::RequestMethod Void)
+    response <- mkRequest (EP.Entities {type: et, attrs: ea }) (Get::RequestMethod Void)
     case response of
       Left err -> do
         H.liftEffect $ log $ "Error: " <> err
@@ -172,9 +168,16 @@ instance manageEntityApplicationM :: ManageEntity ApplicationM where
       Right (Tuple _ entities) -> do
         pure entities
 
+--
+-- Things that needs to run in Aff
+--
+
+iotHubURL:: EP.BaseURL
+iotHubURL = EP.BaseURL "https://iotsundsvall.se/ngsi-ld/v1"
+
 _queryEntities::String->Maybe String->Aff (Maybe (Array Entity))
 _queryEntities et ea = do
-  response <- _mkIOTHUBRequest (EP.BaseURL "https://iotsundsvall.se/ngsi-ld/v1") (EP.IOTHUBEntities {type: et, attrs: ea }) (Get::RequestMethod Void)
+  response <- _mkRequest iotHubURL (EP.Entities {type: et, attrs: ea }) (Get::RequestMethod Void)
   case response of
     Left err -> do
       H.liftEffect $ log $ "Error: " <> err

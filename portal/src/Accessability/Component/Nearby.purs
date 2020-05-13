@@ -17,10 +17,9 @@ import Data.Time.Duration (Milliseconds(..))
 import Control.Monad.Reader.Trans (class MonadAsk)
 import Control.Parallel (parSequence, parOneOf)
 import Control.Alt ((<|>))
-import Control.Alternative (class Alternative)
 
 -- Effects
-import Effect.Aff (delay, Aff)
+import Effect.Aff (delay)
 import Effect.Aff.Class (class MonadAff, liftAff)
 import Effect.Console (log)
 
@@ -51,14 +50,9 @@ import Web.OL.Map (OLMap,
 import Accessability.Component.HTML.Utils (css, style)
 import Accessability.Interface.Navigate (class ManageNavigation)
 import Accessability.Interface.Item (class ManageItem, queryItems, Item)
-import Accessability.Interface.Entity (class ManageEntity, queryEntities, Entity(..))
+import Accessability.Interface.Entity (class ManageEntity, Entity(..))
 
 import Accessability.Application (_queryEntities)
-
-import Accessability.Utils.Request
-import Accessability.Interface.Endpoint as EP
-import Data.Either (Either(..))
-import Data.Tuple (Tuple(..))
 
 -- | Slot type for the Login component
 type Slot p = ∀ q . H.Slot q Void p
@@ -106,8 +100,8 @@ entityToPOI (Entity e) = {
 
   where
 
-    entityNameTemperature e = ((append "T:") <<< show <<< _.value) <$> e.temperature
-    entityNameSnowHeight e  = ((append "d:") <<< show <<< _.value) <$> e.snowHeight
+    entityNameTemperature en = ((append "T:") <<< show <<< _.value) <$> en.temperature
+    entityNameSnowHeight  en  = ((append "d:") <<< show <<< _.value) <$> en.snowHeight
 
 -- | The component definition
 component ∷ ∀ r q i o m . MonadAff m
