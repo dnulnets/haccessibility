@@ -18,6 +18,8 @@ import Control.Monad.Reader.Trans (class MonadAsk)
 import Control.Parallel (parSequence, parOneOf)
 import Control.Alt ((<|>))
 
+import Control.Monad.Trans.Class (lift)
+
 -- Effects
 import Effect.Aff (delay)
 import Effect.Aff.Class (class MonadAff, liftAff)
@@ -50,7 +52,7 @@ import Web.OL.Map (OLMap,
 import Accessability.Component.HTML.Utils (css, style)
 import Accessability.Interface.Navigate (class ManageNavigation)
 import Accessability.Interface.Item (class ManageItem, queryItems, Item)
-import Accessability.Interface.Entity (class ManageEntity, Entity(..))
+import Accessability.Interface.Entity (class ManageEntity, queryEntities, Entity(..))
 
 import Accessability.Application (_queryEntities)
 
@@ -163,13 +165,23 @@ handleAction Initialize = do
   g <- H.liftEffect $ join <$> (sequence $ addGeolocationToMap <$> olmap)
   H.liftEffect $ sequence_ $ setTracking <$> g <*> (Just true)
   pos <- H.liftAff $ sequence $ _getCoordinate <$> g
+--
+-- The one that works
+--
+  entities <- liftAff $ (map concat) <$> (parOneOf [
+    sequence <$> (parSequence [
+      _queryEntities "WeatherObserved" (Just "temperature")
+--      , _queryEntities "WeatherObserved" (Just "snowHeight")
+      ]),
+    Nothing <$ (delay (Milliseconds 2000.0))
+    ])  
   items <- queryItems {
     longitude : join $ _.longitude <$> pos, 
     latitude: join $ _.latitude <$> pos, 
     distance: Just state.distance,
     limit: Nothing,
     text: Nothing }
-  layer <- H.liftEffect $ sequence $ createPOILayer <$> (join $ _.longitude <$> pos) <*> (join $ _.latitude <$> pos) <*> (Just (state.distance*2.0)) <*> (map (map itemToPOI) items)
+  layer <- H.liftEffect $ sequence $ createPOILayer <$> (join $ _.longitude <$> pos) <*> (join $ _.latitude <$> pos) <*> (Just (state.distance*2.0)) <*> (append <$> (map (map itemToPOI) items) <*> (map (map entityToPOI) entities))
   H.liftEffect do
     sequence_ $ addLayerToMap <$> olmap <*> layer
     sequence_ $ setCenter <$> olmap <*> (join $ _.longitude <$> pos) <*> (join $ _.latitude <$> pos)  
@@ -189,28 +201,26 @@ handleAction Lookup = do
   H.liftEffect $ log "Make an items lookup"
   state <- H.get
   tmp <- H.liftEffect $ sequence $ getCoordinate <$> state.geo
---  entities <- liftAff $ map (map concat) (sequence <$> parSequence [
---    _queryEntities "WeatherObserved" (Just "temperature")
---    ])
---  _entities <- map (map concat) (sequence <$> parSequence [
---    queryEntities "WeatherObserved" (Just "temperature")
---    ])
---  _entities <- (map concat) <$> (parOneOf [
+--
+-- The one that does not work
+--
+--  entities <- (map concat) <$> (parOneOf [
 --    sequence <$> (parSequence [
 --      queryEntities "WeatherObserved" (Just "temperature")
 --      ]),
 --      liftAff $ Nothing <$ (delay (Milliseconds 500.0))
 --    ])
---  H.liftEffect $ log $ show _entities
+--  H.liftEffect $ log $ show entities
+--
+-- The one that works
+--
   entities <- liftAff $ (map concat) <$> (parOneOf [
     sequence <$> (parSequence [
-      _queryEntities "WeatherObserved" (Just "temperature"),
-      _queryEntities "WeatherObserved" (Just "snowHeight")
+      _queryEntities "WeatherObserved" (Just "temperature")
+--      , _queryEntities "WeatherObserved" (Just "snowHeight")
       ]),
     Nothing <$ (delay (Milliseconds 2000.0))
     ])
-
--- Aff (Maybe (Array Entity))
 
   H.liftEffect $ log $ show entities
   items <- queryItems {
@@ -238,6 +248,16 @@ handleAction (Mock b) = do
   H.liftEffect $ sequence_ $ setTracking <$> state.geo <*> (Just $ not b)  
   H.liftEffect $ sequence_ $ (flip setTestMode b) <$> state.map
   tmp <- H.liftEffect $ sequence $ getCoordinate <$> state.geo
+--
+-- The one that works
+--
+  entities <- liftAff $ (map concat) <$> (parOneOf [
+    sequence <$> (parSequence [
+      _queryEntities "WeatherObserved" (Just "temperature")
+--      , _queryEntities "WeatherObserved" (Just "snowHeight")
+      ]),
+    Nothing <$ (delay (Milliseconds 2000.0))
+    ])  
   items <- queryItems {
     longitude : join $ _.longitude <$> tmp, 
     latitude: join $ _.latitude <$> tmp, 
@@ -245,7 +265,7 @@ handleAction (Mock b) = do
     limit: Nothing,
     text: Nothing }
   H.liftEffect $ sequence_ $ removeLayerFromMap <$> state.map <*> state.poi
-  layer <- H.liftEffect $ sequence $ createPOILayer <$> (join $ _.longitude <$> tmp) <*> (join $ _.latitude <$> tmp) <*> (Just (state.distance*2.0)) <*> (map (map itemToPOI) items)
+  layer <- H.liftEffect $ sequence $ createPOILayer <$> (join $ _.longitude <$> tmp) <*> (join $ _.latitude <$> tmp) <*> (Just (state.distance*2.0)) <*> (append <$> (map (map itemToPOI) items) <*> (map (map entityToPOI) entities))
   H.liftEffect $ sequence_ $ removeLayerFromMap <$> state.map <*> state.poi
   H.liftEffect $ sequence_ $ addLayerToMap <$> state.map <*> layer
   H.liftEffect $ sequence_ $ setCenter <$> state.map <*> (join $ _.longitude <$> tmp) <*> (join $ _.latitude <$> tmp)
