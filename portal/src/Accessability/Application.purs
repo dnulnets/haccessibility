@@ -28,7 +28,7 @@ import Effect.Ref as REF
 import Effect.Console (log)
 
 -- Control Monad stuff
-import Control.Monad.Reader (asks, runReaderT)
+import Control.Monad.Reader (asks, ask, runReaderT)
 import Control.Monad.Reader.Class (class MonadAsk)
 import Control.Monad.Reader.Trans (ReaderT)
 import Control.Parallel (parSequence, parOneOf)
@@ -94,10 +94,6 @@ derive newtype instance monadAffApplication ∷ MonadAff ApplicationM
 instance monadAskApplication ∷ TypeEquals e Environment ⇒ MonadAsk e ApplicationM where
   ask = ApplicationM $ asks from
 
--- | Reload the current page
---reload :: Effect Unit
---reload = window >>= location >>= L.reload
-
 --
 -- Add the set of functions that handles navigation in the app
 --
@@ -108,13 +104,14 @@ instance manageNavigationApplicationM ∷ ManageNavigation ApplicationM where
     H.liftEffect $ log $ "GotoPage to = " <> (show newPage)
     oldHash <- H.liftEffect $ getHash
     H.liftEffect $ log $ "Current page = " <> (show $ page oldHash)
+    
     if newPage /= page oldHash
       then do
         H.liftEffect $ log $ "Set hash to " <> newHash
         H.liftEffect $ setHash $ newHash
       else do
         H.liftEffect $ log $ "Reload hash with " <> oldHash
-        -- H.liftEffect $ reload
+
     where
       newHash :: String
       newHash = print routeCodec newPage
@@ -122,8 +119,6 @@ instance manageNavigationApplicationM ∷ ManageNavigation ApplicationM where
       page :: String->Page
       page h = either (const Error) identity $ parse routeCodec h
 
---      reload :: Effect Unit
---      reload = window >>= location >>= L.reload
 
 --
 --  Add the set of functions that handles login and logout of a user
@@ -133,17 +128,22 @@ instance manageAuthenticationApplicationM :: ManageAuthentication ApplicationM w
   -- |Tries to login the user and get a token from the backend that can be used for future
   -- calls
   login auth = do
-    ref <- asks _.userInfo
+    env <- ask
     burl <- EP.backend ep
-    response <- liftAff $ mkRequest burl EP.Authenticate (Post (Just auth))    
+
+    response <- liftAff $ parOneOf [
+      mkRequest burl ep (Post (Just auth))
+      , Left "Timeout" <$ (delay env.timeoutBackend)]
+
     case response of
       Left err -> do
         H.liftEffect $ log $ "Error: " <> err
-        H.liftEffect $ REF.write Nothing ref
+        H.liftEffect $ REF.write Nothing env.userInfo
         pure Nothing
       Right (Tuple _ userInfo) -> do
-        H.liftEffect $ REF.write userInfo ref
+        H.liftEffect $ REF.write userInfo env.userInfo
         pure userInfo
+
     where
       ep = EP.Authenticate
 
@@ -160,16 +160,21 @@ instance manageItemApplicationM :: ManageItem ApplicationM where
   -- |Tries to login the user and get a token from the backend that can be used for future
   -- calls
   queryItems filter = do
-    ref <- asks _.userInfo    
-    ui <- H.liftEffect $ REF.read ref
+    env <- ask
+    ui <- H.liftEffect $ REF.read env.userInfo
     burl <- EP.backend ep
-    response <- liftAff $ mkAuthRequest burl ep ui (Post (Just filter))    
+
+    response <- liftAff $ parOneOf [
+      mkAuthRequest burl ep ui (Post (Just filter))
+      , Left "Timeout" <$ (delay env.timeoutBackend)]
+
     case response of
       Left err -> do
         H.liftEffect $ log $ "Error: " <> err
         pure Nothing
       Right (Tuple _ items) -> do
         pure items
+
     where
       ep = EP.Items
 
@@ -179,17 +184,18 @@ instance manageItemApplicationM :: ManageItem ApplicationM where
 instance manageEntityApplicationM :: ManageEntity ApplicationM where
 
   -- |Executes the queries towards the backend in parallel to get all entities
-  -- andmerge them into one response
+  -- and merge them into one response
   queryEntities et = do
     b1 <- EP.backend ep1
     b2 <- EP.backend ep2
-    tmo <- asks _.timeoutIothub
-    response <- liftAff $ (map concat) <$> (parOneOf [
-      sequence <$> parSequence [
+    env <- ask
+
+    response <- liftAff $ parOneOf [
+      (map concat) <$> (sequence <$> parSequence [
         unpack <$> mkRequest b1 ep1 (Get::RequestMethod Void)
         , unpack <$> mkRequest b2 ep2 (Get::RequestMethod Void)
-      ],
-      Nothing <$ (delay tmo)])
+      ]),
+      Nothing <$ (delay env.timeoutIothub)]
 
     pure response
 
