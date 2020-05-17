@@ -170,7 +170,6 @@ handleAction Initialize = do
     distance: Just state.distance,
     limit: Nothing,
     text: Nothing }
---  layer <- H.liftEffect $ sequence $ createPOILayer <$> (join $ _.longitude <$> pos) <*> (join $ _.latitude <$> pos) <*> (Just (state.distance*2.0)) <*> (append <$> (map (map itemToPOI) items) <*> (map (map entityToPOI) entities))
   layer <- H.liftEffect $ sequence $ createPOILayer <$> (join $ _.longitude <$> pos) <*> (join $ _.latitude <$> pos) <*> (Just (state.distance*2.0)) <*> ((map (map itemToPOI) items) <> (map (map entityToPOI) entities))
   H.liftEffect do
     sequence_ $ addLayerToMap <$> olmap <*> layer
@@ -200,7 +199,7 @@ handleAction Update = do
     limit: Nothing,
     text: Nothing }
   H.liftEffect $ sequence_ $ removeLayerFromMap <$> state.map <*> state.poi
-  layer <- H.liftEffect $ sequence $ createPOILayer <$> (join $ _.longitude <$> pos) <*> (join $ _.latitude <$> pos) <*> (Just (state.distance*2.0)) <*> (append <$> (map (map itemToPOI) items) <*> (map (map entityToPOI) entities))
+  layer <- H.liftEffect $ sequence $ createPOILayer <$> (join $ _.longitude <$> pos) <*> (join $ _.latitude <$> pos) <*> (Just (state.distance*2.0)) <*> ((map (map itemToPOI) items) <> (map (map entityToPOI) entities))
   H.liftEffect $ sequence_ $ addLayerToMap <$> state.map <*> layer
   H.put state { poi = layer }
 
@@ -226,7 +225,7 @@ handleAction (Mock b) = do
     limit: Nothing,
     text: Nothing }
   H.liftEffect $ sequence_ $ removeLayerFromMap <$> state.map <*> state.poi
-  layer <- H.liftEffect $ sequence $ createPOILayer <$> (join $ _.longitude <$> pos) <*> (join $ _.latitude <$> pos) <*> (Just (state.distance*2.0)) <*> (append <$> (map (map itemToPOI) items) <*> (map (map entityToPOI) entities))
+  layer <- H.liftEffect $ sequence $ createPOILayer <$> (join $ _.longitude <$> pos) <*> (join $ _.latitude <$> pos) <*> (Just (state.distance*2.0)) <*> ((map (map itemToPOI) items) <> (map (map entityToPOI) entities))
   H.liftEffect $ sequence_ $ removeLayerFromMap <$> state.map <*> state.poi
   H.liftEffect $ sequence_ $ addLayerToMap <$> state.map <*> layer
   H.liftEffect $ sequence_ $ setCenter <$> state.map <*> (join $ _.longitude <$> pos) <*> (join $ _.latitude <$> pos)
