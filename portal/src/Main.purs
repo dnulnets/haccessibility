@@ -46,7 +46,7 @@ import Routing.Hash (matchesWith)
 import Routing.Duplex (parse)
 
 -- Our own imports
-import Accessability.Application (runApplication, Environment)
+import Accessability.Application (runApplication, Environment, default)
 import Accessability.Root as Root
 import Accessability.Interface.Endpoint (BaseURL(..))
 import Accessability.Data.Route (routeCodec, Page(..))
@@ -81,7 +81,7 @@ rootComponent env = H.hoist (runApplication env) Root.component
 -- | The main entry point for our application
 main ∷ Effect Unit -- ^ Default return value
 main = do
-  currentUserInfo <- liftEffect $ Ref.new Nothing
+  cui <- liftEffect $ Ref.new Nothing
   loc <- window >>= location >>= origin
   log $ "Origin = " <> loc
   log $ "Build = " <> build
@@ -89,9 +89,8 @@ main = do
     body <- HA.awaitBody
     let
       env ∷ Environment
-      env = { baseURL : BaseURL loc
-        , iothubURL : BaseURL "https://iotsundsvall.se/ngsi-ld/v1"
-        , userInfo : currentUserInfo}
+      env = (default cui) { baseURL = BaseURL loc }
+
     io <- runUI (rootComponent env) unit body
 
     void $ liftEffect $ matchesWith (parse routeCodec) \old new -> do

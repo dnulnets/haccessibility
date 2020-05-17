@@ -6,8 +6,8 @@
 module Accessability.Application(
     Environment,
     runApplication,
-    ApplicationM,
-    _queryEntities) where
+    default,
+    ApplicationM) where
 
 -- Language imports
 import Prelude
@@ -15,10 +15,13 @@ import Data.Maybe (Maybe(..))
 import Data.Either (Either(..), either)
 import Data.Tuple (Tuple(..))
 import Type.Equality (class TypeEquals, from)
+import Data.Array(concat)
+import Data.Traversable (sequence)
+import Data.Time.Duration (Milliseconds(..))
 
 -- Effects
-import Effect.Aff (Aff)
-import Effect.Aff.Class (class MonadAff)
+import Effect.Aff (Aff, delay)
+import Effect.Aff.Class (class MonadAff, liftAff)
 import Effect.Class (class MonadEffect)
 import Effect.Ref (Ref)
 import Effect.Ref as REF
@@ -28,6 +31,7 @@ import Effect.Console (log)
 import Control.Monad.Reader (asks, runReaderT)
 import Control.Monad.Reader.Class (class MonadAsk)
 import Control.Monad.Reader.Trans (ReaderT)
+import Control.Parallel (parSequence, parOneOf)
 
 -- Halogen
 import Halogen as H
@@ -37,25 +41,35 @@ import Routing.Duplex (print, parse)
 import Routing.Hash (setHash, getHash)
 
 -- Our own imports
-import Accessability.Interface.Endpoint (BaseURL)
+import Accessability.Interface.Endpoint (BaseURL(..))
 import Accessability.Interface.Endpoint as EP
 import Accessability.Interface.Authenticate (UserInfo,class ManageAuthentication)
 import Accessability.Interface.Navigate (class ManageNavigation)
 import Accessability.Interface.Item (class ManageItem)
-import Accessability.Interface.Entity(class ManageEntity, Entity)
+import Accessability.Interface.Entity(class ManageEntity)
 
 import Accessability.Data.Route (routeCodec, Page(..))
 
 import Accessability.Utils.Request (
   mkRequest, 
   mkAuthRequest,
-  _mkRequest,
   RequestMethod (..))
 
 -- | The application environment
 type Environment = { baseURL :: BaseURL -- ^The base URL for the API
   , userInfo :: Ref (Maybe UserInfo)    -- ^The user info when logged in
   , iothubURL :: BaseURL                -- ^The url to the IoT Hub in Sundsvall
+  , timeoutIothub :: Milliseconds       -- ^The timeout for iot hub API
+  , timeoutBackend :: Milliseconds      -- ^The timeout for our own backend
+  }
+
+-- |The default environment
+default::Ref (Maybe UserInfo) -> Environment
+default ui = { baseURL : BaseURL "https://127.0.0.1"          -- ^Defuault backend, needs to changed
+  , iothubURL : BaseURL "https://iotsundsvall.se/ngsi-ld/v1"  -- ^Fixed backend for the Swedish IoT Hub
+  , timeoutIothub : Milliseconds 2000.0                       -- ^The timeout for the Swedish IoT Hub, it is slow
+  , timeoutBackend : Milliseconds 500.0                       -- ^The timeout for our own haskell backend
+  , userInfo : ui
   }
 
 -- | The application monad
@@ -120,8 +134,8 @@ instance manageAuthenticationApplicationM :: ManageAuthentication ApplicationM w
   -- calls
   login auth = do
     ref <- asks _.userInfo
-    response <- mkRequest EP.Authenticate (Post (Just auth))
-    
+    burl <- EP.backend ep
+    response <- liftAff $ mkRequest burl EP.Authenticate (Post (Just auth))    
     case response of
       Left err -> do
         H.liftEffect $ log $ "Error: " <> err
@@ -130,6 +144,8 @@ instance manageAuthenticationApplicationM :: ManageAuthentication ApplicationM w
       Right (Tuple _ userInfo) -> do
         H.liftEffect $ REF.write userInfo ref
         pure userInfo
+    where
+      ep = EP.Authenticate
 
   -- |Log out the user
   logout = do
@@ -144,43 +160,41 @@ instance manageItemApplicationM :: ManageItem ApplicationM where
   -- |Tries to login the user and get a token from the backend that can be used for future
   -- calls
   queryItems filter = do
-    response <- mkAuthRequest EP.Items (Post (Just filter))    
+    ref <- asks _.userInfo    
+    ui <- H.liftEffect $ REF.read ref
+    burl <- EP.backend ep
+    response <- liftAff $ mkAuthRequest burl ep ui (Post (Just filter))    
     case response of
       Left err -> do
         H.liftEffect $ log $ "Error: " <> err
         pure Nothing
       Right (Tuple _ items) -> do
         pure items
+    where
+      ep = EP.Items
 
 --
 --  Add the set of functions that handles entities from the IoT Hub
 --
 instance manageEntityApplicationM :: ManageEntity ApplicationM where
 
-  -- |Tries to login the user and get a token from the backend that can be used for future
-  -- calls
-  queryEntities et ea = do
-    response <- mkRequest (EP.Entities {type: et, attrs: ea }) (Get::RequestMethod Void)
-    case response of
-      Left err -> do
-        H.liftEffect $ log $ "Error: " <> err
-        pure Nothing
-      Right (Tuple _ entities) -> do
-        pure entities
+  -- |Executes the queries towards the backend in parallel to get all entities
+  -- andmerge them into one response
+  queryEntities et = do
+    b1 <- EP.backend ep1
+    b2 <- EP.backend ep2
+    tmo <- asks _.timeoutIothub
+    response <- liftAff $ (map concat) <$> (parOneOf [
+      sequence <$> parSequence [
+        unpack <$> mkRequest b1 ep1 (Get::RequestMethod Void)
+        , unpack <$> mkRequest b2 ep2 (Get::RequestMethod Void)
+      ],
+      Nothing <$ (delay tmo)])
 
---
--- Things that needs to run in Aff
---
+    pure response
 
-iotHubURL:: EP.BaseURL
-iotHubURL = EP.BaseURL "https://iotsundsvall.se/ngsi-ld/v1"
-
-_queryEntities::String->Maybe String->Aff (Maybe (Array Entity))
-_queryEntities et ea = do
-  response <- _mkRequest iotHubURL (EP.Entities {type: et, attrs: ea }) (Get::RequestMethod Void)
-  case response of
-    Left err -> do
-      H.liftEffect $ log $ "Error: " <> err
-      pure Nothing
-    Right (Tuple _ entities) -> do
-      pure entities
+    where
+      ep1 = EP.Entities {type: et, attrs: Just "temperature"}
+      ep2 = EP.Entities {type: et, attrs: Just "snowHeight"}
+      unpack (Left _) = Nothing
+      unpack (Right (Tuple _ e)) = Just e

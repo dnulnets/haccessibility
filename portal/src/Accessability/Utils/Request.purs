@@ -5,7 +5,6 @@
 -- |
 module Accessability.Utils.Request(RequestMethod(..),
                           mkRequest,
-                          _mkRequest,
                           mkRequest_,
                           mkAuthRequest,
                           mkAuthRequest_) where
@@ -25,16 +24,7 @@ import Data.Argonaut (Json,
                       class EncodeJson,
                       encodeJson)
 
-import Control.Monad.Reader (asks)
-import Control.Monad.Reader.Class (class MonadAsk)
-
 import Effect.Aff (Aff)
-import Effect.Aff.Class (class MonadAff,
-                         liftAff)
-import Effect.Class (liftEffect)
-
-import Effect.Ref (Ref)
-import Effect.Ref as Ref
 
 import Affjax as AX
 import Affjax.ResponseFormat as AXRF
@@ -47,8 +37,10 @@ import Routing.Duplex (print)
 --
 -- Our own imports
 --
-import Accessability.Interface.Endpoint (Endpoint,
-                                endpointCodec, backend, BaseURL(..))
+import Accessability.Interface.Endpoint (
+  Endpoint,
+  endpointCodec,
+  BaseURL(..))
 import Accessability.Interface.Authenticate (UserInfo(..))
 
 -- |type of Authorization 
@@ -87,45 +79,27 @@ defaultRequest (BaseURL baseUrl) ep reqm auth =
       Delete -> Tuple DELETE Nothing
 
 -- |Makes a request to the backend and return with status and result
-mkRequest ∷ ∀ a m r v. MonadAff m
-            ⇒ MonadAsk { baseURL :: BaseURL, iothubURL :: BaseURL | r } m
-            ⇒ DecodeJson v
+mkRequest ∷ ∀ a v. DecodeJson v
             ⇒ EncodeJson a
-            ⇒ Endpoint          -- ^The endpoint to call
+            ⇒ BaseURL           -- ^The base URL for the endpoint
+            -> Endpoint          -- ^The endpoint to call            
             -> RequestMethod a   -- ^The request method to use for the call
-            -> m (Either String (Tuple AXS.StatusCode v)) -- ^The result of the call
-mkRequest ep rm = do
-  baseURL <- backend ep
-  response <- liftAff $ AX.request $ defaultRequest baseURL ep rm Nothing
-  pure case response of
-    Left err → Left $ AX.printError err -- Make a string out of affjax errors
-    Right val → (Tuple val.status) <$> (decodeJson val.body)
-
--- |Makes a request in Aff
-_mkRequest ∷ ∀ a v.
-            DecodeJson v
-            ⇒ EncodeJson a
-            ⇒ BaseURL
-            -> Endpoint
-            -> RequestMethod a
-            -> Aff (Either String (Tuple AXS.StatusCode v))
-_mkRequest burl ep rm = do
+            -> Aff (Either String (Tuple AXS.StatusCode v)) -- ^The result of the call
+mkRequest burl ep rm = do
   response <- AX.request $ defaultRequest burl ep rm Nothing
   pure case response of
     Left err → Left $ AX.printError err -- Make a string out of affjax errors
     Right val → (Tuple val.status) <$> (decodeJson val.body)
 
 -- |Makes a request to the backend and return with status
-mkRequest_ ∷ ∀ a m r v. MonadAff m
-            ⇒ MonadAsk { baseURL :: BaseURL, iothubURL :: BaseURL | r } m
-            ⇒ DecodeJson v
+mkRequest_ ∷ ∀ a v. DecodeJson v
             ⇒ EncodeJson a
-            ⇒ Endpoint
+            ⇒ BaseURL
+            -> Endpoint
             → RequestMethod a
-            → m (Either String AXS.StatusCode)
-mkRequest_ ep rm = do
-  baseURL <- backend ep
-  response <- liftAff $ AX.request $ defaultRequest baseURL ep rm Nothing
+            → Aff (Either String AXS.StatusCode)
+mkRequest_ burl ep rm = do
+  response <- AX.request $ defaultRequest burl ep rm Nothing
   pure case response of
     Left err -> Left $ AX.printError err -- Make a string gout of affjax errors
     Right val -> Right val.status
@@ -135,35 +109,29 @@ mkAuthorization::UserInfo->Authorization
 mkAuthorization (UserInfo t) = Bearer t.token
 
 -- |Makes a request to the backend and return with status and result
-mkAuthRequest ∷ ∀ a m r v. MonadAff m
-            ⇒ MonadAsk { baseURL :: BaseURL, iothubURL :: BaseURL, userInfo :: Ref (Maybe UserInfo) | r } m
-            ⇒ DecodeJson v
+mkAuthRequest ∷ ∀ a v. DecodeJson v
             ⇒ EncodeJson a
-            ⇒ Endpoint
+            ⇒ BaseURL
+            -> Endpoint
+            -> Maybe UserInfo
             → RequestMethod a
-            → m (Either String (Tuple AXS.StatusCode v))
-mkAuthRequest ep rm = do
-  ref <- asks _.userInfo
-  baseURL <- backend ep
-  userInfo <- liftEffect $ Ref.read ref
-  response <- liftAff $ AX.request $ defaultRequest baseURL ep rm $ mkAuthorization <$> userInfo
+            → Aff (Either String (Tuple AXS.StatusCode v))
+mkAuthRequest burl ep ui rm = do
+  response <- AX.request $ defaultRequest burl ep rm $ mkAuthorization <$> ui
   pure case response of
     Left err → Left $ AX.printError err -- Make a string out of affjax errors
     Right val → (Tuple val.status) <$> (decodeJson val.body)
 
 -- |Makes a request to the backend and return with status and ignore result
-mkAuthRequest_ ∷ ∀ a m r v. MonadAff m
-            ⇒ MonadAsk { baseURL :: BaseURL, iothubURL :: BaseURL, userInfo :: Ref (Maybe UserInfo) | r } m
-            ⇒ DecodeJson v
+mkAuthRequest_ ∷ ∀ a v. DecodeJson v
             ⇒ EncodeJson a
-            ⇒ Endpoint
+            ⇒ BaseURL
+            -> Endpoint
+            -> Maybe UserInfo
             → RequestMethod a
-            → m (Either String AXS.StatusCode)
-mkAuthRequest_ ep rm = do
-  ref <- asks _.userInfo
-  baseURL <- backend ep
-  userInfo <- liftEffect $ Ref.read ref
-  response <- liftAff $ AX.request $ defaultRequest baseURL ep rm $ mkAuthorization <$>userInfo
+            → Aff (Either String AXS.StatusCode)
+mkAuthRequest_ burl ep ui rm = do
+  response <- AX.request $ defaultRequest burl ep rm $ mkAuthorization <$> ui
   pure case response of
     Left err -> Left $ AX.printError err -- Make a string gout of affjax errors
     Right val -> Right val.status

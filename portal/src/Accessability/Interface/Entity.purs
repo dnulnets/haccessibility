@@ -99,9 +99,8 @@ class MonadAff m ⇐ ManageEntity m where
 
   -- |Fetches a list of items based on the query parameters
   queryEntities::String             -- ^Type of entities
-    -> Maybe String                 -- ^Type of attributes to return
     -> m (Maybe (Array Entity))     -- ^List of Entities
 
 -- |Avoid lift in the components
 instance manageEntityHalogenM :: ManageEntity m => ManageEntity (HalogenM st act slots msg m) where
-  queryEntities t a = lift $ queryEntities t a
+  queryEntities t = lift $ queryEntities t
