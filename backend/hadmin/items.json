@@ -1,6 +1,6 @@
 [
     {
-        "name":"NP3 Arena South West Entrance",
+        "name":"NP3 SE Entrance",
         "description":"Sundsvall football arena, office space",
         "source":"Human",
         "level":"L3",
@@ -13,7 +13,7 @@
         "latitude": 62.393406
     },
     {
-        "name":"NP3 Arena South Entrance",
+        "name":"NP3 S Entrance",
         "description":"Sundsvall football arena, stadion and office entrance",
         "source":"Human",
         "level":"L4",
@@ -26,7 +26,7 @@
         "latitude": 62.393560
     },
     {
-        "name":"NP3 Arena East Entrance",
+        "name":"NP3 E Entrance",
         "description":"Sundsvall football arena, stadion entrance",
         "source":"Human",
         "level":"L4",
@@ -39,7 +39,7 @@
         "latitude": 62.393844
     },
     {
-        "name":"NP3 Arena West Entrance",
+        "name":"NP3 W Entrance",
         "description":"Sundsvall football arena, field entrance",
         "source":"Human",
         "level":"L4",
