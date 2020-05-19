@@ -1,7 +1,8 @@
 {
   "dependencies": {
     "big-integer": "^1.6.48",
-    "ol": "^6.3.1"
+    "ol": "^6.3.1",
+    "purescript": "^0.13.6"
   },
   "devDependencies": {
     "cssnano": "^4.1.10",
