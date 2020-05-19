@@ -1,14 +1,15 @@
 FROM node:erbium
 COPY . /haccessability
 WORKDIR /haccessability/portal
-ENV PATH /node_modules/.bin:$PATH
 RUN	   rm -fR output \
 	&& rm -fR dist \
 	&& rm -fR .cache \
 	&& rm -fR .spago \
+	&& rm -fR node_modules \
 	&& npm install --only=dev \
-	&& npm install \
-	&& ./generate.sh \
+	&& npm install
+ENV PATH /haccessability/portal/node_modules/.bin:$PATH
+RUN	   ./generate.sh \
 	&& cat ./src/Version.purs \
 	&& spago build \
 	&& rm -fR /haccessability

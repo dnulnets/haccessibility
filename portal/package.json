@@ -1,12 +1,13 @@
 {
+  "name": "haccesibility",
+  "license": "BSD-3-Clause",
   "repository": {
     "type": "git",
     "url": "git://github.com:dnulnets/haccessibility.git"
   },
   "dependencies": {
     "big-integer": "^1.6.48",
-    "ol": "^6.3.1",
-    "purescript": "^0.13.6"
+    "ol": "^6.3.1"
   },
   "devDependencies": {
     "cssnano": "^4.1.10",
