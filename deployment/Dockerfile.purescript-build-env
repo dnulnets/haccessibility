@@ -1,6 +1,14 @@
-FROM node:12.4
-RUN npm install purescript && npm install spago && npm install parcel && npm install cssnano
-ENV PATH /node_modules/.bin:$PATH
+FROM node:erbium
 COPY . /haccessability
 WORKDIR /haccessability/portal
-RUN rm -fR output && rm -fR dist && rm -fR .cache && rm -fR .spago && ./generate.sh && cat ./src/Version.purs && spago build && rm -fR /haccessability
+ENV PATH /node_modules/.bin:$PATH
+RUN	   rm -fR output \
+	&& rm -fR dist \
+	&& rm -fR .cache \
+	&& rm -fR .spago \
+	&& npm install --only=dev \
+	&& npm install \
+	&& ./generate.sh \
+	&& cat ./src/Version.purs \
+	&& spago build \
+	&& rm -fR /haccessability
