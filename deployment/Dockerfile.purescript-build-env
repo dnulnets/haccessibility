@@ -1,6 +1,8 @@
 FROM node:erbium
-COPY . /haccessability
-WORKDIR /haccessability/portal
+WORKDIR /
+RUN 	   apt-get install git \
+	&& git clone https://github.com/dnulnets/haccessibility.git
+WORKDIR /haccessibility/portal
 RUN	   rm -fR output \
 	&& rm -fR dist \
 	&& rm -fR .cache \
@@ -8,8 +10,9 @@ RUN	   rm -fR output \
 	&& rm -fR node_modules \
 	&& npm install --only=dev \
 	&& npm install
-ENV PATH /haccessability/portal/node_modules/.bin:$PATH
+ENV PATH /haccessibility/portal/node_modules/.bin:$PATH
 RUN	   ./generate.sh \
 	&& cat ./src/Version.purs \
-	&& spago build \
-	&& rm -fR /haccessability
+	&& spago build
+WORKDIR /
+RUN 	   rm -fR /haccessibility
