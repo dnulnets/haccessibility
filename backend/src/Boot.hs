@@ -64,6 +64,7 @@ import           Accessability.Handler.REST.Item
                                                 , postItemsR
                                                 , putItemR
                                                 , getAttributesR
+                                                , getItemAttributesR
                                                 )
 
 import           Accessability.Handler.REST.Authenticate

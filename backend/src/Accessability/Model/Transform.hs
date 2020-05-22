@@ -17,6 +17,7 @@ module Accessability.Model.Transform (
     toGQLItem,
     toGenericUser,
     toGenericAttribute,
+    toGenericItemAttribute,
     textToKey,
     keyToText,
     idToKey,
@@ -62,12 +63,27 @@ keyToText key = toText $ fromBinary $ fromSqlKey key
 
 -- | Converts a database attribute to a generic attribute
 toGenericAttribute::(Key DB.Attribute, DB.Attribute)->G.Attribute
-toGenericAttribute (key, a) = G.Attribute {G.attributeId = Just $ keyToText key,
-    G.attributeItemId  = Nothing, G.attributeDescription = DB.attributeDescription a,
+toGenericAttribute (key, a) = G.Attribute {
+    G.attributeId = Just $ keyToText key,
+    G.attributeItemId  = Nothing,
+    G.attributeDescription = DB.attributeDescription a,
     G.attributeName = DB.attributeName a,
     G.attributeTypeof = DB.attributeTypeof a,
     G.attributeUnit = DB.attributeUnit  a,
-    G.attributeValue = Nothing}
+    G.attributeValue = Nothing,
+    G.attributeAttributeValueId = Nothing}
+
+-- | Converts a database attribute to a generic attribute
+toGenericItemAttribute::(Key DB.Attribute, DB.Attribute, Key DB.AttributeValue, DB.AttributeValue)->G.Attribute
+toGenericItemAttribute (ka, a, kv, v) = G.Attribute {
+    G.attributeId = Just $ keyToText ka,
+    G.attributeItemId = Just $ keyToText (DB.attributeValueItem v),
+    G.attributeDescription = DB.attributeDescription a,
+    G.attributeName = DB.attributeName a,
+    G.attributeTypeof = DB.attributeTypeof a,
+    G.attributeUnit = DB.attributeUnit  a,
+    G.attributeValue = Just $ DB.attributeValueValue v,
+    G.attributeAttributeValueId = Just $ keyToText kv}
 
 -- | Converts a database item to a GQL item
 toGQLItem::(Key DB.Item, DB.Item, Maybe Double)  -- ^ The database item and distance

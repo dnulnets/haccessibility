@@ -19,6 +19,7 @@
 module Accessability.Data.Item
   ( Item(..)
   , Attribute(..)
+  , AttributeValue(..)
   , ItemLevel(..)
   , ItemSource(..)
   , ItemState(..)
@@ -106,11 +107,12 @@ data Attribute = Attribute {
     , attributeTypeof      :: AttributeType   -- ^The type of the attribute
     , attributeUnit        :: Text            -- ^The unit of the attribute
     , attributeValue       :: Maybe Text      -- ^The value of the attribute
-    , attributeItemId      :: Maybe Text      -- ^The item that the attribute belongs to
+    , attributeItemId      :: Maybe Text      -- ^The key to the item that the AttributeValue belongs to
+    , attributeAttributeValueId :: Maybe Text -- ^The key to the AtributeValue record
     } deriving (Generic, Show)
 
 -- |Definition of the value of an attribute, used for setting them, otherwise the type
--- Attribute is mor econvenient.
+-- Attribute is more convenient.
 data AttributeValue = AttributeValue {
   attributeValueId            :: Maybe Text   -- ^The key to the record
   , attributeValueValue       :: Text         -- ^The value

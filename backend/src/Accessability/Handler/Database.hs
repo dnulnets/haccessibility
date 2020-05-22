@@ -21,6 +21,7 @@ module Accessability.Handler.Database (
     dbDeleteItem,
     dbUpdateItem,
     dbFetchAttributes,
+    dbFetchItemAttributes,
     ilike,
     changeField,
     Accessability.Handler.Database.filter) where
@@ -71,7 +72,7 @@ changeField::(PersistField a) => EntityField Item a -- ^ The coumn
 changeField field (Just value) = [field =. value]
 changeField _ Nothing          = []
 
--- | Fetch the item from the database within the Handler monad
+-- | Fetch all possible attributes from the database within the Handler monad
 dbFetchAttributes :: Handler (Either String [(Key Attribute, Attribute)])  -- ^ The result of the database search
 dbFetchAttributes = do
    attributes <- runDB $ selectList [] [Asc AttributeName]
@@ -79,6 +80,15 @@ dbFetchAttributes = do
    where
       cleanup::Entity Attribute->(Key Attribute, Attribute)
       cleanup (Entity k a) = (k, a)
+
+-- | Fetch the items attributes from the database within the Handler monad
+dbFetchItemAttributes :: Key Item->Handler (Either String [(Key Attribute, Attribute, Key AttributeValue, AttributeValue)])  -- ^ The result of the database search
+dbFetchItemAttributes key = do
+   attributes <- runDB $ rawSql "SELECT ??,?? FROM attribute, attribute_value WHERE attribute.id = attribute_value.attribute AND attribute_value.item=? ORDER BY attribute.name" [PersistInt64 (fromSqlKey key)]
+   return $ Right $ cleanup <$> attributes
+   where
+      cleanup::(Entity Attribute,Entity AttributeValue)->(Key Attribute, Attribute, Key AttributeValue, AttributeValue)
+      cleanup (Entity k1 a, Entity k2 v) = (k1, a, k2, v)
 
 -- | Fetch the item from the database within the Handler monad
 dbFetchItem :: Key Item                                                       -- ^ The key

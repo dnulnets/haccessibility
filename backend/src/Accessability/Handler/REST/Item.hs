@@ -18,7 +18,8 @@ module Accessability.Handler.REST.Item (
     deleteItemR,
     postCreateItemR,
     postItemsR,
-    getAttributesR) where
+    getAttributesR,
+    getItemAttributesR) where
 
 --
 -- Import standard libs
@@ -148,4 +149,18 @@ getAttributesR = do
         (pure . Left . show)
     case result of
         Left e -> invalidArgs $ ["Unable to get the attributes from the database"] <> splitOn "\n" (pack e)
+        Right a -> sendStatusJSON status200 a
+
+        -- | The REST GET handler for an item, i.e. return with the data of an item based on the items
+-- key provided in the URL api/item/0000000000000001
+--
+getItemAttributesR::Text      -- ^ The item key
+    ->Handler Value -- ^ The list of possible attributes and their values, if any
+getItemAttributesR key = do
+    requireAuthentication
+    result <- UIOE.catchAny
+        (fffmap toGenericItemAttribute $ DBF.dbFetchItemAttributes $ textToKey key)
+        (pure . Left . show)
+    case result of
+        Left e -> invalidArgs $ ["Unable to get the item from the database", key] <> splitOn "\n" (pack e)
         Right a -> sendStatusJSON status200 a
