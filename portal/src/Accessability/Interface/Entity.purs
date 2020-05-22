@@ -8,21 +8,10 @@ module Accessability.Interface.Entity where
 -- Language imports
 import Prelude
 
-import Data.DateTime.ISO (ISO, unwrapISO)
-import Data.DateTime (DateTime)
-import Data.Maybe (Maybe(..))
-import Data.Either (note)
-import Data.Argonaut (class DecodeJson,
-                      class EncodeJson,
-                      decodeJson, encodeJson, jsonEmptyObject,
-                      (.:),
-                      (.:?),
-                      (:=),
-                      (~>))
+import Data.Maybe (Maybe)
+import Data.Argonaut (class DecodeJson, decodeJson, (.:), (.:?))
 
 import Effect.Aff.Class (class MonadAff)
-
-import Control.Alt ((<|>))
 
 -- Halogen imports
 import Halogen (HalogenM, lift)

@@ -17,7 +17,8 @@ module Accessability.Handler.REST.Item (
     putItemR,
     deleteItemR,
     postCreateItemR,
-    postItemsR) where
+    postItemsR,
+    getAttributesR) where
 
 --
 -- Import standard libs
@@ -134,5 +135,17 @@ postItemsR = do
             liftIO $ putStrLn "Unable to find any items"
             invalidArgs $ ["Unable to find any items in the database"] <> splitOn "\n" (pack e)
         Right items -> do
-            liftIO $ putStrLn $ show $ encode items
+            liftIO $ print (encode items)
             sendStatusJSON status200 items
+
+-- | The REST get handler for attributes, i.e. a list of attributes that an item can
+-- have.
+getAttributesR::Handler Value    -- ^ The list of items as a JSON response
+getAttributesR = do
+    requireAuthentication
+    result <- UIOE.catchAny
+        (fffmap toGenericAttribute DBF.dbFetchAttributes)
+        (pure . Left . show)
+    case result of
+        Left e -> invalidArgs $ ["Unable to get the attributes from the database"] <> splitOn "\n" (pack e)
+        Right a -> sendStatusJSON status200 a

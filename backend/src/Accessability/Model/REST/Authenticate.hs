@@ -14,17 +14,20 @@
 -- This module contains the interfaces for the user handler API
 --
 
-module Accessability.Model.REST.Authenticate (Authenticate(..),
-                                              UserInfo(..)) where
+module Accessability.Model.REST.Authenticate
+  ( Authenticate(..)
+  , UserInfo(..)
+  )
+where
 
 --
 -- External imports
 --
-import           GHC.Generics  (Generic)
+import           GHC.Generics                   ( Generic )
 
 import           Data.Aeson
 import           Data.Aeson.TH
-import           Data.Text     (Text)
+import           Data.Text                      ( Text )
 
 --
 -- Heat imports

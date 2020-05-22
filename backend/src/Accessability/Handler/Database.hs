@@ -20,6 +20,7 @@ module Accessability.Handler.Database (
     dbCreateItem,
     dbDeleteItem,
     dbUpdateItem,
+    dbFetchAttributes,
     ilike,
     changeField,
     Accessability.Handler.Database.filter) where
@@ -69,6 +70,15 @@ changeField::(PersistField a) => EntityField Item a -- ^ The coumn
    -> [Update Item]                                 -- ^ The update filter
 changeField field (Just value) = [field =. value]
 changeField _ Nothing          = []
+
+-- | Fetch the item from the database within the Handler monad
+dbFetchAttributes :: Handler (Either String [(Key Attribute, Attribute)])  -- ^ The result of the database search
+dbFetchAttributes = do
+   attributes <- runDB $ selectList [] [Asc AttributeName]
+   return $ Right $ cleanup <$> attributes
+   where
+      cleanup::Entity Attribute->(Key Attribute, Attribute)
+      cleanup (Entity k a) = (k, a)
 
 -- | Fetch the item from the database within the Handler monad
 dbFetchItem :: Key Item                                                       -- ^ The key

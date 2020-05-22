@@ -8,12 +8,9 @@ module Accessability.Component.Login where
 -- Language imports
 import Prelude
 import Data.Maybe (Maybe(..), fromMaybe, maybe)
-import Data.Either (Either(..))
 
 -- Control Monad
 import Control.Monad.Reader.Trans (class MonadAsk)
-import Control.Monad.Reader (asks)
-import Control.Monad.Error.Class (try)
 
 -- Effects
 import Effect.Aff.Class (class MonadAff)

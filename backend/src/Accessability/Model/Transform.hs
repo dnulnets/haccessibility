@@ -16,6 +16,7 @@ module Accessability.Model.Transform (
     toGenericItem,
     toGQLItem,
     toGenericUser,
+    toGenericAttribute,
     textToKey,
     keyToText,
     idToKey,
@@ -58,6 +59,15 @@ textToKey key = toSqlKey $ toBinary $ hexString $ encodeUtf8 key
 -- | Convert from Text to database key
 keyToText::ToBackendKey SqlBackend record => Key record -> Text
 keyToText key = toText $ fromBinary $ fromSqlKey key
+
+-- | Converts a database attribute to a generic attribute
+toGenericAttribute::(Key DB.Attribute, DB.Attribute)->G.Attribute
+toGenericAttribute (key, a) = G.Attribute {G.attributeId = Just $ keyToText key,
+    G.attributeItemId  = Nothing, G.attributeDescription = DB.attributeDescription a,
+    G.attributeName = DB.attributeName a,
+    G.attributeTypeof = DB.attributeTypeof a,
+    G.attributeUnit = DB.attributeUnit  a,
+    G.attributeValue = Nothing}
 
 -- | Converts a database item to a GQL item
 toGQLItem::(Key DB.Item, DB.Item, Maybe Double)  -- ^ The database item and distance

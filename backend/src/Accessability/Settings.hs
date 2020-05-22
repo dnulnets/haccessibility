@@ -12,14 +12,16 @@
 -- This module contains the possible settings for the application and also
 -- a default setting.
 --
-module Accessability.Settings (
-  AppSettings(..),
-  defaultSettings) where
+module Accessability.Settings
+  ( AppSettings(..)
+  , defaultSettings
+  )
+where
 
 --
 -- External imports
 --
-import           Data.Text (Text)
+import           Data.Text                      ( Text )
 
 -- |Our application settings
 data AppSettings = AppSettings {
@@ -31,11 +33,8 @@ data AppSettings = AppSettings {
   }
 
 -- |A default setting for our application
-defaultSettings::AppSettings
-defaultSettings = AppSettings {
-
-  tokenSecret = "69fh)d#%fih"   -- ^The default token secret
-  ,tokenExpiration = 60*60      -- ^The default token is only valid for 1 hour
-  ,passwordCost = 10            -- ^The default password hashing cost
-
-  }
+defaultSettings :: AppSettings
+defaultSettings = AppSettings { tokenSecret     = "69fhh)d#%fih"   -- ^The default token secret
+                              , tokenExpiration = 60 * 60      -- ^The default token is only valid for 1 hour
+                              , passwordCost    = 10            -- ^The default password hashing cost
+                              }

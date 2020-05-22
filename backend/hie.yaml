@@ -1,0 +1,19 @@
+cradle:
+  stack:
+    - path: "./src"
+      component: "accessibility:lib"
+
+    - path: "./server/Main.hs"
+      component: "accessibility:exe:accessibility-server"
+
+    - path: "./server/Paths_accessibility.hs"
+      component: "accessibility:exe:accessibility-server"
+
+    - path: "./hadmin/Main.hs"
+      component: "accessibility:exe:hadmin"
+
+    - path: "./hadmin/Paths_accessibility.hs"
+      component: "accessibility:exe:hadmin"
+
+    - path: "./test"
+      component: "accessibility:test:accessibility-test"

@@ -8,16 +8,10 @@ module Accessability.Interface.Item where
 -- Language imports
 import Prelude
 
-import Data.DateTime.ISO (ISO, unwrapISO)
-import Data.DateTime (DateTime)
+import Data.DateTime.ISO (ISO)
 import Data.Maybe (Maybe(..))
 import Data.Either (note)
-import Data.Argonaut (class DecodeJson,
-                      class EncodeJson,
-                      decodeJson, encodeJson, jsonEmptyObject,
-                      (.:),
-                      (:=),
-                      (~>))
+import Data.Argonaut (class DecodeJson, class EncodeJson, decodeJson, encodeJson)
 
 -- Halogen imports
 import Halogen (HalogenM, lift)

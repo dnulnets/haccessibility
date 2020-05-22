@@ -15,17 +15,19 @@
 --
 -- This module contains the types for the Item resource for the REST API
 --
-module Accessability.Model.REST.Item (
-    PostItemsBody(..),
-    PostItemBody(..),
-    PutItemBody(..)) where
+module Accessability.Model.REST.Item
+    ( PostItemsBody(..)
+    , PostItemBody(..)
+    , PutItemBody(..)
+    )
+where
 
 --
 -- Import standard libs
 --
-import           Data.Text                (Text)
-import           Data.Time.Clock          (UTCTime)
-import           GHC.Generics             (Generic (..))
+import           Data.Text                      ( Text )
+import           Data.Time.Clock                ( UTCTime )
+import           GHC.Generics                   ( Generic(..) )
 
 --
 -- JSON library
@@ -36,10 +38,13 @@ import           Data.Aeson.TH
 --
 -- Our own
 --
-import           Accessability.Data.Item  (ItemApproval (..), ItemLevel (..),
-                                           ItemModifier (..), ItemSource (..),
-                                           ItemState (..))
-import           Accessability.Utils.JSON (firstLower)
+import           Accessability.Data.Item        ( ItemApproval(..)
+                                                , ItemLevel(..)
+                                                , ItemModifier(..)
+                                                , ItemSource(..)
+                                                , ItemState(..)
+                                                )
+import           Accessability.Utils.JSON       ( firstLower )
 
 -- | The argument for the queryitems query
 data PostItemsBody = PostItemsBody {

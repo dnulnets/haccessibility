@@ -16,20 +16,26 @@
 -- This module contains the common item type regardless of interface or database
 -- that is associated with geographical items.
 --
-module Accessability.Data.Item (
-    Item(..),
-    ItemLevel(..),
-    ItemSource(..),
-    ItemState(..),
-    ItemModifier(..),
-    ItemApproval(..)) where
+module Accessability.Data.Item
+  ( Item(..)
+  , Attribute(..)
+  , ItemLevel(..)
+  , ItemSource(..)
+  , ItemState(..)
+  , ItemModifier(..)
+  , ItemApproval(..)
+  , AttributeType(..)
+  )
+where
 
 --
 -- Import standard libs
 --
-import           Data.Text                (Text, pack)
-import           Data.Time.Clock          (UTCTime)
-import           GHC.Generics             (Generic (..))
+import           Data.Text                      ( Text
+                                                , pack
+                                                )
+import           Data.Time.Clock                ( UTCTime )
+import           GHC.Generics                   ( Generic(..) )
 
 --
 -- Import for persistence
@@ -45,13 +51,16 @@ import           Data.Aeson.TH
 --
 -- Imports for GQL
 --
-import           Data.Morpheus.Kind       (ENUM)
-import           Data.Morpheus.Types      (GQLType (..))
+import           Data.Morpheus.Kind             ( ENUM )
+import           Data.Morpheus.Types            ( GQLType(..) )
 
 --
 -- Import our own stuff
 --
-import           Accessability.Utils.JSON (firstLower)
+import           Accessability.Utils.JSON       ( firstLower )
+
+-- | The numberation for the attribute type
+data AttributeType = TextType | NumberType | BooleanType deriving (Generic, Show, Read, Eq)
 
 -- | The enumeration for the accessability level for an item
 data ItemLevel = L1 | L2 | L3 | L4 | L5 deriving (Generic, Show, Read, Eq)
@@ -89,9 +98,34 @@ data Item = Item {
     , itemDistance    :: Maybe Float -- ^ The distance to a specified point at the time of the query
     } deriving (Generic, Show)
 
+-- | Definition of the attribute and it doubles as the value for an attribute and item
+data Attribute = Attribute {
+    attributeId            :: Maybe Text      -- ^Attribute key
+    , attributeName        :: Text            -- ^The name of the attribute
+    , attributeDescription :: Text            -- ^The description of the attribute 
+    , attributeTypeof      :: AttributeType   -- ^The type of the attribute
+    , attributeUnit        :: Text            -- ^The unit of the attribute
+    , attributeValue       :: Maybe Text      -- ^The value of the attribute
+    , attributeItemId      :: Maybe Text      -- ^The item that the attribute belongs to
+    } deriving (Generic, Show)
+
+-- |Definition of the value of an attribute, used for setting them, otherwise the type
+-- Attribute is mor econvenient.
+data AttributeValue = AttributeValue {
+  attributeValueId            :: Maybe Text   -- ^The key to the record
+  , attributeValueValue       :: Text         -- ^The value
+  , attributeValueAttributeId :: Text         -- ^The key to the attribute
+  , attributeValueItemId      :: Text         -- ^The key to the item
+}
+
 --
 -- Persistence
 --
+
+--
+-- Persistence for Enumberation AttributeType
+--
+derivePersistField "AttributeType"
 
 --
 -- Persistence for Enumeration ItemLevel
@@ -130,28 +164,36 @@ derivePersistField "ItemApproval"
 
 -- Make ItemLevel a GQL type
 instance GQLType ItemLevel where
-    type  KIND ItemLevel = ENUM
-    description = const $ Just $ pack "The level of accessability of the item, L1-L5. L5 is the highest "
+  type KIND ItemLevel = ENUM
+  description = const $ Just $ pack
+    "The level of accessability of the item, L1-L5. L5 is the highest "
 
 -- Make ItemSource a GQL type
 instance GQLType ItemSource where
-    type  KIND ItemSource = ENUM
-    description = const $ Just $ pack "The source of the items state, i.e. if the items activity is manual or automatically determined"
+  type KIND ItemSource = ENUM
+  description =
+    const
+      $ Just
+      $ pack
+          "The source of the items state, i.e. if the items activity is manual or automatically determined"
 
 -- Make ItemLevel a GQL type
 instance GQLType ItemState where
-    type  KIND ItemState = ENUM
-    description = const $ Just $ pack "The items state, i.e. if it is Online, Offline or Unknown"
+  type KIND ItemState = ENUM
+  description = const $ Just $ pack
+    "The items state, i.e. if it is Online, Offline or Unknown"
 
 -- Make ItemLevel a GQL type
 instance GQLType ItemModifier where
-    type  KIND ItemModifier = ENUM
-    description = const $ Just $ pack "The items modifier, i.e. if it is Static or Transient"
+  type KIND ItemModifier = ENUM
+  description =
+    const $ Just $ pack "The items modifier, i.e. if it is Static or Transient"
 
 -- Make ItemLevel a GQL type
 instance GQLType ItemApproval where
-    type  KIND ItemApproval = ENUM
-    description = const $ Just $ pack "The items approval, i.e. if it is Waiting, Approved or Denied"
+  type KIND ItemApproval = ENUM
+  description = const $ Just $ pack
+    "The items approval, i.e. if it is Waiting, Approved or Denied"
 
 --
 -- JSON interfaces
@@ -163,65 +205,94 @@ customOptions :: Options
 customOptions = defaultOptions
 
 --
+-- JSON for Enumeration AttributeType
+--
+
+instance ToJSON AttributeType where
+  toJSON     = genericToJSON customOptions
+  toEncoding = genericToEncoding customOptions
+
+instance FromJSON AttributeType where
+  parseJSON = genericParseJSON customOptions
+
+--
 -- JSON for Enumeration ItemLevel
 --
 
 instance ToJSON ItemLevel where
-    toJSON     = genericToJSON customOptions
-    toEncoding = genericToEncoding customOptions
+  toJSON     = genericToJSON customOptions
+  toEncoding = genericToEncoding customOptions
 
 instance FromJSON ItemLevel where
-    parseJSON = genericParseJSON customOptions
+  parseJSON = genericParseJSON customOptions
 
 --
 -- JSON for Enumeration ItemSource
 --
 
 instance ToJSON ItemSource where
-    toJSON     = genericToJSON customOptions
-    toEncoding = genericToEncoding customOptions
+  toJSON     = genericToJSON customOptions
+  toEncoding = genericToEncoding customOptions
 
 instance FromJSON ItemSource where
-    parseJSON = genericParseJSON customOptions
+  parseJSON = genericParseJSON customOptions
 
 --
 -- JSON for Enumeration ItemState
 --
 
 instance ToJSON ItemState where
-    toJSON     = genericToJSON customOptions
-    toEncoding = genericToEncoding customOptions
+  toJSON     = genericToJSON customOptions
+  toEncoding = genericToEncoding customOptions
 
 instance FromJSON ItemState where
-    parseJSON = genericParseJSON customOptions
+  parseJSON = genericParseJSON customOptions
 
 --
 -- JSON for Enumeration ItemModifier
 --
 
 instance ToJSON ItemModifier where
-    toJSON     = genericToJSON customOptions
-    toEncoding = genericToEncoding customOptions
+  toJSON     = genericToJSON customOptions
+  toEncoding = genericToEncoding customOptions
 
 instance FromJSON ItemModifier where
-    parseJSON = genericParseJSON customOptions
+  parseJSON = genericParseJSON customOptions
 
 --
 -- JSON for Enumeration ItemApproval
 --
 
 instance ToJSON ItemApproval where
-    toJSON     = genericToJSON customOptions
-    toEncoding = genericToEncoding customOptions
+  toJSON     = genericToJSON customOptions
+  toEncoding = genericToEncoding customOptions
 
 instance FromJSON ItemApproval where
-    parseJSON = genericParseJSON customOptions
+  parseJSON = genericParseJSON customOptions
 
 --
 -- JSON for Item
 --
 
--- |Automatically derive JSON but we do not want the first character in the field to go out
+-- |Automatically derive JSON but we do not want the first characters in the field to go out
 $(deriveJSON defaultOptions {
     fieldLabelModifier = firstLower . drop 4 -- Get rid of the 'item' in the field names
   } ''Item)
+
+--
+-- JSON for Attribute
+--
+
+-- |Automatically derive JSON but we do not want the first characters in the field to go out
+$(deriveJSON defaultOptions {
+    fieldLabelModifier = firstLower . drop 9 -- Get rid of the 'attribute' in the field names
+  } ''Attribute)
+
+--
+-- JSON for AttributeValue
+--
+
+-- |Automatically derive JSON but we do not want the first characters in the field to go out
+$(deriveJSON defaultOptions {
+    fieldLabelModifier = firstLower . drop 14 -- Get rid of the 'attributeValue' in the field names
+  } ''AttributeValue)

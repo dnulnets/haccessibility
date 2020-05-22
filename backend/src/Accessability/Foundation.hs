@@ -70,6 +70,7 @@ mkYesodData "Server" [parseRoutes|
 /api/item/#Text ItemR GET DELETE PUT
 /api/items ItemsR POST
 /api/authenticate AuthenticateR POST
+/api/attributes AttributesR GET
 !/ StaticR Static getStatic
 |]
 
