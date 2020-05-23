@@ -28,14 +28,14 @@ baseData::SqlPersistM ()
 baseData = do
     now <- liftIO $ getCurrentTime
     _ <- insert $ DB.User "test" "$2b$10$Mrwvk0uFy/ZekcDeyGTyd.Lyx3k380XuB5zq1yaVxqEd6y5SxSrcG" "test@testland.com"
-    _ <- insert $ DB.Item "Test-1" "GUID-1" "Test 1 Description" L1 Human Online Static Waiting (position 17.302273 62.393406) now
-    _ <- insert $ DB.Item "Test-2" "GUID-2" "Test 2 Description" L2 Human Offline Static Approved (position 17.300922 62.393560) now
-    _ <- insert $ DB.Item "Test-3" "GUID-3" "Test 3 Description" L3 Machine Offline Static Waiting (position 17.302562 62.393844) now
-    _ <- insert $ DB.Item "Test-4" "GUID-4" "Test 4 Description" L4 Machine Offline Transient Approved (position 17.299657 62.393923) now
-    _ <- insert $ DB.Item "Test-5" "GUID-5" "Test 5 Description" L5 Machine Online Transient Waiting (position 17.303989 62.393789) now
-    _ <- insert $ DB.Item "Test-6" "GUID-6" "Test 6 Description" L5 Machine Online Transient Waiting (position (-17.303989) (-62.393789)) now
-    _ <- insert $ DB.Item "Test-7" "GUID-7" "Test 7 Description" L5 Machine Online Transient Waiting (position (-17.303989) (-62.393789)) now
-    _ <- insert $ DB.Item "Test-8" "GUID-8" "Test 8 Description" L5 Machine Online Transient Waiting (position (-17.303989) (-62.393789)) now
+    _ <- insert $ DB.Item "Test-1" "GUID-1" "Test 1 Description" Human Static Waiting (position 17.302273 62.393406) now
+    _ <- insert $ DB.Item "Test-2" "GUID-2" "Test 2 Description" Human Static Approved (position 17.300922 62.393560) now
+    _ <- insert $ DB.Item "Test-3" "GUID-3" "Test 3 Description" Machine Static Waiting (position 17.302562 62.393844) now
+    _ <- insert $ DB.Item "Test-4" "GUID-4" "Test 4 Description" Machine Transient Approved (position 17.299657 62.393923) now
+    _ <- insert $ DB.Item "Test-5" "GUID-5" "Test 5 Description" Machine Transient Waiting (position 17.303989 62.393789) now
+    _ <- insert $ DB.Item "Test-6" "GUID-6" "Test 6 Description" Machine Transient Waiting (position (-17.303989) (-62.393789)) now
+    _ <- insert $ DB.Item "Test-7" "GUID-7" "Test 7 Description" Machine Transient Waiting (position (-17.303989) (-62.393789)) now
+    _ <- insert $ DB.Item "Test-8" "GUID-8" "Test 8 Description" Machine Transient Waiting (position (-17.303989) (-62.393789)) now
     return ()
 
 -- |Our test item
@@ -46,8 +46,6 @@ newItem = do
         , postItemGuid = "68436843-43ggfs-432gvvdd"
         , postItemDescription = "A test item"
         , postItemSource = Machine
-        , postItemState = Online
-        , postItemLevel = L1
         , postItemModifier = Static
         , postItemApproval = Waiting
         , postItemCreated = now
@@ -63,8 +61,6 @@ updateItem = do
         , putItemGuid = Just "Updated GUID"
         , putItemDescription = Just "Updated Description"
         , putItemSource = Just Human
-        , putItemState = Just Offline
-        , putItemLevel = Just L1
         , putItemModifier = Just Static
         , putItemApproval = Just Approved
         , putItemCreated = Just now
@@ -74,8 +70,8 @@ updateItem = do
 
 -- |Our base test query
 queryItem::Float->IO PostItemsBody
-queryItem d = do
-    return PostItemsBody {
+queryItem d = 
+    pure PostItemsBody {
         postItemsLongitude = Just 17.302273
         , postItemsLatitude = Just 62.393844
         , postItemsDistance = Just d
@@ -83,8 +79,8 @@ queryItem d = do
         , postItemsText = Nothing }
 
 queryItemText::String->IO PostItemsBody
-queryItemText s = do
-    return PostItemsBody {
+queryItemText s =
+    pure PostItemsBody {
         postItemsLongitude = Nothing
         , postItemsLatitude = Nothing
         , postItemsDistance = Nothing
@@ -126,8 +122,6 @@ spec = withBaseDataAppOnce baseData $ do
                 liftIO $ postItemGuid pb `shouldBe` DI.itemGuid ri
                 liftIO $ postItemDescription pb `shouldBe` DI.itemDescription ri
                 liftIO $ postItemSource pb `shouldBe` DI.itemSource ri
-                liftIO $ postItemState pb `shouldBe` DI.itemState ri
-                liftIO $ postItemLevel pb `shouldBe` DI.itemLevel ri
                 liftIO $ postItemModifier pb `shouldBe` DI.itemModifier ri
                 liftIO $ postItemApproval pb `shouldBe` DI.itemApproval ri
                 liftIO $ diffUTCTime (postItemCreated pb) (DI.itemCreated ri) `shouldSatisfy` timeProximity
@@ -224,8 +218,6 @@ spec = withBaseDataAppOnce baseData $ do
                 liftIO $ fromJust (putItemGuid u) `shouldBe` DI.itemGuid ri
                 liftIO $ fromJust (putItemDescription u) `shouldBe` DI.itemDescription ri
                 liftIO $ fromJust (putItemSource u) `shouldBe` DI.itemSource ri
-                liftIO $ fromJust (putItemState u) `shouldBe` DI.itemState ri
-                liftIO $ fromJust (putItemLevel u) `shouldBe` DI.itemLevel ri
                 liftIO $ fromJust (putItemModifier u) `shouldBe` DI.itemModifier ri
                 liftIO $ fromJust (putItemApproval u) `shouldBe` DI.itemApproval ri
                 liftIO $ diffUTCTime (fromJust $ putItemCreated u) (DI.itemCreated ri) `shouldSatisfy` timeProximity
@@ -270,8 +262,6 @@ spec = withBaseDataAppOnce baseData $ do
                 liftIO $ "GUID-7" `shouldBe` DI.itemGuid ri
                 liftIO $ "Test 7 Description" `shouldBe` DI.itemDescription ri
                 liftIO $ Machine `shouldBe` DI.itemSource ri
-                liftIO $ Online `shouldBe` DI.itemState ri
-                liftIO $ L5 `shouldBe` DI.itemLevel ri
                 liftIO $ Transient `shouldBe` DI.itemModifier ri
                 liftIO $ Waiting `shouldBe` DI.itemApproval ri
                 liftIO $ (-62.393789)-(DI.itemLatitude ri) `shouldSatisfy` lolaProximity

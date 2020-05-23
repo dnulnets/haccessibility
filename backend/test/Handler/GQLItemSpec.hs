@@ -44,8 +44,6 @@ data TestItem = TestItem {
     , testItemGuid        :: Text  -- ^ The external unique identifier of the item
     , testItemDescription :: Text       -- ^ The description of the item
     , testItemSource      :: ItemSource      -- ^ How the items online state is determined
-    , testItemState       :: ItemState        -- ^ The state of the item
-    , testItemLevel       :: ItemLevel        -- ^ The accessability level of the item
     , testItemModifier    :: ItemModifier     -- ^ The modifier of the item
     , testItemApproval    :: ItemApproval     -- ^ The approval state of the item
     , testItemLatitude    :: Float        -- ^ The latitude of the item
@@ -66,25 +64,24 @@ baseData::SqlPersistM ()
 baseData = do
     now <- liftIO $ getCurrentTime
     _ <- insert $ DB.User "test" "$2b$10$Mrwvk0uFy/ZekcDeyGTyd.Lyx3k380XuB5zq1yaVxqEd6y5SxSrcG" "test@testland.com"
-    _ <- insert $ DB.Item "Test-1" "GUID-1" "Test 1 Description" L1 Human Online Static Waiting (position 17.302273 62.393406) now
-    _ <- insert $ DB.Item "Test-2" "GUID-2" "Test 2 Description" L2 Human Offline Static Approved (position 17.300922 62.393560) now
-    _ <- insert $ DB.Item "Test-3" "GUID-3" "Test 3 Description" L3 Machine Offline Static Waiting (position 17.302562 62.393844) now
-    _ <- insert $ DB.Item "Test-4" "GUID-4" "Test 4 Description" L4 Machine Offline Transient Approved (position 17.299657 62.393923) now
-    _ <- insert $ DB.Item "Test-5" "GUID-5" "Test 5 Description" L5 Machine Online Transient Waiting (position 17.303989 62.393789) now
-    _ <- insert $ DB.Item "Test-6" "GUID-6" "Test 6 Description" L5 Machine Online Transient Waiting (position (-17.303989) (-62.393789)) now
-    _ <- insert $ DB.Item "Test-7" "GUID-7" "Test 7 Description" L5 Machine Online Transient Waiting (position (-17.303989) (-62.393789)) now
-    _ <- insert $ DB.Item "Test-8" "GUID-8" "Test 8 Description" L5 Machine Online Transient Waiting (position (-17.303989) (-62.393789)) now
+    _ <- insert $ DB.Item "Test-1" "GUID-1" "Test 1 Description" Human Static Waiting (position 17.302273 62.393406) now
+    _ <- insert $ DB.Item "Test-2" "GUID-2" "Test 2 Description" Human Static Approved (position 17.300922 62.393560) now
+    _ <- insert $ DB.Item "Test-3" "GUID-3" "Test 3 Description" Machine Static Waiting (position 17.302562 62.393844) now
+    _ <- insert $ DB.Item "Test-4" "GUID-4" "Test 4 Description" Machine Transient Approved (position 17.299657 62.393923) now
+    _ <- insert $ DB.Item "Test-5" "GUID-5" "Test 5 Description" Machine Transient Waiting (position 17.303989 62.393789) now
+    _ <- insert $ DB.Item "Test-6" "GUID-6" "Test 6 Description" Machine Transient Waiting (position (-17.303989) (-62.393789)) now
+    _ <- insert $ DB.Item "Test-7" "GUID-7" "Test 7 Description" Machine Transient Waiting (position (-17.303989) (-62.393789)) now
+    _ <- insert $ DB.Item "Test-8" "GUID-8" "Test 8 Description" Machine Transient Waiting (position (-17.303989) (-62.393789)) now
     return ()
 
 -- |The set of identifiers expected in the graphQL schema
 gqlItems::Set String
-gqlItems = fromList ["ItemApproval", "ItemState", "ItemSource", "ItemLevel",
-    "UTCTime", "ItemModifier", "Item", "Query", "Mutation"]
+gqlItems = fromList ["ItemApproval", "ItemSource", "UTCTime", "ItemModifier", "Item", "Query", "Mutation"]
 
 -- |graphql get item query
 gqlQueryItem::Text->Text
 gqlQueryItem id = "query FetchThemAll { queryItem (queryItemId: \\\"" <> id <>
-    "\\\") {itemId itemName itemGuid itemDescription itemSource itemState itemLevel itemModifier itemApproval itemLatitude itemLongitude itemDistance itemCreated}}"
+    "\\\") {itemId itemName itemGuid itemDescription itemSource itemModifier itemApproval itemLatitude itemLongitude itemDistance itemCreated}}"
 
 -- |graphql get items query
 gqlQueryItems::Text
@@ -183,8 +180,6 @@ spec = withBaseDataAppOnce baseData $ do
                         (testItemGuid a) `shouldBe` "GUID-1"
                         (testItemDescription a) `shouldBe` "Test 1 Description"
                         (testItemSource a) `shouldBe` DI.Human
-                        (testItemState a) `shouldBe` DI.Online
-                        (testItemLevel a) `shouldBe` DI.L1
                         (testItemModifier a) `shouldBe` DI.Static
                         (testItemApproval a) `shouldBe` DI.Waiting
                         ((testItemLongitude a) - 17.302273) `shouldSatisfy` lolaProximity
@@ -312,7 +307,7 @@ spec = withBaseDataAppOnce baseData $ do
         drill = flip (.:)
 
         -- |Retrieve the response data
-        locateItem::(FromJSON a) => Text -- ^The field below the data filed in the garphQL response
+        locateItem::(FromJSON a) => Text -- ^The field below the data filed in the graphQL response
             -> Object                    -- ^The json structure
             -> Parser a                  -- ^The parser for the "a"-structure
         locateItem f o = do

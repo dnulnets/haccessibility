@@ -25,8 +25,9 @@ import           Accessability.Handler.GQL               (postGQLR)
 import           Accessability.Settings
 
 import           Accessability.Handler.REST.Item         (deleteItemR, getItemR,
-                                                          postCreateItemR,
-                                                          postItemsR, putItemR)
+                                                          postCreateItemR, getItemAttributesR,
+                                                          postItemsR, putItemR,
+                                                          getAttributesR, putItemAttributesR)
 
 import           Accessability.Handler.REST.Authenticate (postAuthenticateR)
 import           Accessability.Model.Database            (entityDefs)
