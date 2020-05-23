@@ -65,6 +65,7 @@ library:
     - random
     - wai-app-static
     - time
+    - mtl
 
 executables:
 

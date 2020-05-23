@@ -68,7 +68,7 @@ mkYesodData "Server" [parseRoutes|
 /gql GQLR POST
 /api/item CreateItemR POST
 /api/item/#Text ItemR GET DELETE PUT
-/api/item/#Text/attributes ItemAttributesR GET
+/api/item/#Text/attributes ItemAttributesR GET PUT
 /api/items ItemsR POST
 /api/authenticate AuthenticateR POST
 /api/attributes AttributesR GET

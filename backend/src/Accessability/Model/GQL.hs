@@ -21,8 +21,6 @@ module Accessability.Model.GQL (
     QueryItemArgs(..),
     QueryItemsArgs(..),
     Item(..),
-    ItemLevel(..),
-    ItemState(..),
     ItemSource(..),
 
     Mutation(..),
@@ -54,9 +52,8 @@ import           Data.Morpheus.Types     (GQLScalar (..), GQLType (..), ID (..),
 --
 -- My own imports
 --
-import           Accessability.Data.Item (ItemApproval (..), ItemLevel (..),
-                                          ItemModifier (..), ItemSource (..),
-                                          ItemState (..))
+import           Accessability.Data.Item (ItemApproval (..), 
+                                          ItemModifier (..), ItemSource (..))
 
 --
 -- Scalars
@@ -91,8 +88,6 @@ data Item = Item {
     , itemGuid        :: Text  -- ^ The external unique identifier of the item
     , itemDescription :: Text       -- ^ The description of the item
     , itemSource      :: ItemSource      -- ^ How the items online state is determined
-    , itemState       :: ItemState        -- ^ The state of the item
-    , itemLevel       :: ItemLevel        -- ^ The accessability level of the item
     , itemModifier    :: ItemModifier     -- ^ The modifier of the item
     , itemApproval    :: ItemApproval     -- ^ The approval state of the item
     , itemLatitude    :: Float        -- ^ The latitude of the item
@@ -122,8 +117,6 @@ data MutationCreateItemArgs = MutationCreateItemArgs {
         , createItemGuid        :: Text           -- ^ The global unique identifier
         , createItemDescription :: Text  -- ^ The description of the item
         , createItemSource      :: ItemSource -- ^ How the items online state is determined
-        , createItemState       :: ItemState   -- ^ The state of the item
-        , createItemLevel       :: ItemLevel   -- ^ The accessability level of the item
         , createItemModifier    :: ItemModifier -- ^ The modifier of the item
         , createItemApproval    :: ItemApproval -- ^ The approval state of the item
         , createItemCreated     :: UTCTime    -- ^ The create date of the item
@@ -143,8 +136,6 @@ data MutationUpdateItemArgs = MutationUpdateItemArgs {
         , updateItemGuid        :: Maybe Text           -- ^ The external unique identifier
         , updateItemDescription :: Maybe Text  -- ^ The description of the item
         , updateItemSource      :: Maybe ItemSource -- ^ How the items online state is determined
-        , updateItemState       :: Maybe ItemState   -- ^ The state of the item
-        , updateItemLevel       :: Maybe ItemLevel   -- ^ The accessability level of the item
         , updateItemModifier    :: Maybe ItemModifier -- ^ The modifier of the item
         , updateItemApproval    :: Maybe ItemApproval -- ^ The approval state of the item
         , updateItemCreated     :: Maybe UTCTime   -- ^ The create time of the item

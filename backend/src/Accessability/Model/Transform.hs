@@ -64,7 +64,7 @@ keyToText key = toText $ fromBinary $ fromSqlKey key
 -- | Converts a database attribute to a generic attribute
 toGenericAttribute::(Key DB.Attribute, DB.Attribute)->G.Attribute
 toGenericAttribute (key, a) = G.Attribute {
-    G.attributeId = Just $ keyToText key,
+    G.attributeAttributeId = Just $ keyToText key,
     G.attributeItemId  = Nothing,
     G.attributeDescription = DB.attributeDescription a,
     G.attributeName = DB.attributeName a,
@@ -76,7 +76,7 @@ toGenericAttribute (key, a) = G.Attribute {
 -- | Converts a database attribute to a generic attribute
 toGenericItemAttribute::(Key DB.Attribute, DB.Attribute, Key DB.AttributeValue, DB.AttributeValue)->G.Attribute
 toGenericItemAttribute (ka, a, kv, v) = G.Attribute {
-    G.attributeId = Just $ keyToText ka,
+    G.attributeAttributeId = Just $ keyToText ka,
     G.attributeItemId = Just $ keyToText (DB.attributeValueItem v),
     G.attributeDescription = DB.attributeDescription a,
     G.attributeName = DB.attributeName a,
@@ -95,9 +95,7 @@ toGQLItem (key, item, d) = GQL.Item { GQL.itemId = Just $ keyToID key,
     GQL.itemApproval = DB.itemApproval item,
     GQL.itemCreated = DB.itemCreated item,
     GQL.itemDescription = DB.itemDescription item,
-    GQL.itemLevel = DB.itemLevel item,
     GQL.itemSource = DB.itemSource item,
-    GQL.itemState = DB.itemState item,
     GQL.itemDistance = realToFrac <$> d,
     GQL.itemLongitude = realToFrac $ longitude $ DB.itemPosition item,
     GQL.itemLatitude = realToFrac $ latitude $ DB.itemPosition item}
@@ -112,9 +110,7 @@ toGenericItem (key, item, d) = G.Item { G.itemId = Just $ keyToText key,
     G.itemModifier = DB.itemModifier item,
     G.itemApproval = DB.itemApproval item,
     G.itemDescription = DB.itemDescription item,
-    G.itemLevel = DB.itemLevel item,
     G.itemSource = DB.itemSource item,
-    G.itemState = DB.itemState item,
     G.itemDistance = realToFrac <$> d,
     G.itemLongitude = realToFrac $ longitude $ DB.itemPosition item,
     G.itemLatitude = realToFrac $ latitude $ DB.itemPosition item}
@@ -128,9 +124,7 @@ toDataItem item = DB.Item { DB.itemName =  GQL.itemName item,
     DB.itemApproval = GQL.itemApproval item,
     DB.itemCreated = GQL.itemCreated item,
     DB.itemDescription = GQL.itemDescription item,
-    DB.itemLevel = GQL.itemLevel item,
     DB.itemSource = GQL.itemSource item,
-    DB.itemState = GQL.itemState item,
     DB.itemPosition = Position $ PointXY (realToFrac $ GQL.itemLatitude item) (realToFrac $ GQL.itemLongitude item)}
 
 -- | Converts a Database user to a generic user

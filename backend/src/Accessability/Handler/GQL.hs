@@ -75,9 +75,7 @@ resolveUpdateItem arg =
    fffmap toGQLItem liftEither $ DBF.dbUpdateItem (idToKey $ updateItemId arg) $
          DBF.changeField DB.ItemName (updateItemName arg) <>
          DBF.changeField DB.ItemDescription (updateItemDescription arg) <>
-         DBF.changeField DB.ItemLevel (updateItemLevel arg) <>
          DBF.changeField DB.ItemSource (updateItemSource arg) <>
-         DBF.changeField DB.ItemState (updateItemState arg) <>
          DBF.changeField DB.ItemPosition (maybePosition (realToFrac <$> updateItemLongitude arg) (realToFrac <$> updateItemLatitude arg))
 
 -- | The mutation create item resolver
@@ -98,9 +96,7 @@ resolveCreateItem arg =
       DB.itemModifier = createItemModifier arg,
       DB.itemApproval = createItemApproval arg,
       DB.itemDescription = createItemDescription arg,
-      DB.itemLevel = createItemLevel arg,
       DB.itemSource = createItemSource arg,
-      DB.itemState = createItemState arg,
       DB.itemPosition = Position $ PointXY (realToFrac $ createItemLongitude arg) (realToFrac $ createItemLatitude arg)}
 
 -- | The query resolver

@@ -19,6 +19,7 @@ module Accessability.Model.REST.Item
     ( PostItemsBody(..)
     , PostItemBody(..)
     , PutItemBody(..)
+    , PutItemAttributes(..)
     )
 where
 
@@ -39,10 +40,8 @@ import           Data.Aeson.TH
 -- Our own
 --
 import           Accessability.Data.Item        ( ItemApproval(..)
-                                                , ItemLevel(..)
                                                 , ItemModifier(..)
                                                 , ItemSource(..)
-                                                , ItemState(..)
                                                 )
 import           Accessability.Utils.JSON       ( firstLower )
 
@@ -66,8 +65,6 @@ data PutItemBody = PutItemBody {
     , putItemGuid        :: Maybe Text            -- ^ The external id of the item
     , putItemDescription ::  Maybe Text    -- ^ The description of the item
     , putItemSource      ::  Maybe ItemSource   -- ^ How the items online state is determined
-    , putItemState       ::  Maybe ItemState     -- ^ The state of the item
-    , putItemLevel       ::  Maybe ItemLevel     -- ^ The accessability level of the item
     , putItemModifier    ::  Maybe ItemModifier  -- ^ The modifier of the item
     , putItemApproval    ::  Maybe ItemApproval  -- ^ The approval of the item
     , putItemCreated     ::  Maybe UTCTime     -- ^ The created time of the item
@@ -86,8 +83,6 @@ data PostItemBody = PostItemBody {
     , postItemGuid        :: Text            -- ^ The external unique identifier
     , postItemDescription :: Text    -- ^ The description of the item
     , postItemSource      ::  ItemSource   -- ^ How the items online state is determined
-    , postItemState       ::  ItemState     -- ^ The state of the item
-    , postItemLevel       ::  ItemLevel     -- ^ The accessability level of the item
     , postItemModifier    ::  ItemModifier  -- ^ The modifier of the item
     , postItemApproval    ::  ItemApproval  -- ^ The approval state of the item
     , postItemCreated     ::  UTCTime          -- ^ The created time stamp of the item
@@ -99,3 +94,15 @@ data PostItemBody = PostItemBody {
 $(deriveJSON defaultOptions {
     fieldLabelModifier = firstLower . drop 8 -- Get rid of the 'postItem' in the field names
   } ''PostItemBody)
+
+-- |The arguments to the putItemAttributes
+data PutItemAttributes = PutItemAttributes {
+    putItemAttributesAttributeValueId            :: Maybe Text   -- ^The key to the record
+    , putItemAttributesValue       :: Maybe Text   -- ^The value
+    , putItemAttributesAttributeId :: Maybe Text         -- ^The key to the attribute
+    } deriving (Generic)
+
+-- |Automatically derive JSON but we do not want the first charatcer in the field to go out
+$(deriveJSON defaultOptions {
+    fieldLabelModifier = firstLower . drop 17 -- Get rid of the 'putItemAttributes' in the field names
+  } ''PutItemAttributes)

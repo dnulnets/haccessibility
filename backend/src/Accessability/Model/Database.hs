@@ -36,10 +36,8 @@ import           Database.Persist.TH
 --
 import           Accessability.Data.Geo         ( GeospatialPosition(..) )
 import           Accessability.Data.Item        ( ItemApproval(..)
-                                                , ItemLevel(..)
                                                 , ItemModifier(..)
                                                 , ItemSource(..)
-                                                , ItemState(..)
                                                 , AttributeType(..)
                                                 )
 
@@ -55,9 +53,7 @@ Item
     name Text           -- ^ Name of the item
     guid Text           -- ^ The global unique identifier of the item
     description Text    -- ^ Description of the location
-    level ItemLevel     -- ^ The level of accessability
     source ItemSource   -- ^ The source of the state
-    state ItemState     -- ^ The state of the item
     modifier ItemModifier   -- ^ The modifier of the item
     approval ItemApproval   -- ^ The approval state of the item
     position GeospatialPosition -- ^ The geodetical position

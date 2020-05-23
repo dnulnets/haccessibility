@@ -19,10 +19,7 @@
 module Accessability.Data.Item
   ( Item(..)
   , Attribute(..)
-  , AttributeValue(..)
-  , ItemLevel(..)
   , ItemSource(..)
-  , ItemState(..)
   , ItemModifier(..)
   , ItemApproval(..)
   , AttributeType(..)
@@ -63,9 +60,6 @@ import           Accessability.Utils.JSON       ( firstLower )
 -- | The numberation for the attribute type
 data AttributeType = TextType | NumberType | BooleanType deriving (Generic, Show, Read, Eq)
 
--- | The enumeration for the accessability level for an item
-data ItemLevel = L1 | L2 | L3 | L4 | L5 deriving (Generic, Show, Read, Eq)
-
 -- | The enmueration for the source of the item
 data ItemSource = Human | Machine deriving (Generic, Show, Read, Eq)
 
@@ -74,9 +68,6 @@ data ItemModifier = Static | Transient deriving (Generic, Show, Read, Eq)
 
 -- | The enumeration for the approval of the item
 data ItemApproval = Waiting | Approved | Denied deriving (Generic, Show, Read, Eq)
-
--- | The enmueration for the state of the item
-data ItemState = Online | Unknown | Offline deriving (Generic, Show, Read, Eq)
 
 --
 -- Item
@@ -90,8 +81,6 @@ data Item = Item {
     , itemCreated     :: UTCTime     -- ^ The creation time
     , itemDescription :: Text    -- ^ The description of the item
     , itemSource      :: ItemSource   -- ^ How the items online state is determined
-    , itemState       :: ItemState     -- ^ The state of the item
-    , itemLevel       :: ItemLevel     -- ^ The accessability level of the item
     , itemModifier    :: ItemModifier       -- ^ The type of the item
     , itemApproval    :: ItemApproval   -- ^ The tstae of approval for the item
     , itemLatitude    :: Float      -- ^ The latitude of the item
@@ -101,7 +90,7 @@ data Item = Item {
 
 -- | Definition of the attribute and it doubles as the value for an attribute and item
 data Attribute = Attribute {
-    attributeId            :: Maybe Text      -- ^Attribute key
+    attributeAttributeId   :: Maybe Text      -- ^Attribute key
     , attributeName        :: Text            -- ^The name of the attribute
     , attributeDescription :: Text            -- ^The description of the attribute 
     , attributeTypeof      :: AttributeType   -- ^The type of the attribute
@@ -110,15 +99,6 @@ data Attribute = Attribute {
     , attributeItemId      :: Maybe Text      -- ^The key to the item that the AttributeValue belongs to
     , attributeAttributeValueId :: Maybe Text -- ^The key to the AtributeValue record
     } deriving (Generic, Show)
-
--- |Definition of the value of an attribute, used for setting them, otherwise the type
--- Attribute is more convenient.
-data AttributeValue = AttributeValue {
-  attributeValueId            :: Maybe Text   -- ^The key to the record
-  , attributeValueValue       :: Text         -- ^The value
-  , attributeValueAttributeId :: Text         -- ^The key to the attribute
-  , attributeValueItemId      :: Text         -- ^The key to the item
-}
 
 --
 -- Persistence
@@ -130,22 +110,10 @@ data AttributeValue = AttributeValue {
 derivePersistField "AttributeType"
 
 --
--- Persistence for Enumeration ItemLevel
---
-
-derivePersistField "ItemLevel"
-
---
 -- Persistence for Enumeration ItemSource
 --
 
 derivePersistField "ItemSource"
-
---
--- Persistence for Enumeration ItemState
---
-
-derivePersistField "ItemState"
 
 --
 -- Persistence for Enumeration ItemModifier
@@ -164,12 +132,6 @@ derivePersistField "ItemApproval"
 -- GQL Instances
 --
 
--- Make ItemLevel a GQL type
-instance GQLType ItemLevel where
-  type KIND ItemLevel = ENUM
-  description = const $ Just $ pack
-    "The level of accessability of the item, L1-L5. L5 is the highest "
-
 -- Make ItemSource a GQL type
 instance GQLType ItemSource where
   type KIND ItemSource = ENUM
@@ -178,12 +140,6 @@ instance GQLType ItemSource where
       $ Just
       $ pack
           "The source of the items state, i.e. if the items activity is manual or automatically determined"
-
--- Make ItemLevel a GQL type
-instance GQLType ItemState where
-  type KIND ItemState = ENUM
-  description = const $ Just $ pack
-    "The items state, i.e. if it is Online, Offline or Unknown"
 
 -- Make ItemLevel a GQL type
 instance GQLType ItemModifier where
@@ -218,17 +174,6 @@ instance FromJSON AttributeType where
   parseJSON = genericParseJSON customOptions
 
 --
--- JSON for Enumeration ItemLevel
---
-
-instance ToJSON ItemLevel where
-  toJSON     = genericToJSON customOptions
-  toEncoding = genericToEncoding customOptions
-
-instance FromJSON ItemLevel where
-  parseJSON = genericParseJSON customOptions
-
---
 -- JSON for Enumeration ItemSource
 --
 
@@ -237,17 +182,6 @@ instance ToJSON ItemSource where
   toEncoding = genericToEncoding customOptions
 
 instance FromJSON ItemSource where
-  parseJSON = genericParseJSON customOptions
-
---
--- JSON for Enumeration ItemState
---
-
-instance ToJSON ItemState where
-  toJSON     = genericToJSON customOptions
-  toEncoding = genericToEncoding customOptions
-
-instance FromJSON ItemState where
   parseJSON = genericParseJSON customOptions
 
 --
@@ -289,12 +223,3 @@ $(deriveJSON defaultOptions {
 $(deriveJSON defaultOptions {
     fieldLabelModifier = firstLower . drop 9 -- Get rid of the 'attribute' in the field names
   } ''Attribute)
-
---
--- JSON for AttributeValue
---
-
--- |Automatically derive JSON but we do not want the first characters in the field to go out
-$(deriveJSON defaultOptions {
-    fieldLabelModifier = firstLower . drop 14 -- Get rid of the 'attributeValue' in the field names
-  } ''AttributeValue)

@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 8289e0ec6950bf7a4382887777c1df9ea15fff264ccc69834d85ea5ca458d985
+-- hash: cc62043910bf7d1b73186d524fa209d6cbe1b9c74bb77fc503df79b627424abe
 
 name:           accessibility
 version:        0.1.0.0
@@ -69,6 +69,7 @@ library
     , lifted-base
     , monad-logger
     , morpheus-graphql
+    , mtl
     , nonce
     , path-pieces
     , persistent

@@ -22,6 +22,7 @@ module Accessability.Handler.Database (
     dbUpdateItem,
     dbFetchAttributes,
     dbFetchItemAttributes,
+    dbUpdateItemAttributes,
     ilike,
     changeField,
     Accessability.Handler.Database.filter) where
@@ -30,7 +31,8 @@ module Accessability.Handler.Database (
 -- Import standard libs
 --
 import           Data.Text                    (Text, pack)
-
+import           Control.Monad (void)
+import           Control.Monad.Reader           ( ReaderT )
 --
 --
 --
@@ -161,6 +163,18 @@ dbCreateItem item = do
    case key of
       Left (Entity k dbitem) -> return $ Right (k, dbitem, Nothing)
       Right k                -> return $ Right (k, item, Nothing)
+
+dbUpdateItemAttributes::[(Maybe (Key AttributeValue), Maybe AttributeValue)]
+   -> Handler (Either String ())
+dbUpdateItemAttributes aav = do
+   mapM_ (runDB . generate) aav
+   pure $ Right ()
+   where
+      generate::(MonadIO m)=>(Maybe (Key AttributeValue), Maybe AttributeValue)->ReaderT SqlBackend m ()
+      generate (Just k, Nothing) = delete k
+      generate (Just k, Just av) = update k [AttributeValueValue =. attributeValueValue av]
+      generate (Nothing, Just av) = void $ insert av
+      generate (Nothing, Nothing) = pure ()
 
 -- | Delete the item in the database
 dbDeleteItem:: Key Item                       -- ^ The key
