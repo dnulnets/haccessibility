@@ -16,44 +16,50 @@
 --
 -- This module contains the types for the graphQL support
 --
-module Accessability.Model.GQL (
-    Query(..),
-    QueryItemArgs(..),
-    QueryItemsArgs(..),
-    Item(..),
-    ItemSource(..),
-
-    Mutation(..),
-    MutationCreateItemArgs(..),
-    MutationDeleteItemArgs(..),
-    MutationUpdateItemArgs(..)
-
-    ) where
+module Accessability.Model.GQL
+    ( Query(..)
+    , QueryItemArgs(..)
+    , QueryItemsArgs(..)
+    , Item(..)
+    , ItemSource(..)
+    , Mutation(..)
+    , MutationCreateItemArgs(..)
+    , MutationDeleteItemArgs(..)
+    , MutationUpdateItemArgs(..)
+    )
+where
 
 --
 -- Import standard libs
 --
-import qualified Data.Aeson              as DA
-import qualified Data.ByteString.Lazy    as DBL
-import           Data.Text               (Text, pack)
-import           Data.Text.Encoding      (decodeUtf8)
-import           Data.Text.Lazy          (fromStrict)
-import           Data.Text.Lazy.Encoding (encodeUtf8)
-import           Data.Time.Clock         (UTCTime)
-import           GHC.Generics            (Generic (..))
+import qualified Data.Aeson                    as DA
+import qualified Data.ByteString.Lazy          as DBL
+import           Data.Text                      ( Text
+                                                , pack
+                                                )
+import           Data.Text.Encoding             ( decodeUtf8 )
+import           Data.Text.Lazy                 ( fromStrict )
+import           Data.Text.Lazy.Encoding        ( encodeUtf8 )
+import           Data.Time.Clock                ( UTCTime )
+import           GHC.Generics                   ( Generic(..) )
 
 --
 -- Import for morpheus
 --
-import           Data.Morpheus.Kind      (SCALAR)
-import           Data.Morpheus.Types     (GQLScalar (..), GQLType (..), ID (..),
-                                          ScalarValue (..))
+import           Data.Morpheus.Kind             ( SCALAR )
+import           Data.Morpheus.Types            ( GQLScalar(..)
+                                                , GQLType(..)
+                                                , ID(..)
+                                                , ScalarValue(..)
+                                                )
 
 --
 -- My own imports
 --
-import           Accessability.Data.Item (ItemApproval (..), 
-                                          ItemModifier (..), ItemSource (..))
+import           Accessability.Data.Item        ( ItemApproval(..)
+                                                , ItemModifier(..)
+                                                , ItemSource(..)
+                                                )
 
 --
 -- Scalars
@@ -62,21 +68,24 @@ import           Accessability.Data.Item (ItemApproval (..),
 -- GQL
 --
 instance GQLType UTCTime where
-    type  KIND UTCTime = SCALAR
-    description = const $ Just $ pack "The type that holds the UTC timestamp scalar"
+    type KIND UTCTime = SCALAR
+    description =
+        const $ Just $ pack "The type that holds the UTC timestamp scalar"
 
 instance GQLScalar UTCTime where
 
-    parseValue (Int _) = Left "Wrong type for UTC timestamp"
-    parseValue (Float _) = Left "Wrong type for UTC timestamp"
+    parseValue (Int     _) = Left "Wrong type for UTC timestamp"
+    parseValue (Float   _) = Left "Wrong type for UTC timestamp"
     parseValue (Boolean _) = Left "Wrong type for UTC timestamp"
-    parseValue (String s) = case DA.eitherDecode $ encodeUtf8 $ fromStrict ("\"" <> s <> "\"") of
-                                (Right u) -> Right u
-                                (Left e)  -> Left $ pack $ "Unable to parse " <> e
+    parseValue (String s) =
+        case DA.eitherDecode $ encodeUtf8 $ fromStrict ("\"" <> s <> "\"") of
+            (Right u) -> Right u
+            (Left  e) -> Left $ pack $ "Unable to parse " <> e
 
 
     --serialize u = String $ pack $ show u
-    serialize u = String $ decodeUtf8 $ DBL.toStrict $ DBL.init . DBL.tail $ DA.encode u
+    serialize u =
+        String $ decodeUtf8 $ DBL.toStrict $ DBL.init . DBL.tail $ DA.encode u
 --
 -- Object Item
 --
@@ -98,7 +107,8 @@ data Item = Item {
 
 -- Make Item a GQL Type
 instance GQLType Item where
-    description = const $ Just $ pack "The item that holds the accessability information"
+    description =
+        const $ Just $ pack "The item that holds the accessability information"
 
 --
 -- Mutation object

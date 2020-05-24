@@ -16,11 +16,11 @@
 -- This module contains the types for the Item resource for the REST API
 --
 module Accessability.Model.REST.Item
-    ( PostItemsBody(..)
-    , PostItemBody(..)
-    , PutItemBody(..)
-    , PutItemAttributes(..)
-    )
+  ( PostItemsBody(..)
+  , PostItemBody(..)
+  , PutItemBody(..)
+  , PutItemAttributes(..)
+  )
 where
 
 --

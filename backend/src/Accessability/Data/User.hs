@@ -15,13 +15,16 @@
 --
 -- This module contains the user information regardless of interface.
 --
-module Accessability.Data.User (User(..)) where
+module Accessability.Data.User
+    ( User(..)
+    )
+where
 
 --
 -- Import standard libs
 --
-import           Data.Text                (Text)
-import           GHC.Generics             (Generic (..))
+import           Data.Text                      ( Text )
+import           GHC.Generics                   ( Generic(..) )
 
 --
 -- JSON library
@@ -33,7 +36,7 @@ import           Data.Aeson.TH
 -- Our own stuff
 --
 
-import           Accessability.Utils.JSON (firstLower)
+import           Accessability.Utils.JSON       ( firstLower )
 
 --
 -- User

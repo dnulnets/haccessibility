@@ -24,7 +24,9 @@ module Main where
 --
 -- Standard libraries
 --
-import           Control.Monad                  ( forM_, void)
+import           Control.Monad                  ( forM_
+                                                , void
+                                                )
 import           Control.Monad.IO.Class         ( MonadIO
                                                 , liftIO
                                                 )
@@ -41,8 +43,11 @@ import           Data.Maybe                     ( catMaybes )
 import qualified Data.Text                     as DT
 import qualified Data.Text.Encoding            as DTE
 import           Data.Time.Clock                ( getCurrentTime )
-import           Data.HexString               (fromBinary, hexString, toBinary,
-                                               toText)
+import           Data.HexString                 ( fromBinary
+                                                , hexString
+                                                , toBinary
+                                                , toText
+                                                )
 import           System.Environment             ( getArgs
                                                 , getEnv
                                                 )
@@ -236,30 +241,33 @@ handleListItemAttributes database args = case length args of
         runFileLoggingT "hadmin.log"
             $ withPostgresqlPool (DB.pack database) 5
             $ \pool ->
-                  liftIO $ flip runSqlPersistMPool pool $ listItemAttributes (args !! 1)
+                  liftIO $ flip runSqlPersistMPool pool $ listItemAttributes
+                      (args !! 1)
     _ -> putStrLn "Usage: hadmin lsitemattrs <item id>"
   where
 
     listItemAttributes :: (MonadIO m) => String -> ReaderT SqlBackend m () -- ^ A database effect
     listItemAttributes key = do
-        attributes <- rawSql "SELECT ??,?? FROM attribute, attribute_value WHERE attribute.id = attribute_value.attribute AND attribute_value.item=? ORDER BY attribute.name" [PersistInt64 (toBinary $ hexString $ DTE.encodeUtf8 (DT.pack key))]        
+        attributes <- rawSql
+            "SELECT ??,?? FROM attribute, attribute_value WHERE attribute.id = attribute_value.attribute AND attribute_value.item=? ORDER BY attribute.name"
+            [PersistInt64 (toBinary $ hexString $ DTE.encodeUtf8 (DT.pack key))]
         liftIO
             $ putStrLn
             $ DT.unpack
             $ DTE.decodeUtf8
             $ B.toStrict
             $ encodePretty (cleanup <$> attributes)
-    
-    cleanup::(Entity Attribute,Entity AttributeValue)->ADI.Attribute
-    cleanup (Entity k1 a, Entity k2 v) = ADI.Attribute {
-        ADI.attributeDescription = attributeDescription a,
-        ADI.attributeName = attributeName a,
-        ADI.attributeItemId = Just $ keyToText $ attributeValueItem v,
-        ADI.attributeTypeof = attributeTypeof a,
-        ADI.attributeUnit = attributeUnit a,
-        ADI.attributeAttributeId = Just $ keyToText k1,
-        ADI.attributeAttributeValueId = Just $ keyToText k2,
-        ADI.attributeValue = Just $ attributeValueValue v
+
+    cleanup :: (Entity Attribute, Entity AttributeValue) -> ADI.Attribute
+    cleanup (Entity k1 a, Entity k2 v) = ADI.Attribute
+        { ADI.attributeDescription      = attributeDescription a
+        , ADI.attributeName             = attributeName a
+        , ADI.attributeItemId = Just $ keyToText $ attributeValueItem v
+        , ADI.attributeTypeof           = attributeTypeof a
+        , ADI.attributeUnit             = attributeUnit a
+        , ADI.attributeAttributeId      = Just $ keyToText k1
+        , ADI.attributeAttributeValueId = Just $ keyToText k2
+        , ADI.attributeValue            = Just $ attributeValueValue v
         }
 
 -- |Handles the adduser command
@@ -341,15 +349,17 @@ handleListItem
     -> [String]  -- ^The key
     -> IO ()             -- ^ The effect
 handleListItem database args = case length args of
-    2 -> runFileLoggingT "hadmin.log"
+    2 ->
+        runFileLoggingT "hadmin.log"
             $ withPostgresqlPool (DB.pack database) 5
-            $ \pool -> liftIO $ runSqlPersistMPool (listItems (args!!1)) pool
+            $ \pool -> liftIO $ runSqlPersistMPool (listItems (args !! 1)) pool
     _ -> putStrLn "Usage: hadmin lsitem <id>"
 
   where
-    listItems :: (MonadIO m) => String->ReaderT SqlBackend m () -- ^ A database effect
+    listItems :: (MonadIO m) => String -> ReaderT SqlBackend m () -- ^ A database effect
     listItems key = do
-        items <- ffmap clean $ selectList [ItemId ==.(textToKey $ DT.pack key)] []
+        items <- ffmap clean
+            $ selectList [ItemId ==. (textToKey $ DT.pack key)] []
         liftIO
             $ putStrLn
             $ DT.unpack
@@ -365,13 +375,14 @@ handleListItemN
     -> [String]  -- ^The key
     -> IO ()             -- ^ The effect
 handleListItemN database args = case length args of
-    2 -> runFileLoggingT "hadmin.log"
+    2 ->
+        runFileLoggingT "hadmin.log"
             $ withPostgresqlPool (DB.pack database) 5
-            $ \pool -> liftIO $ runSqlPersistMPool (listItems (args!!1)) pool
+            $ \pool -> liftIO $ runSqlPersistMPool (listItems (args !! 1)) pool
     _ -> putStrLn "Usage: hadmin lsitemn <name>"
 
   where
-    listItems :: (MonadIO m) => String->ReaderT SqlBackend m () -- ^ A database effect
+    listItems :: (MonadIO m) => String -> ReaderT SqlBackend m () -- ^ A database effect
     listItems key = do
         items <- ffmap clean $ selectList [ItemName ==. DT.pack key] []
         liftIO
@@ -416,11 +427,10 @@ addAttributes
     => String -- ^ Filename
     -> ReaderT SqlBackend m ()   -- ^ A database effect
 addAttributes file = do
-    eia <-
-        liftIO
-            (eitherDecodeFileStrict' file :: IO
-                  (Either String [Maybe ADI.Attribute])
-            )
+    eia <- liftIO
+        (eitherDecodeFileStrict' file :: IO
+              (Either String [Maybe ADI.Attribute])
+        )
     case eia of
         (Left e) -> do
             liftIO $ putStrLn "Error encountered during JSON parsing"
@@ -430,10 +440,10 @@ addAttributes file = do
     storeAttribute :: (MonadIO m) => ADI.Attribute -> ReaderT SqlBackend m ()
     storeAttribute body = do
         key <- insert Attribute
-            { attributeName = ADI.attributeName body,
-              attributeDescription = ADI.attributeDescription body,
-              attributeTypeof = ADI.attributeTypeof body,
-              attributeUnit = ADI.attributeUnit body
+            { attributeName        = ADI.attributeName body
+            , attributeDescription = ADI.attributeDescription body
+            , attributeTypeof      = ADI.attributeTypeof body
+            , attributeUnit        = ADI.attributeUnit body
             }
         liftIO $ putStrLn $ "Added attribute with id " <> show (keyToText key)
 
@@ -446,8 +456,8 @@ handleAddAttributes database args = case length args of
     2 ->
         runFileLoggingT "hadmin.log"
             $ withPostgresqlPool (DB.pack database) 5
-            $ \pool ->
-                  liftIO $ flip runSqlPersistMPool pool $ addAttributes (args !! 1)
+            $ \pool -> liftIO $ flip runSqlPersistMPool pool $ addAttributes
+                  (args !! 1)
     _ -> putStrLn "Usage: hadmin addattrs <JSON-file with array of attributes>"
 
 -- |Parses the JSON file and inserts all items that can be decoded
@@ -458,11 +468,10 @@ addItemAttributes
     -> ReaderT SqlBackend m ()   -- ^ A database effect
 addItemAttributes key file = do
     liftIO $ putStrLn key
-    eia <-
-        liftIO
-            (eitherDecodeFileStrict' file :: IO
-                  (Either String [Maybe ItemAttribute])
-            )
+    eia <- liftIO
+        (eitherDecodeFileStrict' file :: IO
+              (Either String [Maybe ItemAttribute])
+        )
     case eia of
         (Left e) -> do
             liftIO $ putStrLn "Error encountered during JSON parsing"
@@ -471,10 +480,20 @@ addItemAttributes key file = do
             deleteWhere [AttributeValueItem ==. (textToKey $ DT.pack key)]
             forM_ (catMaybes attributes) $ storeAttribute key
   where
-    storeAttribute :: (MonadIO m) => String->ItemAttribute -> ReaderT SqlBackend m [Key AttributeValue]
+    storeAttribute
+        :: (MonadIO m)
+        => String
+        -> ItemAttribute
+        -> ReaderT SqlBackend m [Key AttributeValue]
     storeAttribute key body = do
-        k <- rawSql "insert into attribute_value(attribute, item, value) values ((select id from attribute where name=?),?,?) returning id" [PersistText (iaName body), PersistInt64 (toBinary $ hexString $ DTE.encodeUtf8 (DT.pack key)), PersistText (iaValue body)]
-        liftIO $ putStrLn $ "Added attribute with id " <> show (keyToText (k!!0))        
+        k <- rawSql
+            "insert into attribute_value(attribute, item, value) values ((select id from attribute where name=?),?,?) returning id"
+            [ PersistText (iaName body)
+            , PersistInt64 (toBinary $ hexString $ DTE.encodeUtf8 (DT.pack key))
+            , PersistText (iaValue body)
+            ]
+        liftIO $ putStrLn $ "Added attribute with id " <> show
+            (keyToText (k !! 0))
         pure k
 
 -- |Handles the additems command
@@ -486,9 +505,12 @@ handleAddItemAttributes database args = case length args of
     3 ->
         runFileLoggingT "hadmin.log"
             $ withPostgresqlPool (DB.pack database) 5
-            $ \pool ->
-                  liftIO $ flip runSqlPersistMPool pool $ addItemAttributes (args !! 1) (args !! 2)
-    _ -> putStrLn "Usage: hadmin additemattrs <item key> <JSON-file with array of attribute values>"
+            $ \pool -> liftIO $ flip runSqlPersistMPool pool $ addItemAttributes
+                  (args !! 1)
+                  (args !! 2)
+    _ ->
+        putStrLn
+            "Usage: hadmin additemattrs <item key> <JSON-file with array of attribute values>"
 
 -- |The usage information
 usage :: IO ()
@@ -526,7 +548,8 @@ usage = do
     putStrLn $ "Source: " <> show [ADI.Human, ADI.Machine]
     putStrLn $ "Modifier: " <> show [ADI.Static, ADI.Transient]
     putStrLn $ "Approval: " <> show [ADI.Waiting, ADI.Approved, ADI.Denied]
-    putStrLn $ "TypeOf: " <> show [ADI.BooleanType, ADI.NumberType , ADI.TextType]
+    putStrLn $ "TypeOf: " <> show
+        [ADI.BooleanType, ADI.NumberType, ADI.TextType]
     putStrLn ""
 
 -- Example HAPI_DATABASE "postgresql://heatserver:heatserver@yolo.com:5432/heat"
@@ -542,18 +565,18 @@ main = do
     args     <- getArgs
     if not (null args)
         then case head args of
-            "adduser"  -> handleAddUser database cost args
-            "lsusers"  -> handleListUser database
-            "deluser"  -> handleDeleteUser database args
-            "chapw"    -> handleChangePassword database cost args
-            "additems" -> handleAddItems database args
-            "addattrs" -> handleAddAttributes database args
+            "adduser"      -> handleAddUser database cost args
+            "lsusers"      -> handleListUser database
+            "deluser"      -> handleDeleteUser database args
+            "chapw"        -> handleChangePassword database cost args
+            "additems"     -> handleAddItems database args
+            "addattrs"     -> handleAddAttributes database args
             "setitemattrs" -> handleAddItemAttributes database args
-            "lsattrs" -> handleListAttributes database
-            "lsitemattrs" -> handleListItemAttributes database args
-            "delitem"  -> handleDelItem database args
-            "lsitems"  -> handleListItems database
-            "lsitem"   -> handleListItem database args
-            "lsitemn"  -> handleListItemN database args
-            _          -> usage
+            "lsattrs"      -> handleListAttributes database
+            "lsitemattrs"  -> handleListItemAttributes database args
+            "delitem"      -> handleDelItem database args
+            "lsitems"      -> handleListItems database
+            "lsitem"       -> handleListItem database args
+            "lsitemn"      -> handleListItemN database args
+            _              -> usage
         else usage

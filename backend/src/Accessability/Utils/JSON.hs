@@ -9,15 +9,17 @@
 --
 -- This module contains helper functions for JSON translations
 --
-module Accessability.Utils.JSON (
-    firstLower) where
+module Accessability.Utils.JSON
+    ( firstLower
+    )
+where
 
 --
 -- Standard libs
 --
-import           Data.Char (toLower)
+import           Data.Char                      ( toLower )
 
 -- | Make the strings first character lowercase
 firstLower :: String -> String
-firstLower (h:t) = toLower h : t
-firstLower []    = []
+firstLower (h : t) = toLower h : t
+firstLower []      = []
