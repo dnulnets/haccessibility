@@ -74,6 +74,7 @@ AttributeValue
     attribute AttributeId -- ^The attribute whose value is stored here
     item ItemId           -- ^The item whose value is stored here
     value Text            -- ^The value
+    UniqueAttributeValue attribute item -- ^Must be a unique combination
     deriving Show Generic
 
 User

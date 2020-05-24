@@ -3,6 +3,9 @@
 {-# LANGUAGE MultiParamTypeClasses      #-}
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE TypeFamilies               #-}
+{-# LANGUAGE TemplateHaskell   #-}
+{-# LANGUAGE DeriveAnyClass    #-}
+{-# LANGUAGE DeriveGeneric     #-}
 
 -- |
 -- Module      : Main
@@ -21,15 +24,17 @@ module Main where
 --
 -- Standard libraries
 --
-import           Control.Monad                  ( forM_ )
+import           Control.Monad                  ( forM_, void)
 import           Control.Monad.IO.Class         ( MonadIO
                                                 , liftIO
                                                 )
 import           Control.Monad.Logger           ( runFileLoggingT )
 import           Control.Monad.Reader           ( ReaderT )
 
+import           GHC.Generics                   ( Generic(..) )
 import           Data.Aeson
 import           Data.Aeson.Encode.Pretty
+import           Data.Aeson.TH
 import qualified Data.ByteString.Char8         as DB
 import qualified Data.ByteString.Lazy          as B
 import           Data.Maybe                     ( catMaybes )
@@ -59,6 +64,21 @@ import           Accessability.Model.REST.Item
 import           Accessability.Model.Transform
 import           Accessability.Utils.Password
 import           Accessability.Data.Functor
+import           Accessability.Utils.JSON       ( firstLower )
+--
+--
+--
+
+-- | used by set item attributes
+data ItemAttribute = ItemAttribute {
+    iaName:: DT.Text,
+    iaValue:: DT.Text
+} deriving (Generic, Show)
+
+-- |Automatically derive JSON but we do not want the first characters in the field to go out
+$(deriveJSON defaultOptions {
+    fieldLabelModifier = firstLower . drop 2 -- Get rid of the 'ia' in the field names
+  } ''ItemAttribute)
 
 --
 -- User related functions
@@ -381,6 +401,45 @@ handleAddAttributes database args = case length args of
                   liftIO $ flip runSqlPersistMPool pool $ addAttributes (args !! 1)
     _ -> putStrLn "Usage: hadmin addattrs <JSON-file with array of attributes>"
 
+-- |Parses the JSON file and inserts all items that can be decoded
+addItemAttributes
+    :: (MonadIO m)
+    => String -- ^The key to the item
+    -> String -- ^The file name for the JSON file
+    -> ReaderT SqlBackend m ()   -- ^ A database effect
+addItemAttributes key file = do
+    liftIO $ putStrLn key
+    eia <-
+        liftIO
+            (eitherDecodeFileStrict' file :: IO
+                  (Either String [Maybe ItemAttribute])
+            )
+    case eia of
+        (Left e) -> do
+            liftIO $ putStrLn "Error encountered during JSON parsing"
+            liftIO $ putStrLn e
+        (Right attributes) -> do
+            deleteWhere [AttributeValueItem ==. (textToKey $ DT.pack key)]
+            forM_ (catMaybes attributes) $ storeAttribute key
+  where
+    storeAttribute :: (MonadIO m) => String->ItemAttribute -> ReaderT SqlBackend m [Key AttributeValue]
+    storeAttribute key body = do
+        k <- rawSql "insert into attribute_value(attribute, item, value) values ((select id from attribute where name=?),?,?) returning id" [PersistText (iaName body), PersistInt64 (toBinary $ hexString $ DTE.encodeUtf8 (DT.pack key)), PersistText (iaValue body)]
+        liftIO $ putStrLn $ "Added attribute with id " <> show (keyToText (k!!0))        
+        pure k
+
+-- |Handles the additems command
+handleAddItemAttributes
+    :: String            -- ^ The database URL
+    -> [String]          -- ^ The command line arguments
+    -> IO ()             -- ^ The effect
+handleAddItemAttributes database args = case length args of
+    3 ->
+        runFileLoggingT "hadmin.log"
+            $ withPostgresqlPool (DB.pack database) 5
+            $ \pool ->
+                  liftIO $ flip runSqlPersistMPool pool $ addItemAttributes (args !! 1) (args !! 2)
+    _ -> putStrLn "Usage: hadmin additemattrs <item key> <JSON-file with array of attribute values>"
 
 -- |The usage information
 usage :: IO ()
@@ -403,6 +462,7 @@ usage = do
     putStrLn "Attribute commands:"
     putStrLn ""
     putStrLn "addattrs  <JSON-file with array of attributes>"
+    putStrLn "setitemattrs <JSON-file with array of item attribute values>"
     putStrLn "lsattrs"
     putStrLn "lsitemattrs"
     putStrLn ""
@@ -414,8 +474,7 @@ usage = do
     putStrLn $ "Source: " <> show [ADI.Human, ADI.Machine]
     putStrLn $ "Modifier: " <> show [ADI.Static, ADI.Transient]
     putStrLn $ "Approval: " <> show [ADI.Waiting, ADI.Approved, ADI.Denied]
-    putStrLn "Id: Hexadecimal 64 bits 16 characters 0000000000003af5"
-    putStrLn ""
+    putStrLn $ "TypeOf: " <> show [ADI.BooleanType, ADI.NumberType , ADI.TextType]
 
 -- Example HAPI_DATABASE "postgresql://heatserver:heatserver@yolo.com:5432/heat"
 -- Example HAPI_PASSWORD_COST 10
@@ -436,6 +495,7 @@ main = do
             "chapw"    -> handleChangePassword database cost args
             "additems" -> handleAddItems database args
             "addattrs" -> handleAddAttributes database args
+            "setitemattrs" -> handleAddItemAttributes database args
             "lsattrs" -> handleListAttributes database
             "lsitemattrs" -> handleListItemAttributes database args
             "delitem"  -> handleDelItem database args
