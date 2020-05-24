@@ -99,6 +99,7 @@ executables:
     - aeson
     - aeson-pretty
     - time
+    - hexstring
 
 tests:
   accessibility-test:

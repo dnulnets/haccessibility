@@ -1,0 +1,14 @@
+[
+    {
+        "name": "width",
+        "description": "The width of the door",
+        "unit": "cm",
+        "typeof": "NumberType"
+    },
+    {
+        "name": "height",
+        "description": "The height of the door",
+        "unit": "cm",
+        "typeof": "NumberType"
+    }
+]

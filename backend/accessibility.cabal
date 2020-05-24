@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: cc62043910bf7d1b73186d524fa209d6cbe1b9c74bb77fc503df79b627424abe
+-- hash: 54b5ce308ca2855916579ac26462a402fae1351fa6ad24ce69914ccc32b0b104
 
 name:           accessibility
 version:        0.1.0.0
@@ -118,6 +118,7 @@ executable hadmin
     , aeson-pretty
     , base >=4.7 && <5
     , bytestring
+    , hexstring
     , monad-logger
     , mtl
     , persistent

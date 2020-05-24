@@ -36,6 +36,8 @@ import           Data.Maybe                     ( catMaybes )
 import qualified Data.Text                     as DT
 import qualified Data.Text.Encoding            as DTE
 import           Data.Time.Clock                ( getCurrentTime )
+import           Data.HexString               (fromBinary, hexString, toBinary,
+                                               toText)
 import           System.Environment             ( getArgs
                                                 , getEnv
                                                 )
@@ -204,6 +206,42 @@ handleDeleteUser database args = case length args of
                   liftIO $ flip runSqlPersistMPool pool $ deleteUser (args !! 1)
     _ -> putStrLn "Usage: hadmin deluser <username>"
 
+-- |Handles the list item attributes command
+handleListItemAttributes
+    :: String  -- ^ The database URL
+    -> [String]          -- ^ The command line arguments
+    -> IO ()             -- ^ The effect
+handleListItemAttributes database args = case length args of
+    2 ->
+        runFileLoggingT "hadmin.log"
+            $ withPostgresqlPool (DB.pack database) 5
+            $ \pool ->
+                  liftIO $ flip runSqlPersistMPool pool $ listItemAttributes (args !! 1)
+    _ -> putStrLn "Usage: hadmin lsitemattrs <item id>"
+  where
+
+    listItemAttributes :: (MonadIO m) => String -> ReaderT SqlBackend m () -- ^ A database effect
+    listItemAttributes key = do
+        attributes <- rawSql "SELECT ??,?? FROM attribute, attribute_value WHERE attribute.id = attribute_value.attribute AND attribute_value.item=? ORDER BY attribute.name" [PersistInt64 (toBinary $ hexString $ DTE.encodeUtf8 (DT.pack key))]        
+        liftIO
+            $ putStrLn
+            $ DT.unpack
+            $ DTE.decodeUtf8
+            $ B.toStrict
+            $ encodePretty (cleanup <$> attributes)
+    
+    cleanup::(Entity Attribute,Entity AttributeValue)->ADI.Attribute
+    cleanup (Entity k1 a, Entity k2 v) = ADI.Attribute {
+        ADI.attributeDescription = attributeDescription a,
+        ADI.attributeName = attributeName a,
+        ADI.attributeItemId = Just $ keyToText $ attributeValueItem v,
+        ADI.attributeTypeof = attributeTypeof a,
+        ADI.attributeUnit = attributeUnit a,
+        ADI.attributeAttributeId = Just $ keyToText k1,
+        ADI.attributeAttributeValueId = Just $ keyToText k2,
+        ADI.attributeValue = Just $ attributeValueValue v
+        }
+
 -- |Handles the adduser command
 handleListUser
     :: String  -- ^ The database URL
@@ -277,6 +315,73 @@ handleListItems database =
     clean :: Entity Item -> ADI.Item
     clean (Entity k i) = toGenericItem (k, i, Nothing)
 
+-- |Handles the delitem command
+handleListAttributes
+    :: String  -- ^ The database URL
+    -> IO ()             -- ^ The effect
+handleListAttributes database =
+    runFileLoggingT "hadmin.log"
+        $ withPostgresqlPool (DB.pack database) 5
+        $ \pool -> liftIO $ runSqlPersistMPool listAttributes pool
+  where
+    listAttributes :: (MonadIO m) => ReaderT SqlBackend m () -- ^ A database effect
+    listAttributes = do
+        items <- ffmap clean $ selectList [] [Asc AttributeName]
+        liftIO
+            $ putStrLn
+            $ DT.unpack
+            $ DTE.decodeUtf8
+            $ B.toStrict
+            $ encodePretty items
+
+    clean :: Entity Attribute -> ADI.Attribute
+    clean (Entity k i) = toGenericAttribute (k, i)
+
+--
+-- Attributes related functions
+--
+
+-- |Parses the JSON file and inserts all items that can be decoded
+addAttributes
+    :: (MonadIO m)
+    => String -- ^ Filename
+    -> ReaderT SqlBackend m ()   -- ^ A database effect
+addAttributes file = do
+    eia <-
+        liftIO
+            (eitherDecodeFileStrict' file :: IO
+                  (Either String [Maybe ADI.Attribute])
+            )
+    case eia of
+        (Left e) -> do
+            liftIO $ putStrLn "Error encountered during JSON parsing"
+            liftIO $ putStrLn e
+        (Right attributes) -> forM_ (catMaybes attributes) storeAttribute
+  where
+    storeAttribute :: (MonadIO m) => ADI.Attribute -> ReaderT SqlBackend m ()
+    storeAttribute body = do
+        key <- insert Attribute
+            { attributeName = ADI.attributeName body,
+              attributeDescription = ADI.attributeDescription body,
+              attributeTypeof = ADI.attributeTypeof body,
+              attributeUnit = ADI.attributeUnit body
+            }
+        liftIO $ putStrLn $ "Added attribute with id " <> show (keyToText key)
+
+-- |Handles the additems command
+handleAddAttributes
+    :: String            -- ^ The database URL
+    -> [String]          -- ^ The command line arguments
+    -> IO ()             -- ^ The effect
+handleAddAttributes database args = case length args of
+    2 ->
+        runFileLoggingT "hadmin.log"
+            $ withPostgresqlPool (DB.pack database) 5
+            $ \pool ->
+                  liftIO $ flip runSqlPersistMPool pool $ addAttributes (args !! 1)
+    _ -> putStrLn "Usage: hadmin addattrs <JSON-file with array of attributes>"
+
+
 -- |The usage information
 usage :: IO ()
 usage = do
@@ -294,6 +399,12 @@ usage = do
     putStrLn "additems  <JSON-file with array of items>"
     putStrLn "delitem   <id>"
     putStrLn "lsitems"
+    putStrLn ""
+    putStrLn "Attribute commands:"
+    putStrLn ""
+    putStrLn "addattrs  <JSON-file with array of attributes>"
+    putStrLn "lsattrs"
+    putStrLn "lsitemattrs"
     putStrLn ""
     putStrLn "Format of data:"
     putStrLn ""
@@ -324,6 +435,9 @@ main = do
             "deluser"  -> handleDeleteUser database args
             "chapw"    -> handleChangePassword database cost args
             "additems" -> handleAddItems database args
+            "addattrs" -> handleAddAttributes database args
+            "lsattrs" -> handleListAttributes database
+            "lsitemattrs" -> handleListItemAttributes database args
             "delitem"  -> handleDelItem database args
             "lsitems"  -> handleListItems database
             _          -> usage

@@ -67,12 +67,14 @@ Attribute
     description Text    -- ^The description of the attribute
     typeof AttributeType         -- ^The type of value ATText|ATYesNo|ATNumber
     unit Text           -- ^The unit of the attribute, e.g. meters
-    UniqueAttributeName -- ^The name is UniqueItemGuid
+    UniqueAttributeName name -- ^The name is unique
+    deriving Show Generic
 
 AttributeValue
     attribute AttributeId -- ^The attribute whose value is stored here
     item ItemId           -- ^The item whose value is stored here
     value Text            -- ^The value
+    deriving Show Generic
 
 User
     username Text       -- ^ The user name
