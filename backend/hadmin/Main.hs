@@ -336,6 +336,55 @@ handleListItems database =
     clean (Entity k i) = toGenericItem (k, i, Nothing)
 
 -- |Handles the delitem command
+handleListItem
+    :: String  -- ^The database URL
+    -> [String]  -- ^The key
+    -> IO ()             -- ^ The effect
+handleListItem database args = case length args of
+    2 -> runFileLoggingT "hadmin.log"
+            $ withPostgresqlPool (DB.pack database) 5
+            $ \pool -> liftIO $ runSqlPersistMPool (listItems (args!!1)) pool
+    _ -> putStrLn "Usage: hadmin lsitem <id>"
+
+  where
+    listItems :: (MonadIO m) => String->ReaderT SqlBackend m () -- ^ A database effect
+    listItems key = do
+        items <- ffmap clean $ selectList [ItemId ==.(textToKey $ DT.pack key)] []
+        liftIO
+            $ putStrLn
+            $ DT.unpack
+            $ DTE.decodeUtf8
+            $ B.toStrict
+            $ encodePretty items
+
+    clean :: Entity Item -> ADI.Item
+    clean (Entity k i) = toGenericItem (k, i, Nothing)
+
+handleListItemN
+    :: String  -- ^The database URL
+    -> [String]  -- ^The key
+    -> IO ()             -- ^ The effect
+handleListItemN database args = case length args of
+    2 -> runFileLoggingT "hadmin.log"
+            $ withPostgresqlPool (DB.pack database) 5
+            $ \pool -> liftIO $ runSqlPersistMPool (listItems (args!!1)) pool
+    _ -> putStrLn "Usage: hadmin lsitemn <name>"
+
+  where
+    listItems :: (MonadIO m) => String->ReaderT SqlBackend m () -- ^ A database effect
+    listItems key = do
+        items <- ffmap clean $ selectList [ItemName ==. DT.pack key] []
+        liftIO
+            $ putStrLn
+            $ DT.unpack
+            $ DTE.decodeUtf8
+            $ B.toStrict
+            $ encodePretty items
+
+    clean :: Entity Item -> ADI.Item
+    clean (Entity k i) = toGenericItem (k, i, Nothing)
+
+-- |Handles the delitem command
 handleListAttributes
     :: String  -- ^ The database URL
     -> IO ()             -- ^ The effect
@@ -444,6 +493,7 @@ handleAddItemAttributes database args = case length args of
 -- |The usage information
 usage :: IO ()
 usage = do
+    putStrLn ""
     putStrLn "Usage: hadmin <command> [parameters]"
     putStrLn ""
     putStrLn "User commands:"
@@ -457,14 +507,16 @@ usage = do
     putStrLn ""
     putStrLn "additems  <JSON-file with array of items>"
     putStrLn "delitem   <id>"
+    putStrLn "lsitem    <id>"
+    putStrLn "lsitemn   <name>"
     putStrLn "lsitems"
     putStrLn ""
     putStrLn "Attribute commands:"
     putStrLn ""
-    putStrLn "addattrs  <JSON-file with array of attributes>"
-    putStrLn "setitemattrs <JSON-file with array of item attribute values>"
+    putStrLn "addattrs     <JSON-file with array of attributes>"
+    putStrLn "setitemattrs <id> <JSON-file with array of item attribute values>"
     putStrLn "lsattrs"
-    putStrLn "lsitemattrs"
+    putStrLn "lsitemattrs  <id>"
     putStrLn ""
     putStrLn "Format of data:"
     putStrLn ""
@@ -475,6 +527,7 @@ usage = do
     putStrLn $ "Modifier: " <> show [ADI.Static, ADI.Transient]
     putStrLn $ "Approval: " <> show [ADI.Waiting, ADI.Approved, ADI.Denied]
     putStrLn $ "TypeOf: " <> show [ADI.BooleanType, ADI.NumberType , ADI.TextType]
+    putStrLn ""
 
 -- Example HAPI_DATABASE "postgresql://heatserver:heatserver@yolo.com:5432/heat"
 -- Example HAPI_PASSWORD_COST 10
@@ -500,5 +553,7 @@ main = do
             "lsitemattrs" -> handleListItemAttributes database args
             "delitem"  -> handleDelItem database args
             "lsitems"  -> handleListItems database
+            "lsitem"   -> handleListItem database args
+            "lsitemn"  -> handleListItemN database args
             _          -> usage
         else usage
