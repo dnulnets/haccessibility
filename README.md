@@ -1,5 +1,5 @@
 # Accessibility API and portal
-This is a prototype, among many other prototypes and solutions, for the Swedish IoT Hub for Accessibility. This prototype allows you to manually or automatically through IoT accessibility enabled devices enter information, such as availability, on geographical positions.
+This is a prototype for the Swedish IoT Hub for Accessibility. This prototype allows you to manually or automatically through IoT accessibility enabled devices enter information on the accessibility of geographical positions, points of interests. It also determines the level of accessibility based on personal settings and attributes on the points.
 
 <img src="https://github.com/dnulnets/haccessibility/blob/master/doc/webapp.png" width="200" />
 
