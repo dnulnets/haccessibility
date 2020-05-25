@@ -16,36 +16,6 @@ import Data.Argonaut (class DecodeJson, class EncodeJson, decodeJson, encodeJson
 -- Halogen imports
 import Halogen (HalogenM, lift)
 
--- | The enumeration for the accessability level for an item
-data ItemLevel = L1 | L2 | L3 | L4 | L5
-
-itemLevelToString::ItemLevel->String
-itemLevelToString L1 = "L1"
-itemLevelToString L2 = "L2"
-itemLevelToString L3 = "L3"
-itemLevelToString L4 = "L4"
-itemLevelToString L5 = "L5"
-
-instance showItemLevel :: Show ItemLevel where
-  show = itemLevelToString
-
-instance encodeJsonItemLevel :: EncodeJson ItemLevel where
-  encodeJson il = encodeJson $ itemLevelToString il
-
-instance decodeJsonItemLevel :: DecodeJson ItemLevel where
-  decodeJson json = do
-    string <- decodeJson json
-    let decodeError = "Could not decode ItemLevel from " <> string
-    note decodeError (fromString string)
-    where
-        fromString = case _ of
-            "L1" -> Just L1
-            "L2" -> Just L1
-            "L3" -> Just L1
-            "L4" -> Just L1
-            "L5" -> Just L1
-            _ -> Nothing
-
 -- | The enmueration for the source of the item
 data ItemSource = Human | Machine
 
@@ -120,32 +90,6 @@ instance decodeJsonItemApproval :: DecodeJson ItemApproval where
             "Denied" -> Just Denied
             _ -> Nothing
 
--- | The enmueration for the state of the item
-data ItemState = Online | Unknown | Offline
-
-itemStateToString::ItemState->String
-itemStateToString Online = "Online"
-itemStateToString Offline = "Offline"
-itemStateToString Unknown = "Unknown"
-
-instance showItemState :: Show ItemState where
-  show = itemStateToString
-
-instance encodeJsonItemState :: EncodeJson ItemState where
-  encodeJson is = encodeJson $ itemStateToString is
-
-instance decodeJsonItemState :: DecodeJson ItemState where
-  decodeJson json = do
-    string <- decodeJson json
-    let decodeError = "Could not decode ItemState from " <> string
-    note decodeError (fromString string)
-    where
-        fromString = case _ of
-            "Online" -> Just Online
-            "Offline" -> Just Offline
-            "Unknown" -> Just Unknown
-            _ -> Nothing
-
 --
 -- Item
 --
@@ -158,8 +102,6 @@ type Item = {
     , created     :: ISO     -- ^ The creation time
     , description :: String    -- ^ The description of the item
     , source      :: ItemSource   -- ^ How the items online state is determined
-    , state       :: ItemState     -- ^ The state of the item
-    , level       :: ItemLevel     -- ^ The accessability level of the item
     , modifier    :: ItemModifier       -- ^ The type of the item
     , approval    :: ItemApproval   -- ^ The tstae of approval for the item
     , latitude    :: Number      -- ^ The latitude of the item
