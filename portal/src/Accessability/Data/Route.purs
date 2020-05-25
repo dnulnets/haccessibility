@@ -15,14 +15,16 @@ import Data.Generic.Rep.Show (genericShow)
 
 -- Routing specifics
 import Routing.Match (Match, lit)
-import Routing.Duplex (RouteDuplex', root)
+import Routing.Duplex (RouteDuplex', root, segment)
 import Routing.Duplex.Generic (noArgs, sum)
 import Routing.Duplex.Generic.Syntax ((/))
 
 -- |All possible routes
 data Page = Home  -- ^ The Home page
           | Login -- ^ The login page
+          | Point String -- ^ The point management page, contains item key
           | Error -- ^ The Error page
+
 derive instance genericRoute :: Generic Page _
 derive instance eqRoute :: Eq Page
 derive instance ordRoute :: Ord Page
@@ -43,4 +45,5 @@ routeCodec = root $ sum
   { "Home": noArgs
   , "Login": "login" / noArgs
   , "Error": "error" / noArgs
+  , "Point": "point" / segment
   }

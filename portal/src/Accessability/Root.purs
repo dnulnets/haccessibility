@@ -34,6 +34,7 @@ import Accessability.Component.HTML.Utils (css,
                                   
 import Accessability.Component.Login as Login
 import Accessability.Component.Nearby as Nearby
+import Accessability.Component.Point as Point
 import Accessability.Interface.Navigate (class ManageNavigation, gotoPage)
 import Accessability.Interface.Authenticate (class ManageAuthentication, UserInfo (..))
 import Accessability.Interface.Item (class ManageItem)
@@ -53,10 +54,12 @@ data Action = SetUserAction  (Maybe UserInfo)   -- ^Sets the user
 
 -- | The set of slots for the root container
 type ChildSlots = ( login ∷ Login.Slot Unit,
-                    nearby :: Nearby.Slot Unit )
+                    nearby :: Nearby.Slot Unit,
+                    point :: Point.Slot Unit )
 
 _login = SProxy::SProxy "login"
 _nearby = SProxy::SProxy "nearby"
+_point = SProxy::SProxy "point"
 
 component ∷ ∀ r i o m. MonadAff m
   => ManageAuthentication m
@@ -100,7 +103,7 @@ navbarLeft∷forall p . State -> HH.HTML p Action
 navbarLeft state = HH.div [css "collapse navbar-collapse", HP.id_ "navbarCollapse"]
                     [HH.ul [css "navbar-nav mr-auto"] [
                       HH.li [css "nav-item active"] [HH.a [css "nav-link", href Home] [HH.text "Link 1"]],
-                      HH.li [css "nav-item"] [HH.a [css "nav-link", href Home] [HH.text "Link 2"]],
+                      HH.li [css "nav-item"] [HH.a [css "nav-link", href (Point "")] [HH.text "Link 2"]],
                       HH.li [css "nav-item"] [HH.a [css "nav-link", href Home] [HH.text "Link 3"]]
                       ]          
                     ]
@@ -131,6 +134,7 @@ view ∷ ∀ r m. MonadAff m
        ⇒ Page → H.ComponentHTML Action ChildSlots m
 view Login = HH.slot _login  unit Login.component  unit (Just <<< loginMessageConv)
 view Home =  HH.slot _nearby unit Nearby.component unit absurd
+view (Point _) =  HH.slot _point unit Point.component unit absurd
 view _ = HH.div
              [css "container", style "margin-top:20px"]
              [HH.div
