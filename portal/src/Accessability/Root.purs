@@ -103,7 +103,7 @@ navbarLeft∷forall p . State -> HH.HTML p Action
 navbarLeft state = HH.div [css "collapse navbar-collapse", HP.id_ "navbarCollapse"]
                     [HH.ul [css "navbar-nav mr-auto"] [
                       HH.li [css "nav-item active"] [HH.a [css "nav-link", href Home] [HH.text "Map"]],
-                      HH.li [css "nav-item"] [HH.a [css "nav-link", href (Point "")] [HH.text "Add POI"]],
+                      HH.li [css "nav-item"] [HH.a [css "nav-link", href (Point "0000000000000001")] [HH.text "Add POI"]],
                       HH.li [css "nav-item"] [HH.a [css "nav-link", href Home] [HH.text "Not used"]]
                       ]          
                     ]
@@ -134,7 +134,7 @@ view ∷ ∀ r m. MonadAff m
        ⇒ Page → H.ComponentHTML Action ChildSlots m
 view Login = HH.slot _login  unit Login.component  unit (Just <<< loginMessageConv)
 view Home =  HH.slot _nearby unit Nearby.component unit absurd
-view (Point _) =  HH.slot _point unit Point.component unit absurd
+view (Point k) =  HH.slot _point unit Point.component (Just k) absurd
 view _ = HH.div
              [css "container", style "margin-top:20px"]
              [HH.div

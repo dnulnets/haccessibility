@@ -21,8 +21,8 @@ import Accessability.Interface.Item (
 import Accessability.Interface.Navigate (class ManageNavigation)
 import Control.Alt ((<|>))
 import Control.Monad.Reader.Trans (class MonadAsk)
-import Data.Array ((!!), catMaybes)
-import Data.Foldable (sequence_)
+import Data.Array ((!!), catMaybes, deleteBy)
+import Data.Foldable (sequence_, foldr)
 import Data.Maybe (Maybe(..), maybe, fromMaybe)
 import Data.Traversable (sequence)
 import Effect.Aff.Class (class MonadAff)
@@ -43,15 +43,18 @@ type Slot p
 -- | State for the component
 type State
   = { alert::Maybe String,
+      key::Maybe String,
       attrs:: Array AttributeValue,
       itemAttrs::Array AttributeValue }
 
+-- |The input type, it contains the item key, if any
+type Input = Maybe String
+
 -- | Initial state is no logged in user
-initialState ∷
-  ∀ i.
-  i ->
-  State -- ^ The state
-initialState _ = {  alert: Nothing,
+initialState ∷ Input -- ^The item key if any
+  -> State                  -- ^ The state
+initialState k = {  alert: Nothing,
+                    key: k,
                     attrs: [],
                     itemAttrs: []}
 
@@ -60,17 +63,18 @@ data Action
   = Initialize
   | Finalize
   | Submit Event
+  | HandleInput Input
   | Input
 
 -- | The component definition
 component ∷
-  ∀ r q i o m.
+  ∀ r q o m.
   MonadAff m ⇒
   ManageNavigation m =>
   MonadAsk r m =>
   ManageEntity m =>
   ManageItem m ⇒
-  H.Component HH.HTML q i o m
+  H.Component HH.HTML q Input o m
 component =
   H.mkComponent
     { initialState
@@ -81,6 +85,7 @@ component =
               { handleAction = handleAction
               , initialize = Just Initialize
               , finalize = Just Finalize
+              , receive = Just <<< HandleInput
               }
     }
 
@@ -208,17 +213,30 @@ handleAction ∷
 handleAction Initialize = do
   state <- H.get
   H.liftEffect $ log "Initialize Point Component"
+  H.liftEffect $ log $ show state
   a <- queryAttributes
   av <- queryItemAttributes "0000000000000001"
-  H.put state { attrs = fromMaybe [] a, itemAttrs = fromMaybe [] av}
+  H.put state { attrs = diffF same (fromMaybe [] a) (fromMaybe [] av), itemAttrs = fromMaybe [] av}
+  where
+
+    same::AttributeValue->AttributeValue->Boolean
+    same a b = a.attributeId == b.attributeId
+
+    diffF :: forall a. (a -> a -> Boolean) -> Array a -> Array a -> Array a
+    diffF f = foldr (deleteBy f)
 
 -- | Finalize action
 handleAction Finalize = do
-  H.liftEffect $ log "Finalize Nearby Component"
+  H.liftEffect $ log "Finalize Point Component"
 
 handleAction (Submit event) = do
   H.liftEffect $ Event.preventDefault event
-  H.liftEffect $ log "Form submitted"
+  H.liftEffect $ log "Point Form submitted"
 
 handleAction Input = do
+  state <- H.get
+  H.liftEffect $ log $ show state
   H.liftEffect $ log "Input changed"
+
+handleAction (HandleInput input) = do
+  H.liftEffect $ log $ "Input received " <> show input
