@@ -3,15 +3,17 @@
 -- |
 -- | Written by Tomas Stenlund (c), 2019
 -- |
-module Accessability.Component.HTML.Utils (css,
-                                  style,
-                                  prop,
-                                  href,
-                                  maybeElem,
-                                  maybeOrElem,
-                                  maybeElem_,
-                                  maybeOrElem_,
-                                  whenElem) where
+module Accessability.Component.HTML.Utils
+    ( css
+    , style
+    , prop
+    , href
+    , maybeElem
+    , maybeOrElem
+    , maybeElem_
+    , maybeOrElem_
+    , whenElem
+    ) where
 
 -- Language imports
 import Prelude

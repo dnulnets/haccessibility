@@ -31,6 +31,8 @@ instance showBaseURL :: Show BaseURL where
 data Endpoint = Authenticate
                 | Item (Maybe String)
                 | Items
+                | Attributes
+                | Attribute String
                 | Entities { type::String, attrs::Maybe String }
 
 derive instance genericEndpoint :: Generic Endpoint _
@@ -43,6 +45,8 @@ backend::forall r m . MonadAsk { baseURL :: BaseURL, iothubURL::BaseURL | r } m 
 backend Authenticate = asks _.baseURL
 backend (Item _) = asks _.baseURL
 backend Items = asks _.baseURL
+backend Attributes = asks _.baseURL
+backend (Attribute _) = asks _.baseURL
 backend (Entities _) = asks _.iothubURL
 
 -- |The endpoint codec
@@ -50,5 +54,7 @@ endpointCodec :: RouteDuplex' Endpoint
 endpointCodec = root $ sum
   { "Authenticate": "api" / "authenticate" / noArgs
   , "Items": "api" / "items" / noArgs
+  , "Attributes": "api" / "attributes" /noArgs
+  , "Attribute": "api" / "item" / string segment / "attributes"
   , "Item": "api" / "item" / (optional (string segment)) 
   , "Entities": "entities" ? { type : string, attrs : optional <<< string} }

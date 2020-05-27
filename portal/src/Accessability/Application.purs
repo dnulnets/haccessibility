@@ -157,8 +157,43 @@ instance manageAuthenticationApplicationM :: ManageAuthentication ApplicationM w
 --
 instance manageItemApplicationM :: ManageItem ApplicationM where
 
-  -- |Tries to login the user and get a token from the backend that can be used for future
-  -- calls
+  -- |Gets all available attributes
+  queryAttributes = do
+    env <- ask
+    ui <- H.liftEffect $ REF.read env.userInfo
+    burl <- EP.backend ep
+
+    response <- liftAff $ parOneOf [
+      mkAuthRequest burl ep ui (Get::RequestMethod Void)
+      , Left "Timeout" <$ (delay env.timeoutBackend)]
+    case response of
+      Left err -> do
+        H.liftEffect $ log $ "Error: " <> err
+        pure Nothing
+      Right (Tuple _ attrs) -> do
+        pure attrs
+    where
+      ep = EP.Attributes
+
+  -- |Gets all available attributes
+  queryItemAttributes key = do
+    env <- ask
+    ui <- H.liftEffect $ REF.read env.userInfo
+    burl <- EP.backend ep
+
+    response <- liftAff $ parOneOf [
+      mkAuthRequest burl ep ui (Get::RequestMethod Void)
+      , Left "Timeout" <$ (delay env.timeoutBackend)]
+    case response of
+      Left err -> do
+        H.liftEffect $ log $ "Error: " <> err
+        pure Nothing
+      Right (Tuple _ attrs) -> do
+        pure attrs
+    where
+      ep = EP.Attribute key
+
+  -- |Get all items based on a filter
   queryItems filter = do
     env <- ask
     ui <- H.liftEffect $ REF.read env.userInfo
@@ -193,7 +228,7 @@ instance manageEntityApplicationM :: ManageEntity ApplicationM where
     response <- liftAff $ parOneOf [
       (map concat) <$> (sequence <$> parSequence [
         unpack <$> mkRequest b1 ep1 (Get::RequestMethod Void)
-        , unpack <$> mkRequest b2 ep2 (Get::RequestMethod Void)
+--        , unpack <$> mkRequest b2 ep2 (Get::RequestMethod Void)
       ]),
       Nothing <$ (delay env.timeoutIothub)]
 

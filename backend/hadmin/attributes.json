@@ -1,14 +1,20 @@
 [
     {
-        "name": "width",
+        "name": "Door width",
         "description": "The width of the door",
         "unit": "cm",
         "typeof": "NumberType"
     },
     {
-        "name": "height",
+        "name": "Door Height",
         "description": "The height of the door",
         "unit": "cm",
         "typeof": "NumberType"
-    }
+    },
+    {
+        "name": "Ramp",
+        "description": "If it exists a ramp",
+        "unit": "Yes/No",
+        "typeof": "BooleanType"
+    }    
 ]

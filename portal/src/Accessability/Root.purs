@@ -102,9 +102,9 @@ navbarHeader header = [HH.button [css "navbar-toggler",
 navbarLeft∷forall p . State -> HH.HTML p Action
 navbarLeft state = HH.div [css "collapse navbar-collapse", HP.id_ "navbarCollapse"]
                     [HH.ul [css "navbar-nav mr-auto"] [
-                      HH.li [css "nav-item active"] [HH.a [css "nav-link", href Home] [HH.text "Link 1"]],
-                      HH.li [css "nav-item"] [HH.a [css "nav-link", href (Point "")] [HH.text "Link 2"]],
-                      HH.li [css "nav-item"] [HH.a [css "nav-link", href Home] [HH.text "Link 3"]]
+                      HH.li [css "nav-item active"] [HH.a [css "nav-link", href Home] [HH.text "Map"]],
+                      HH.li [css "nav-item"] [HH.a [css "nav-link", href (Point "")] [HH.text "Add POI"]],
+                      HH.li [css "nav-item"] [HH.a [css "nav-link", href Home] [HH.text "Not used"]]
                       ]          
                     ]
 
