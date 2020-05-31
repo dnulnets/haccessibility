@@ -7,24 +7,20 @@ module Accessability.Component.Point where
 
 -- Language imports
 import Prelude
-import Accessability.Component.HTML.Utils (css, style)
-import Accessability.Interface.Entity (class ManageEntity, queryEntities, Entity(..))
+import Accessability.Component.HTML.Utils (css)
+import Accessability.Interface.Entity (class ManageEntity)
 import Accessability.Interface.Item (
-  class ManageItem,
-  queryItems,
-  queryAttributes,
-  queryItemAttributes,
-  AttributeValue(..),
-  AttributeChange(..),
-  AttributeType(..),
-  Item)
+  class ManageItem
+  , AttributeType(..)
+  , AttributeValue
+  , Item
+  , queryAttributes
+  , queryItemAttributes)
 import Accessability.Interface.Navigate (class ManageNavigation)
-import Control.Alt ((<|>))
 import Control.Monad.Reader.Trans (class MonadAsk)
-import Data.Array ((!!), catMaybes, deleteBy)
-import Data.Foldable (sequence_, foldr)
-import Data.Maybe (Maybe(..), maybe, fromMaybe)
-import Data.Traversable (sequence)
+import Data.Array (catMaybes, deleteBy)
+import Data.Foldable (foldr)
+import Data.Maybe (Maybe(..), fromMaybe)
 import Effect.Aff.Class (class MonadAff)
 import Effect.Console (log)
 import Halogen as H
@@ -40,21 +36,28 @@ import Web.Event.Event as Event
 type Slot p
   = ∀ q. H.Slot q Void p
 
+-- |The input type, it contains the item key (Left) or the lola for a new (Right)
+data Operation = 
+  UpdatePOI String
+  | ViewPOI String
+  | AddPOI Number Number
+
+derive instance eqOperation :: Eq Operation
+
 -- | State for the component
 type State
   = { alert::Maybe String,
-      key::Maybe String,
+      operation::Operation,
+      item::Maybe Item,
       attrs:: Array AttributeValue,
       itemAttrs::Array AttributeValue }
 
--- |The input type, it contains the item key, if any
-type Input = Maybe String
-
 -- | Initial state is no logged in user
-initialState ∷ Input -- ^The item key if any
+initialState ∷ Operation -- ^The item key if any
   -> State                  -- ^ The state
-initialState k = {  alert: Nothing,
-                    key: k,
+initialState i = {  alert: Nothing,
+                    item: Nothing,
+                    operation: i,
                     attrs: [],
                     itemAttrs: []}
 
@@ -63,7 +66,7 @@ data Action
   = Initialize
   | Finalize
   | Submit Event
-  | HandleInput Input
+  | Define Operation
   | Input
 
 -- | The component definition
@@ -74,7 +77,7 @@ component ∷
   MonadAsk r m =>
   ManageEntity m =>
   ManageItem m ⇒
-  H.Component HH.HTML q Input o m
+  H.Component HH.HTML q Operation o m
 component =
   H.mkComponent
     { initialState
@@ -85,7 +88,7 @@ component =
               { handleAction = handleAction
               , initialize = Just Initialize
               , finalize = Just Finalize
-              , receive = Just <<< HandleInput
+              , receive = Just <<< Define
               }
     }
 
@@ -116,7 +119,7 @@ inputNumber ∷ forall p. String  -- ^The name of the field
   -> Maybe String                     -- ^The value of the field, if any
   -> String                     -- ^The unit of the field
   -> HH.HTML p Action           -- ^The HTML element
-inputNumber name v unit =
+inputNumber name val unit =
   HH.div [ css "form-group" ] [
       HH.label [ HP.for name ] [ HH.text name ]
       , HH.div [css "input-group"] [
@@ -125,7 +128,7 @@ inputNumber name v unit =
             , HP.type_ HP.InputNumber
             , HPA.label name
             , HP.placeholder name
-            , HE.onValueChange \v -> Just $ Input] <> catMaybes [HP.value <$> v])
+            , HE.onValueChange \v -> Just $ Input] <> catMaybes [HP.value <$> val])
           , HH.div [css "input-group-append"] [
               HH.span [css "input-group-text"] [HH.text unit]]]
     ]
@@ -134,7 +137,7 @@ inputNumber name v unit =
 inputTextArea ∷ forall p. String  -- ^Name of the field
   -> Maybe String                 -- ^The value of the field, if any
   -> HH.HTML p Action             -- ^The HTML element
-inputTextArea name v =
+inputTextArea name val =
   HH.div [ css "form-group" ]
     [ HH.label [ HP.for name ] [ HH.text name ]
     , HH.textarea
@@ -144,14 +147,14 @@ inputTextArea name v =
         , HPA.label name
         , HP.placeholder name
         , HE.onValueChange \v -> Just $ Input
-        ] <> catMaybes [HP.value <$> v])
+        ] <> catMaybes [HP.value <$> val])
     ]
 
 -- |Creates a HTM element for an input box of type Boolean (Yes/No)
 inputYesNo ∷ forall p. String -- ^The name of the field
   -> Maybe String             -- ^The value of the field, if any
   -> HH.HTML p Action         -- ^The HTML element
-inputYesNo name v =
+inputYesNo name val =
   HH.div [ css "form-group" ]
     [ HH.label [ HP.for name ] [ HH.text name ]
     , HH.select
@@ -159,7 +162,7 @@ inputYesNo name v =
         , HP.id_ name
         , HPA.label name
         , HE.onValueChange \v -> Just $ Input
-        ] <> catMaybes [HP.value <$> v])
+        ] <> catMaybes [HP.value <$> val])
         [ HH.option [] [ HH.text "Yes" ]
         , HH.option [] [ HH.text "No" ]
         ]
@@ -213,9 +216,15 @@ handleAction ∷
 handleAction Initialize = do
   state <- H.get
   H.liftEffect $ log "Initialize Point Component"
-  H.liftEffect $ log $ show state
   a <- queryAttributes
-  av <- queryItemAttributes "0000000000000001"
+  av <- case state.operation of
+    UpdatePOI k -> do
+      queryItemAttributes k
+    ViewPOI k ->
+      queryItemAttributes k
+    AddPOI la lo ->
+      pure Nothing
+  
   H.put state { attrs = diffF same (fromMaybe [] a) (fromMaybe [] av), itemAttrs = fromMaybe [] av}
   where
 
@@ -235,8 +244,9 @@ handleAction (Submit event) = do
 
 handleAction Input = do
   state <- H.get
-  H.liftEffect $ log $ show state
   H.liftEffect $ log "Input changed"
 
-handleAction (HandleInput input) = do
-  H.liftEffect $ log $ "Input received " <> show input
+handleAction (Define i) = do
+  H.liftEffect $ log $ "Input received"
+  state <- H.get
+  when (state.operation /= i) $ H.put $ state {operation = i}

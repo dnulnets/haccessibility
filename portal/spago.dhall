@@ -19,6 +19,7 @@ You can edit this file as you like.
     , "coroutines"
     , "aff-coroutines"
     , "datetime-iso"
+    , "numbers"
     ]
 , packages = ./packages.dhall
 , sources = [ "src/**/*.purs", "test/**/*.purs" ]

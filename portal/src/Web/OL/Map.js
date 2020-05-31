@@ -11,6 +11,7 @@
 // Get hold of the OpenLayer types and functions
 var ol  = require ('ol');
 var oll = require ('ol/layer');
+var olc = require ('ol/control')
 var ols = require ('ol/source');
 var olp = require ('ol/proj');
 var olst = require ('ol/style');
@@ -26,11 +27,48 @@ const mock_lat = 62.391409; // Storgatan in Sundsvall
 const mock_lon = 17.304742;
 const mock_accuracy = 10.0; // 10 meters accuracy
 
+// Our controls
+var AddItemControl = /*@__PURE__*/ (function (Control) {
+
+  function AddItemControl(on_click, opt_options) {
+    var options = opt_options || {};
+
+    var button = document.createElement('button');
+    button.innerHTML = 'A';
+    button.id = "add-item";
+    var element = document.createElement('div');
+    element.className = 'add-item ol-unselectable ol-control';
+    element.appendChild(button);
+
+    Control.call(this, {
+      element: element,
+      target: options.target
+    });
+
+    //button.addEventListener('click', this.handleAddItem.bind(this), false);
+    //button.addEventListener('click', on_click, false);
+  }
+
+  if ( Control ) AddItemControl.__proto__ = Control;
+  AddItemControl.prototype = Object.create( Control && Control.prototype );
+  AddItemControl.prototype.constructor = AddItemControl;
+
+  return AddItemControl;
+
+}(olc.Control));
+
+function my_click() {
+  console.log ("Yeaaah!!!")
+}
+
 // Create a map and add it to a DOM element and center it around a longitude and latitude
 // and set initial zoom
 exports.createMapImpl = function (element,lon, lat, z) {
   return function() {
     return new ol.Map({
+      controls: olc.defaults().extend([
+        new AddItemControl(my_click)
+      ]),      
       target: element,
       layers: [
         new oll.Tile({
@@ -342,3 +380,10 @@ exports.setTestModeImpl = function (map, b) {
     }
   }
 }
+
+// module Example.Intro
+
+exports.attachHandlerImpl = function(selector, callback) {
+    var el = document.querySelector(selector);
+    el.addEventListener("click", callback);
+};

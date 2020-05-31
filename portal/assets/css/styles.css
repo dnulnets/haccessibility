@@ -21,4 +21,13 @@ main {
     height: 250px;
     margin-bottom: 5px;
   }
+
+  .add-item {
+    top: 65px;
+    left: .5em;
+  }
+  .ol-touch .add-item {
+    top: 80px;
+  }
+
   

@@ -188,3 +188,11 @@ foreign import setTestModeImpl :: Fn2 OLMap Boolean (Effect Unit)
 
 setTestMode::OLMap->Boolean->Effect Unit
 setTestMode m b = runFn2 setTestModeImpl m b
+
+--
+-- Attach a handler
+--
+foreign import attachHandlerImpl :: Fn2 String (Effect Unit) (Effect Unit)
+
+attachHandler::String->Effect Unit->Effect Unit
+attachHandler a f = runFn2 attachHandlerImpl a f

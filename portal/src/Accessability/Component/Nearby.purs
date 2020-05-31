@@ -7,10 +7,13 @@ module Accessability.Component.Nearby where
 
 -- Language imports
 import Prelude
+
 import Data.Array((!!))
 import Data.Maybe (Maybe(..), maybe, fromMaybe)
 import Data.Foldable (sequence_)
 import Data.Traversable (sequence)
+
+import Unsafe.Coerce
 
 -- Control Monad
 import Control.Monad.Reader.Trans (class MonadAsk)
@@ -25,8 +28,20 @@ import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Properties as HP
 import Halogen.HTML.Events as HE
+import Halogen.Query.EventSource as HQE
 
 -- Web imports
+import Web.HTML (window)
+import Web.HTML.Window (document)
+import Web.HTML.HTMLDocument (toParentNode)
+import Web.HTML.HTMLButtonElement (HTMLButtonElement, fromEventTarget, name)
+
+import Web.Event.Event as E
+import Web.Event.EventTarget as ET
+
+import Web.DOM.ParentNode (QuerySelector(..), querySelector)
+import Web.DOM.Element (toEventTarget)
+
 import Web.OL.Map (OLMap,
   OLGeolocation,
   OLLayer,
@@ -44,8 +59,9 @@ import Web.OL.Map (OLMap,
   POI, POIType(..))
 
 -- Our own stuff
+import Accessability.Data.Route (Page(..)) as ADR
 import Accessability.Component.HTML.Utils (css, style)
-import Accessability.Interface.Navigate (class ManageNavigation)
+import Accessability.Interface.Navigate (class ManageNavigation, gotoPage)
 import Accessability.Interface.Item (class ManageItem, queryItems, Item)
 import Accessability.Interface.Entity (class ManageEntity, queryEntities, Entity(..))
 
@@ -53,7 +69,8 @@ import Accessability.Interface.Entity (class ManageEntity, queryEntities, Entity
 type Slot p = ∀ q . H.Slot q Void p
 
 -- | State for the component
-type State = {  alert::Maybe String         -- ^ The alert text
+type State = {  alert::Maybe String            -- ^ The alert text
+                , subscription::Maybe H.SubscriptionId -- ^The add item button subscription
                 , geo::Maybe OLGeolocation  -- ^ The GeoLocator device
                 , map::Maybe OLMap          -- ^ The Map on the page
                 , poi::Maybe OLLayer        -- ^ The POI Layer
@@ -64,6 +81,7 @@ type State = {  alert::Maybe String         -- ^ The alert text
 initialState ∷ ∀ i. i   -- ^ Initial input
   → State               -- ^ The state
 initialState _ = { alert : Nothing,
+                   subscription : Nothing,
                    geo : Nothing,
                    map : Nothing,
                    poi : Nothing,
@@ -75,6 +93,7 @@ data Action = Initialize
   | Finalize
   | Update
   | Center
+  | AddItem
   | Mock Boolean
   | Add
 
@@ -156,39 +175,86 @@ handleAction ∷ ∀ r o m . MonadAff m
 
 -- | Initialize action
 handleAction Initialize = do
+  H.liftEffect $ log "Initialize Nearby component"
   state <- H.get
-  H.liftEffect $ log "Initialize Nearby Component"
+
+  -- Create the map and add a geolocation and start tracking
   olmap <- H.liftEffect $ createMap "map" 0.0 0.0 18
   g <- H.liftEffect $ join <$> (sequence $ addGeolocationToMap <$> olmap)
   H.liftEffect $ sequence_ $ setTracking <$> g <*> (Just true)
+
+  -- Get the weather data from the IoT Hb and add it to our POI layer
   pos <- H.liftAff $ sequence $ _getCoordinate <$> g 
   entities <- queryEntities "WeatherObserved"
-  H.liftEffect $ log $ show entities
+
+  -- Get all items within our radius
   items <- queryItems {
     longitude : join $ _.longitude <$> pos, 
     latitude: join $ _.latitude <$> pos, 
     distance: Just state.distance,
     limit: Nothing,
     text: Nothing }
+
+  -- Merge the two data sources into one layer
   layer <- H.liftEffect $ sequence $ createPOILayer <$> (join $ _.longitude <$> pos) <*> (join $ _.latitude <$> pos) <*> (Just (state.distance*2.0)) <*> ((map (map itemToPOI) items) <> (map (map entityToPOI) entities))
+
+  -- Add the layer to the map and center it around our location
   H.liftEffect do
     sequence_ $ addLayerToMap <$> olmap <*> layer
     sequence_ $ setCenter <$> olmap <*> (join $ _.longitude <$> pos) <*> (join $ _.latitude <$> pos)  
-  H.put state { poi = layer, map = olmap, geo = g, alert = maybe (Just "Unable to get a geolocation device") (const Nothing) g}
 
--- | Finalize action
+  -- Add a listener to the add item button on the map
+  element <- H.liftEffect $ 
+    (toParentNode <$> (window >>= document)) >>=
+    (querySelector (QuerySelector "#add-item"))  
+  s <- sequence $ subscribe <$> element
+
+  -- Update the state
+  H.put state { poi = layer
+    , subscription = s
+    , map = olmap
+    , geo = g
+    , alert = maybe (Just "Unable to get a geolocation device") (const Nothing) g}
+
+  where
+
+    -- Subscribe to a click event for a button
+    subscribe e = H.subscribe do
+      HQE.eventListenerEventSource
+        (E.EventType "click")
+        (toEventTarget e)
+        (const (Just AddItem))
+
+-- | Add an item to the database based on the current position
+handleAction AddItem = do
+  H.liftEffect $ log $ "Add and item button clicked"
+  state <- H.get
+  pos <- H.liftEffect $ sequence $ getCoordinate <$> state.geo
+  sequence_ $ gotoPage <$> (ADR.AddPoint <$> (join $ _.longitude <$> pos) <*> (join $ _.latitude <$> pos))
+
+-- | Finalize action, clean up the map
 handleAction Finalize = do
   H.liftEffect $ log "Finalize Nearby Component"
   state <- H.get
-  H.liftEffect $ sequence_ $ (flip setTracking false) <$> state.geo
-  H.liftEffect $ sequence_ $ removeLayerFromMap <$> state.map <*> state.poi
-  H.liftEffect $ sequence_ $ removeTarget <$> state.map
+
+  -- Remove the subscription
+  sequence_ $ H.unsubscribe <$> state.subscription
+
+  -- Remove the tracking, layers and the target of the map
+  H.liftEffect $ do
+    sequence_ $ (flip setTracking false) <$> state.geo
+    sequence_ $ removeLayerFromMap <$> state.map <*> state.poi
+    sequence_ $ removeTarget <$> state.map
+
+  -- Update the state
   H.put state { map = Nothing, geo = Nothing, alert = Nothing }
 
 -- | Find the items and create a layer and display it
 handleAction Update = do
   H.liftEffect $ log "Make an items update"
   state <- H.get
+
+  -- Get the current position
   pos <- H.liftEffect $ sequence $ getCoordinate <$> state.geo
   entities <- queryEntities "WeatherObserved"
   H.liftEffect $ log $ show entities  
