@@ -3,17 +3,16 @@
 -- |
 -- | Written by Tomas Stenlund, Sundsvall, Sweden (c) 2020
 -- |
-module Accessibility.Component.Nearby where
+module Accessibility.Component.Nearby (component, Slot(..)) where
 
 -- Language imports
 import Prelude
 
+-- Data imports
 import Data.Array((!!))
 import Data.Maybe (Maybe(..), maybe, fromMaybe)
 import Data.Foldable (sequence_)
 import Data.Traversable (sequence)
-
-import Unsafe.Coerce
 
 -- Control Monad
 import Control.Monad.Reader.Trans (class MonadAsk)
@@ -34,31 +33,30 @@ import Halogen.Query.EventSource as HQE
 import Web.HTML (window)
 import Web.HTML.Window (document)
 import Web.HTML.HTMLDocument (toParentNode)
-import Web.HTML.HTMLButtonElement (HTMLButtonElement, fromEventTarget, name)
 
 import Web.Event.Event as E
-import Web.Event.EventTarget as ET
 
 import Web.DOM.ParentNode (QuerySelector(..), querySelector)
 import Web.DOM.Element (toEventTarget)
 
-import Accessibility.FFI.OpenLayers (OLMap,
-  OLGeolocation,
-  OLLayer,
-  createMap,
-  createPOILayer,
-  removeTarget,
-  setCenter,
-  addGeolocationToMap,
-  setTracking,
-  getCoordinate,
-  _getCoordinate,
-  removeLayerFromMap,
-  addLayerToMap,
-  setTestMode,
-  POI, POIType(..))
-
--- Our own stuff
+-- Our own imports
+import Accessibility.FFI.OpenLayers
+  ( OLMap
+  , OLGeolocation
+  , OLLayer
+  , createMap
+  , createPOILayer
+  , removeTarget
+  , setCenter
+  , addGeolocationToMap
+  , setTracking
+  , getCoordinate
+  , _getCoordinate
+  , removeLayerFromMap
+  , addLayerToMap
+  , setTestMode
+  , POI
+  , POIType(..))
 import Accessibility.Data.Route (Page(..)) as ADR
 import Accessibility.Component.HTML.Utils (css, style)
 import Accessibility.Interface.Navigate (class ManageNavigation, gotoPage)
@@ -66,27 +64,29 @@ import Accessibility.Interface.Item (class ManageItem, queryItems, Item)
 import Accessibility.Interface.Entity (class ManageEntity, queryEntities, Entity(..))
 
 -- | Slot type for the Login component
-type Slot p = ∀ q . H.Slot q Void p
+type Slot p = forall q . H.Slot q Void p
 
 -- | State for the component
-type State = {  alert::Maybe String            -- ^ The alert text
-                , subscription::Maybe H.SubscriptionId -- ^The add item button subscription
-                , geo::Maybe OLGeolocation  -- ^ The GeoLocator device
-                , map::Maybe OLMap          -- ^ The Map on the page
-                , poi::Maybe OLLayer        -- ^ The POI Layer
-                , mock::Boolean             -- ^ Mock of GPS, always at Storgaten, Sundsvall
-                , distance::Number }        -- ^ The max search distance
+type State =  { alert           ::Maybe String            -- ^ The alert text
+                , subscription  ::Maybe H.SubscriptionId  -- ^The add item button subscription
+                , geo           ::Maybe OLGeolocation     -- ^ The GeoLocator device
+                , map           ::Maybe OLMap             -- ^ The Map on the page
+                , poi           ::Maybe OLLayer           -- ^ The POI Layer
+                , mock          ::Boolean                 -- ^ Mock of GPS, always at Storgaten, Sundsvall
+                , distance      ::Number                  -- ^ The max search distance
+              }
 
 -- | Initial state is no logged in user
-initialState ∷ ∀ i. i   -- ^ Initial input
-  → State               -- ^ The state
-initialState _ = { alert : Nothing,
-                   subscription : Nothing,
-                   geo : Nothing,
-                   map : Nothing,
-                   poi : Nothing,
-                   mock : false,
-                   distance : 300.0 }
+initialState :: forall i. i -- ^ Initial input
+  -> State                  -- ^ The state
+initialState _ =  { alert           : Nothing
+                    , subscription  : Nothing
+                    , geo           : Nothing
+                    , map           : Nothing
+                    , poi           : Nothing
+                    , mock          : false
+                    , distance : 300.0
+                  }
 
 -- | Internal form actions
 data Action = Initialize
@@ -98,15 +98,16 @@ data Action = Initialize
   | Add
 
 -- | Convert an Item to a POI
-itemToPOI::Item -- ^The item to be converted
-  ->POI         -- ^The POI
-itemToPOI i = { latitude: i.latitude,
-  longitude: i.longitude,
-  name: i.name, type: Point}
+itemToPOI :: Item -- ^The item to be converted
+          -> POI  -- ^The POI
+itemToPOI i = { latitude    : i.latitude
+                , longitude : i.longitude
+                , name      : i.name
+                , type      : Point}
 
 -- | Convert an Entity to a POI
-entityToPOI::Entity -- ^The entity to be converted
-  ->POI             -- ^The POI
+entityToPOI :: Entity -- ^The entity to be converted
+            -> POI    -- ^The POI
 entityToPOI (Entity e) = {
   latitude: fromMaybe 0.0 $ e.location.value.coordinates!!1, 
   longitude: fromMaybe 0.0 $ e.location.value.coordinates!!0,
@@ -115,16 +116,16 @@ entityToPOI (Entity e) = {
 
   where
 
-    entityNameTemperature en = ((append "T:") <<< show <<< _.value) <$> en.temperature
-    entityNameSnowHeight  en  = ((append "d:") <<< show <<< _.value) <$> en.snowHeight
+    entityNameTemperature en = (flip append "C") <$> (((append "T:") <<< show <<< _.value) <$> en.temperature)
+    entityNameSnowHeight  en  = (flip append "mm") <$> (((append "d:") <<< show <<< _.value) <$> en.snowHeight)
 
 -- | The component definition
-component ∷ ∀ r q i o m . MonadAff m
-            ⇒ ManageNavigation m
-            => MonadAsk r m
-            => ManageEntity m
-            => ManageItem m
-            ⇒ H.Component HH.HTML q i o m
+component :: forall r q i o m . MonadAff m
+          => ManageNavigation m
+          => MonadAsk r m
+          => ManageEntity m
+          => ManageItem m
+          => H.Component HH.HTML q i o m
 component = 
   H.mkComponent
     { initialState
@@ -135,13 +136,15 @@ component =
      }
     }
 
-nearbyAlert::forall p i . Maybe String -> HH.HTML p i
+nearbyAlert ::forall p i . Maybe String
+            -> HH.HTML p i
 nearbyAlert (Just t) = HH.div [css "alert alert-danger"] [HH.text $ t]
 nearbyAlert Nothing = HH.div [] []
 
 -- | Render the nearby page
-render ∷ ∀ m . MonadAff m ⇒ State -- ^ The state to render
-  → H.ComponentHTML Action () m   -- ^ The components HTML
+render  :: forall m . MonadAff m
+        => State                        -- ^ The state to render
+        -> H.ComponentHTML Action () m  -- ^ The components HTML
 render state = HH.div
                [css "container-fluid"]
                [HH.div [css "row"] [HH.div[css "col-xs-12 col-md-12"][nearbyAlert state.alert]],
@@ -165,13 +168,13 @@ render state = HH.div
                     ]]
 
 -- | Handles all actions for the login component
-handleAction ∷ ∀ r o m . MonadAff m
-            ⇒ ManageNavigation m
-            => ManageEntity m
-            => ManageItem m
-            => MonadAsk r m
-  ⇒ Action -- ^ The action to handle
-  → H.HalogenM State Action () o m Unit -- ^ The handled action
+handleAction  :: forall r o m . MonadAff m
+              => ManageNavigation m
+              => ManageEntity m
+              => ManageItem m
+              => MonadAsk r m
+              => Action                               -- ^ The action to handle
+              -> H.HalogenM State Action () o m Unit  -- ^ The handled action
 
 -- | Initialize action
 handleAction Initialize = do

@@ -3,7 +3,10 @@
 -- |
 -- | Written by Tomas Stenlund, Sundsvall, Sweden (c) 2019
 -- |
-module Accessibility.Component.Login where
+module Accessibility.Component.Login
+  ( component
+  , Message(..)
+  , Slot(..)) where
 
 -- Language imports
 import Prelude
@@ -31,40 +34,42 @@ import Web.Event.Event as Event
 import Accessibility.Data.Route (Page(..))
 import Accessibility.Component.HTML.Utils (css, style)
 import Accessibility.Interface.Navigate (class ManageNavigation, gotoPage)
-import Accessibility.Interface.Authenticate (UserInfo(..),
-                                    Authenticate(..),
-                                    class ManageAuthentication,
-                                    login)
+import Accessibility.Interface.Authenticate
+  (UserInfo(..)
+  , Authenticate(..)
+  , class ManageAuthentication
+  , login)
 
 -- | Slot type for the Login component
-type Slot p = ∀ q . H.Slot q Message p
+type Slot p = forall q . H.Slot q Message p
 
 -- | Messages possible to send out from the login component
 data Message = SetUserMessage (Maybe UserInfo)   -- | A login or logout event             
 
 -- | State for the component
-type State = {  alert::Maybe String,   -- ^ The alert text
-                username∷Maybe String, -- ^ The username as entered
-                password∷Maybe String -- ^ The password as entered
+type State =  { alert     ::Maybe String      -- ^ The alert text
+              , username  ::Maybe String  -- ^ The username as entered
+              , password  ::Maybe String  -- ^ The password as entered
               }
 
 -- | Initial state is no logged in user
-initialState ∷ ∀ i. i   -- ^ Initial input
-  → State               -- ^ The state
-initialState _ = { alert : Nothing,
-                   username : Nothing,
-                   password : Nothing}
+initialState  :: forall i . i -- ^ Initial input
+              -> State        -- ^ The state
+initialState _ =  { alert     : Nothing
+                  , username  : Nothing
+                  , password  : Nothing
+                  }
 
 -- | Internal form actions
 data Action = Submit Event        -- ^ Submit of the user
             | Input (State→State) -- ^ The text boxes has a value
 
 -- | The component definition
-component ∷ ∀ r q i m . MonadAff m
-            ⇒ ManageAuthentication m
-            ⇒ ManageNavigation m
-            ⇒ MonadAsk r m
-            ⇒ H.Component HH.HTML q i Message m
+component :: forall r q i m . MonadAff m
+          => ManageAuthentication m
+          => ManageNavigation m
+          => MonadAsk r m
+          => H.Component HH.HTML q i Message m
 component =
   H.mkComponent
     { initialState
@@ -72,15 +77,17 @@ component =
     , eval: H.mkEval $ H.defaultEval { handleAction = handleAction }
     }
 
-loginAlert::forall p i . Maybe String -> HH.HTML p i
-loginAlert t = HH.b [css "", style $ ("color:red;visibility:" <> (maybe "hidden" (\_->"visible") t))] 
+-- |Create a login alert in HTML
+loginAlert  :: forall p i . Maybe String
+            -> HH.HTML p i
+loginAlert t = HH.b [css ""
+  , style $ ("color:red;visibility:" <> (maybe "hidden" (\_->"visible") t))] 
   [HH.text $ fromMaybe "" t]
 
---loginAlert t = HH.div [css "alert alert-danger alert-signin", HPA.role "alert", style "visibility: hidden"] [HH.text t]
-
 -- | Render the alert
-render ∷ ∀ m . MonadAff m ⇒ State -- ^ The state to render
-  → H.ComponentHTML Action () m   -- ^ The components HTML
+render  :: forall m . MonadAff m
+        => State                        -- ^ The state to render
+        -> H.ComponentHTML Action () m  -- ^ The components HTML
 render state = HH.div
                []
                [              
@@ -107,12 +114,12 @@ render state = HH.div
                   ]
 
 -- | Handles all actions for the login component
-handleAction ∷ ∀ r m . MonadAff m
-            ⇒ ManageAuthentication m
-            ⇒ ManageNavigation m
-            => MonadAsk r m
-  ⇒ Action -- ^ The action to handle
-  → H.HalogenM State Action () Message m Unit -- ^ The handled action
+handleAction  :: forall r m . MonadAff m
+              => ManageAuthentication m
+              => ManageNavigation m
+              => MonadAsk r m
+              => Action                                     -- ^ The action to handle
+              -> H.HalogenM State Action () Message m Unit  -- ^ The handled action
 
 -- | Submit => Whenever the Login button is pressed, it will generate a submit message
 handleAction (Submit event) = do

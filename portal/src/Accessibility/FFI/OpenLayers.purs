@@ -5,16 +5,30 @@
 -- |
 module Accessibility.FFI.OpenLayers where
 
+-- Standard import
 import Prelude
 
-import Data.Function.Uncurried (Fn0, Fn1, Fn2, Fn3, Fn4, Fn5, runFn0, runFn1, runFn2, runFn3, runFn4, runFn5)
+-- Data imports
+import Data.Nullable (Nullable, toMaybe)
+import Data.Maybe (Maybe(..))
+import Data.Function.Uncurried
+    ( Fn0
+    , Fn1
+    , Fn2
+    , Fn3
+    , Fn4
+    , Fn5
+    , runFn0
+    , runFn1
+    , runFn2
+    , runFn3
+    , runFn4
+    , runFn5)
 
+-- Effect imports
 import Effect (Effect)
 import Effect.Aff (Aff)
 import Effect.Aff.Compat (EffectFnAff, fromEffectFnAff)
-
-import Data.Nullable (Nullable, toMaybe)
-import Data.Maybe (Maybe(..))
 
 --
 -- A coordinate
@@ -22,11 +36,11 @@ import Data.Maybe (Maybe(..))
 
 -- |The coordinate for a position with altitude and accuracy.
 type Coordinate = {
-    latitude         :: Maybe Number    -- ^The latitude
-    , longitude        :: Maybe Number  -- ^The logitude
-    , altitude         :: Maybe Number  -- ^The altidude in meters
-    , accuracy         :: Maybe Number  -- ^The accuracy of the position
-    , altitudeAccuracy :: Maybe Number  -- ^The accuracy of the altitude
+    latitude            :: Maybe Number  -- ^The latitude
+    , longitude         :: Maybe Number  -- ^The logitude
+    , altitude          :: Maybe Number  -- ^The altidude in meters
+    , accuracy          :: Maybe Number  -- ^The accuracy of the position
+    , altitudeAccuracy  :: Maybe Number  -- ^The accuracy of the altitude
 }
 
 --
@@ -34,7 +48,11 @@ type Coordinate = {
 --
 
 -- |The atributes for a POI
-data POIType = Point | Weather | Information
+data POIType = Point    -- ^A basic point of interest
+    | Weather           -- ^Weather information
+    | Information       -- ^Plain Information
+
+-- |The data content for a point of information
 type POI = {
     latitude        :: Number   -- ^The latitude of the POI
     , longitude     :: Number   -- ^The longitude of the POI
@@ -49,7 +67,7 @@ intPOIType Weather = 2
 intPOIType Information = 3
 
 --
--- The foreign functions and types
+-- The foreign functions and types for openlayers
 --
 foreign import data OLMap :: Type
 foreign import data OLGeolocation :: Type
@@ -58,10 +76,10 @@ foreign import data OLLayer :: Type
 --
 -- Create Map
 --
-
 foreign import createMapImpl  :: Fn4 String Number Number Int (Effect (Nullable OLMap))
 
-createMap   :: String   -- ^The element identity where the map is shown
+-- |Creates a map and centers it around a coordinate to the specified zoom level
+createMap   :: String   -- ^The HTML element identity where the map is shown
             ->Number    -- ^Longitude
             ->Number    -- ^Latitude
             ->Int       -- ^Zoom level
@@ -71,10 +89,9 @@ createMap n lo la z = toMaybe <$> runFn4 createMapImpl n lo la z
 --
 -- Remove Target
 --
-
 foreign import removeTargetImpl :: Fn1 OLMap (Effect Unit)
 
--- |Removes the DOM element id as target for the map.
+-- |Removes the HTML element id as target for the map.
 removeTarget    :: OLMap        -- ^The Map
                 ->Effect Unit   -- ^Nothing to return
 removeTarget m = runFn1 removeTargetImpl m 
@@ -82,7 +99,6 @@ removeTarget m = runFn1 removeTargetImpl m
 --
 -- Set Map Center
 --
-
 foreign import setCenterImpl::Fn3 OLMap Number Number (Effect Unit)
 
 -- |Sets the center of the map to the latitude and longitude provided.
@@ -95,7 +111,6 @@ setCenter m lo la = runFn3 setCenterImpl m lo la
 --
 -- Add Geolocation To Map
 --
-
 foreign import addGeolocationToMapImpl :: Fn1 OLMap (Effect (Nullable OLGeolocation))
 
 -- |Adds a geolocation device and automatic update of a position icon on the map.
@@ -107,7 +122,6 @@ addGeolocationToMap m = toMaybe <$> runFn1 addGeolocationToMapImpl m
 --
 -- Set the tracking on or off
 --
-
 foreign import setTrackingImpl :: Fn2 OLGeolocation Boolean (Effect Unit)
 
 -- |Activates or deactivates the tracking of the geolocation device.
@@ -119,7 +133,6 @@ setTracking gl b = runFn2 setTrackingImpl gl b
 --
 -- Get the current Coordinate
 --
-
 foreign import getCoordinateImpl::forall a. Fn3 (a -> Maybe a) (Maybe a) OLGeolocation (Effect Coordinate)
 
 -- |Returns with the current position of the geolocation device.
@@ -130,55 +143,51 @@ getCoordinate gl = runFn3 getCoordinateImpl Just Nothing gl
 --
 -- Get the current Coordinate Asynch
 --
-
 foreign import _getCoordinateImpl::forall a. Fn3 (a -> Maybe a) (Maybe a) OLGeolocation (EffectFnAff Coordinate)
 
 -- |Returns with the current position of the geolocation device.
-_getCoordinate  :: OLGeolocation        -- ^The geolocation device
+_getCoordinate  :: OLGeolocation    -- ^The geolocation device
                 -> Aff Coordinate   -- ^The Coordinate
 _getCoordinate gl = fromEffectFnAff $ runFn3 _getCoordinateImpl Just Nothing gl
 
 --
 -- Add one additional layer
 --
-
 foreign import addLayerToMapImpl :: Fn2 OLMap OLLayer (Effect Unit)
 
 -- |Adds a layer to the map
-addLayerToMap    :: OLMap        -- ^The Map
-                -> OLLayer       -- ^The layer to add to the map
-                ->Effect Unit   -- ^Nothing to return
+addLayerToMap    :: OLMap       -- ^The Map
+    -> OLLayer      -- ^The layer to add to the map
+    ->Effect Unit   -- ^Nothing to return
 addLayerToMap m l = runFn2 addLayerToMapImpl m l 
 
 --
 -- Remove a layer
 --
-
 foreign import removeLayerFromMapImpl :: Fn2 OLMap OLLayer (Effect Unit)
 
 -- |Removes the layer from the map
-removeLayerFromMap    :: OLMap    -- ^The Map
-                -> OLLayer      -- ^The layer to remove from the map
-                ->Effect Unit   -- ^Nothing to return
+removeLayerFromMap:: OLMap    -- ^The Map
+    -> OLLayer      -- ^The layer to remove from the map
+    ->Effect Unit   -- ^Nothing to return
 removeLayerFromMap m l = runFn2 removeLayerFromMapImpl m l 
 
 --
 -- Create the POI Layer
 --
-
 foreign import createPOILayerImpl :: forall p . Fn5 (POIType->Int) Number Number Number (Array { longitude::Number,latitude::Number,name::String | p }) (Effect OLLayer)
 
 -- |Removes the DOM element id as target for the map.
-createPOILayer  :: forall p . Number   -- ^Longitude
-                -> Number   -- ^Latitude
-                -> Number   -- ^Distance
-                -> Array {
-                    longitude::Number,
-                    latitude::Number,
-                    name::String,
-                    type::POIType | p 
-                    }        -- ^The list of POI:s
-                -> Effect OLLayer          -- ^The returned layer
+createPOILayer:: forall p . Number  -- ^Longitude
+    -> Number                       -- ^Latitude
+    -> Number                       -- ^Distance
+    -> Array {
+        longitude::Number,
+        latitude::Number,
+        name::String,
+        type::POIType | p 
+        }                           -- ^The list of POI:s
+    -> Effect OLLayer               -- ^The returned layer
 createPOILayer lon lat d pois = runFn5 createPOILayerImpl intPOIType lon lat d pois
 
 --
@@ -189,10 +198,3 @@ foreign import setTestModeImpl :: Fn2 OLMap Boolean (Effect Unit)
 setTestMode::OLMap->Boolean->Effect Unit
 setTestMode m b = runFn2 setTestModeImpl m b
 
---
--- Enable tooltips
---
-foreign import enableTooltipsImpl :: Fn0 (Effect Unit)
-
-enableTooltips::Effect Unit
-enableTooltips = runFn0 enableTooltipsImpl

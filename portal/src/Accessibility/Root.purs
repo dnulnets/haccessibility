@@ -3,19 +3,23 @@
 -- |
 -- | Written by Tomas Stenlund, Sundsvall, Sweden (c) 2019
 -- |
-module Accessibility.Root (component,
-  Query (..)) where
+module Accessibility.Root (component, Query (..)) where
 
+-- Standard import
 import Prelude
 
+-- Data imports
 import Data.Maybe (Maybe(..), maybe)
 import Data.Symbol (SProxy(..))
 
+-- Monad imports
 import Control.Monad.Reader.Trans (class MonadAsk)
 
+-- Effect imports
 import Effect.Aff.Class (class MonadAff)
 import Effect.Console (log)
 
+-- Halogen imports
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Properties as HP
@@ -27,11 +31,11 @@ import DOM.HTML.Indexed.ButtonType (ButtonType(..))
 
 -- Our own stuff
 import Accessibility.Data.Route (Page(..))
-import Accessibility.Component.HTML.Utils (css,
-                                  style,
-                                  prop,
-                                  href)
-                                  
+import Accessibility.Component.HTML.Utils
+  ( css
+  , style
+  , prop
+  , href)
 import Accessibility.Component.Login as Login
 import Accessibility.Component.Nearby as Nearby
 import Accessibility.Component.Point as Point
@@ -103,7 +107,7 @@ navbarLeft∷forall p . State -> HH.HTML p Action
 navbarLeft state = HH.div [css "collapse navbar-collapse", HP.id_ "navbarCollapse"]
                     [HH.ul [css "navbar-nav mr-auto"] [
                       HH.li [css "nav-item active"] [HH.a [css "nav-link", href Home] [HH.text "Map"]],
-                      HH.li [css "nav-item"] [HH.a [css "nav-link", href (Point "0000000000000001")] [HH.text "Add POI"]],
+                      HH.li [css "nav-item"] [HH.a [css "nav-link", href (Point "0000000000000001" true)] [HH.text "Add POI"]],
                       HH.li [css "nav-item"] [HH.a [css "nav-link", href Home] [HH.text "Not used"]]
                       ]          
                     ]
@@ -134,7 +138,8 @@ view ∷ ∀ r m. MonadAff m
        ⇒ Page → H.ComponentHTML Action ChildSlots m
 view Login = HH.slot _login  unit Login.component  unit (Just <<< loginMessageConv)
 view Home =  HH.slot _nearby unit Nearby.component unit absurd
-view (Point k) =  HH.slot _point unit Point.component (Point.UpdatePOI k) absurd
+view (Point k true) =  HH.slot _point unit Point.component (Point.ViewPOI k) absurd
+view (Point k false) = HH.slot _point unit Point.component (Point.UpdatePOI k) absurd
 view (AddPoint la lo) = HH.slot _point unit Point.component (Point.AddPOI la lo) absurd
 view _ = HH.div
              [css "container", style "margin-top:20px"]

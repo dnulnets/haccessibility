@@ -8,9 +8,11 @@ module Accessibility.Interface.Entity where
 -- Language imports
 import Prelude
 
+-- Data imports
 import Data.Maybe (Maybe)
 import Data.Argonaut (class DecodeJson, decodeJson, (.:), (.:?))
 
+-- Effects
 import Effect.Aff.Class (class MonadAff)
 
 -- Halogen imports
@@ -21,45 +23,40 @@ import Halogen (HalogenM, lift)
 --
 
 -- |The date the entity was last observed
-type DateObserved = {
-        "type" :: String,
-        "value" :: {
-            "@type" :: String,
-            "@value":: String
-        }
-    }
+type DateObserved = { "type" :: String
+                      , "value" :: {
+                        "@type" :: String
+                        , "@value":: String
+                      }
+                    }
 
 -- |The location of the entity
-type Location = {
-        "type" :: String,
-        "value" :: {
-            "coordinates":: Array Number,
-            "type" :: String
-        }
-    }
+type Location = { "type" :: String
+                  , "value" :: {
+                    "coordinates":: Array Number
+                    , "type" :: String
+                  }
+                }
 
 -- |The device connected to this entity
-type RefDevice = {
-        "object" :: String,
-        "type" :: String
-    }
+type RefDevice = {  "object" :: String
+                    , "type" :: String
+                  }
 
 -- |The value associated with this entity
-type Value = {
-        "type" :: String,
-        "value" :: Number
-    }
+type Value = {  "type" :: String
+                , "value" :: Number
+              }
 
 -- | Definition of the entity
-newtype Entity = Entity {
-    "id" :: String,
-    "type" :: String,
-    "dateObserved" :: DateObserved,
-    "location" :: Location,
-    "refDevice" :: RefDevice,
-    "temperature" :: Maybe Value,
-    "snowHeight" :: Maybe Value
-  }
+newtype Entity = Entity { "id" :: String
+                          , "type" :: String
+                          , "dateObserved" :: DateObserved
+                          , "location" :: Location
+                          , "refDevice" :: RefDevice
+                          , "temperature" :: Maybe Value
+                          , "snowHeight" :: Maybe Value
+                        }
 
 instance decodeJsonEntity :: DecodeJson Entity where
 
@@ -84,11 +81,11 @@ instance showEntity :: Show Entity where
   show (Entity e) = show e
 
 -- |The class for Items management
-class MonadAff m ⇐ ManageEntity m where
+class MonadAff m <= ManageEntity m where
 
   -- |Fetches a list of items based on the query parameters
-  queryEntities::String             -- ^Type of entities
-    -> m (Maybe (Array Entity))     -- ^List of Entities
+  queryEntities :: String                   -- ^Type of entities
+                -> m (Maybe (Array Entity)) -- ^List of Entities
 
 -- |Avoid lift in the components
 instance manageEntityHalogenM :: ManageEntity m => ManageEntity (HalogenM st act slots msg m) where

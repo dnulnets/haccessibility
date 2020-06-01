@@ -7,19 +7,22 @@ module Accessibility.Interface.Item where
 
 -- Language imports
 import Prelude
+
+-- Data imports
 import Data.DateTime.ISO (ISO)
 import Data.Maybe (Maybe(..))
 import Data.Either (note)
 import Data.Argonaut (class DecodeJson, class EncodeJson, decodeJson, encodeJson)
+
 -- Halogen imports
 import Halogen (HalogenM, lift)
 
 -- | The enmueration for the source of the item
-data ItemSource
-  = Human
-  | Machine
+data ItemSource = Human   -- ^Human has entered the item
+                | Machine -- ^Machine has enterd the item
 
-itemSourceToString :: ItemSource -> String
+itemSourceToString:: ItemSource
+                  -> String
 itemSourceToString Human = "Human"
 
 itemSourceToString Machine = "Machine"
@@ -43,9 +46,8 @@ instance decodeJsonItemSource :: DecodeJson ItemSource where
       _ -> Nothing
 
 -- | The enumeration for the modifier of the item
-data ItemModifier
-  = Static
-  | Transient
+data ItemModifier = Static      -- ^This is a static item
+                  | Transient   -- ^This is a dynamic item that vanishes with time
 
 itemModifierToString :: ItemModifier -> String
 itemModifierToString Static = "Static"
@@ -71,10 +73,9 @@ instance decodeJsonItemModifier :: DecodeJson ItemModifier where
       _ -> Nothing
 
 -- | The enumeration for the approval of the item
-data ItemApproval
-  = Waiting
-  | Approved
-  | Denied
+data ItemApproval = Waiting   -- ^The approval has not yet been approved
+                  | Approved  -- ^The item is vetted and approved
+                  | Denied    -- ^The item has been denied
 
 itemApprovalToString :: ItemApproval -> String
 itemApprovalToString Waiting = "Waiting"
@@ -106,28 +107,27 @@ instance decodeJsonItemApproval :: DecodeJson ItemApproval where
 -- Item
 --
 -- | Definition of the item
-type Item
-  = { id :: Maybe String -- ^ Item key
-    , name :: String -- ^ The short name of the item
-    , guid :: String -- ^ The external unique identifier of the item
-    , created :: ISO -- ^ The creation time
-    , description :: String -- ^ The description of the item
-    , source :: ItemSource -- ^ How the items online state is determined
-    , modifier :: ItemModifier -- ^ The type of the item
-    , approval :: ItemApproval -- ^ The tstae of approval for the item
-    , latitude :: Number -- ^ The latitude of the item
-    , longitude :: Number -- ^ The longitude of the item
-    , distance :: Maybe Number -- ^ The distance to a specified point at the time of the query
-    }
+type Item = { id            :: Maybe String -- ^ Item key
+              , name        :: String       -- ^ The short name of the item
+              , guid        :: String       -- ^ The external unique identifier of the item
+              , created     :: ISO          -- ^ The creation time
+              , description :: String       -- ^ The description of the item
+              , source      :: ItemSource   -- ^ How the items online state is determined
+              , modifier    :: ItemModifier -- ^ The type of the item
+              , approval    :: ItemApproval -- ^ The tstae of approval for the item
+              , latitude    :: Number       -- ^ The latitude of the item
+              , longitude   :: Number       -- ^ The longitude of the item
+              , distance    :: Maybe Number -- ^ The distance to a specified point at the time of the query
+            }
 
 --
 -- AttributeValue
 --
 
 -- | The enumeration for the attribute type
-data AttributeType = TextType
-  | NumberType
-  | BooleanType
+data AttributeType  = TextType    -- ^The attribute is of type text
+                    | NumberType  -- ^The attribute is of type number
+                    | BooleanType -- ^The attribute is of type boolean
 
 attributeTypeToString :: AttributeType -> String
 attributeTypeToString TextType = "TextType"
@@ -154,32 +154,30 @@ instance decodeJsonAttributeType :: DecodeJson AttributeType where
       _ -> Nothing
 
 -- |The AttributeValue
-type AttributeValue = {
-  attributeId   :: Maybe String      -- ^Attribute key
-  , name        :: String            -- ^The name of the attribute
-  , description :: String            -- ^The description of the attribute 
-  , typeof      :: AttributeType     -- ^The type of the attribute
-  , unit        :: String            -- ^The unit of the attribute
-  , value       :: Maybe String      -- ^The value of the attribute
-  , itemId      :: Maybe String      -- ^The key to the item that the AttributeValue belongs to
-  , attributeValueId :: Maybe String -- ^The key to the AtributeValue record    
-  }
+type AttributeValue = { attributeId   :: Maybe String      -- ^Attribute key
+                        , name        :: String            -- ^The name of the attribute
+                        , description :: String            -- ^The description of the attribute 
+                        , typeof      :: AttributeType     -- ^The type of the attribute
+                        , unit        :: String            -- ^The unit of the attribute
+                        , value       :: Maybe String      -- ^The value of the attribute
+                        , itemId      :: Maybe String      -- ^The key to the item that the AttributeValue belongs to
+                        , attributeValueId :: Maybe String -- ^The key to the AtributeValue record    
+                      }
 
 -- |The attribute change order
-type AttributeChange = {
-    attributeValueId      :: Maybe String   -- ^The key to the record
-    , value               :: Maybe String   -- ^The value
-    , attributeId         :: Maybe String   -- ^The key to the attribute
-}
+type AttributeChange = {  attributeValueId      :: Maybe String   -- ^The key to the record
+                          , value               :: Maybe String   -- ^The value
+                          , attributeId         :: Maybe String   -- ^The key to the attribute
+                        }
 
 -- | The argument for the queryitems query
-type QueryItems
-  = { longitude :: Maybe Number -- ^ The longitude of search circle
-    , latitude :: Maybe Number -- ^ The latitude of the search circle
-    , distance :: Maybe Number -- ^ The distance or size of the search circle
-    , limit :: Maybe Int -- ^ Max number of items
-    , text :: Maybe String -- ^ The text that must be present in name or description
-    }
+type QueryItems = { longitude   :: Maybe Number -- ^ The longitude of search circle
+                    , latitude  :: Maybe Number -- ^ The latitude of the search circle
+                    , distance  :: Maybe Number -- ^ The distance or size of the search circle
+                    , limit     :: Maybe Int    -- ^ Max number of items
+                    , text      :: Maybe String -- ^ The text that must be present in name or description
+                  }
+
 --
 --instance encodeJsonQueryItems :: EncodeJson QueryItems where
 --  encodeJson b
@@ -191,22 +189,22 @@ type QueryItems
 --    ~> jsonEmptyObject
 --
 -- |The class for Items management
-class Monad m ⇐ ManageItem m where
+class Monad m <= ManageItem m where
 
   -- |Fetches a list of items based on the query parameters
-  queryItem ∷ String     -- ^The key
-    -> m (Maybe Item) -- ^List of items
+  queryItem :: String         -- ^The key
+            -> m (Maybe Item) -- ^List of items
 
   -- |Fetches a list of items based on the query parameters
-  queryItems ∷ QueryItems     -- ^The query
-    -> m (Maybe (Array Item)) -- ^List of items
+  queryItems  :: QueryItems             -- ^The query
+              -> m (Maybe (Array Item)) -- ^List of items
 
   -- |Fetches all attributes
   queryAttributes :: m (Maybe (Array AttributeValue)) -- ^List of attributes
 
   -- |Fetches all attributes and values for an item
-  queryItemAttributes :: String         -- ^The key to the item
-    -> m (Maybe (Array AttributeValue)) -- ^List of attributes and values for a specific item
+  queryItemAttributes :: String                           -- ^The key to the item
+                      -> m (Maybe (Array AttributeValue)) -- ^List of attributes and values for a specific item
 
 -- |Avoid lift in the components
 instance manageItemHalogenM :: ManageItem m => ManageItem (HalogenM st act slots msg m) where

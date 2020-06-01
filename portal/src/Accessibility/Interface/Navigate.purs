@@ -14,8 +14,8 @@ import Halogen (HalogenM)
 import Accessibility.Data.Route (Page)
 
 -- |The class for authentication
-class
-  Monad m ⇐ ManageNavigation m where
+class Monad m <= ManageNavigation m where
+
   -- |Goto a page in the application
   gotoPage :: Page -> m Unit
 

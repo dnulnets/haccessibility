@@ -380,9 +380,3 @@ exports.setTestModeImpl = function (map, b) {
     }
   }
 }
-
-exports.enableTooltipsImpl = function() {
-  return function () {
-    $('[data-toggle="tooltip"]').tooltip()
-  }
-}

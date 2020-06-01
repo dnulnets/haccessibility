@@ -3,30 +3,36 @@
 -- |
 -- | Written by Tomas Stenlund, Sundsvall, Sweden (c) 2019
 -- |
-module Accessibility.Interface.Authenticate (UserInfo(..)
-                                   , Authenticate(..)
-                                   , class ManageAuthentication, login, logout) where
+module Accessibility.Interface.Authenticate
+  ( UserInfo(..)
+  , Authenticate(..)
+  , class ManageAuthentication
+  , login
+  , logout) where
 
 -- Language imports
 import Prelude
 
+-- Data imports
 import Data.Maybe (Maybe)
-import Data.Argonaut (class DecodeJson,
-                      class EncodeJson,
-                      decodeJson, jsonEmptyObject,
-                      (.:),
-                      (:=),
-                      (~>))
+import Data.Argonaut
+  (class DecodeJson
+  , class EncodeJson
+  , decodeJson
+  , jsonEmptyObject
+  , (.:)
+  , (:=)
+  , (~>))
 
 -- Halogen imports
 import Halogen (HalogenM, lift)
 
 -- |The user information returned after an authenticate is successful
-data UserInfo = UserInfo { userid ∷ String,
-                           token ∷ String,
-                           username :: String,
-                           email ∷ String }
-
+data UserInfo = UserInfo { userid     :: String -- ^The user identity key
+                           , token    :: String -- ^The token used for the API
+                           , username :: String -- ^The user name
+                           , email    :: String -- ^The email address of the user
+                          }
 
 instance showUserInfo :: Show UserInfo where
   show (UserInfo ui) = "UserInfo { userid=\"" <> ui.userid <> "\", token=\"" <> ui.token 
@@ -42,8 +48,9 @@ instance decodeJsonUserInfo :: DecodeJson UserInfo where
     pure $ UserInfo { userid, token, username, email }
 
 -- |The authentication informaion needed to be able to authenticate the user and return a token
-data Authenticate = Authenticate { username ∷ String,
-                                   password ∷ String }
+data Authenticate = Authenticate  { username :: String    -- ^The username
+                                    , password :: String  -- ^The password
+                                  }
 
 instance encodeJsonPost :: EncodeJson Authenticate where
   encodeJson (Authenticate auth)
@@ -52,14 +59,14 @@ instance encodeJsonPost :: EncodeJson Authenticate where
     ~> jsonEmptyObject
             
 -- |The class for authentication
-class Monad m ⇐ ManageAuthentication m where
+class Monad m <= ManageAuthentication m where
 
   -- |Tries to log in and returns with a token if succesful
-  login∷Authenticate     -- ^Authentication information
-    →m (Maybe UserInfo)  -- ^UserInfo
+  login :: Authenticate       -- ^Authentication information
+        -> m (Maybe UserInfo) -- ^UserInfo
        
   -- |Logs out the user
-  logout∷m Unit
+  logout :: m Unit
   
 -- |Avoid lift in the components
 instance manageAuthenticationHalogenM :: ManageAuthentication m => ManageAuthentication (HalogenM st act slots msg m) where

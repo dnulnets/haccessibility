@@ -3,21 +3,24 @@
 -- |
 -- | Written by Tomas Stenlund, Sundsvall, Sweden (c) 2019
 -- |
-module Accessibility.Application(
-    Environment,
-    runApplication,
-    default,
-    ApplicationM) where
+module Accessibility.Application (
+  Environment
+  , runApplication
+  , default
+  , ApplicationM) where
 
 -- Language imports
 import Prelude
+
 import Data.Maybe (Maybe(..))
 import Data.Either (Either(..), either)
 import Data.Tuple (Tuple(..))
-import Type.Equality (class TypeEquals, from)
 import Data.Array(concat)
 import Data.Traversable (sequence)
 import Data.Time.Duration (Milliseconds(..))
+
+-- Type imports
+import Type.Equality (class TypeEquals, from)
 
 -- Effects
 import Effect.Aff (Aff, delay)
@@ -27,7 +30,7 @@ import Effect.Ref (Ref)
 import Effect.Ref as REF
 import Effect.Console (log)
 
--- Control Monad stuff
+-- Monad stuff
 import Control.Monad.Reader (asks, ask, runReaderT)
 import Control.Monad.Reader.Class (class MonadAsk)
 import Control.Monad.Reader.Trans (ReaderT)

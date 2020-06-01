@@ -3,18 +3,22 @@
 -- |
 -- | Written by Tomas Stenlund, Sundsvall, Sweden (c) 2019
 -- |
-module Accessibility.Utils.Token (Token
-                        , readToken
-                        , writeToken
-                        , removeToken) where
+module Accessibility.Utils.Token (
+  Token
+  , readToken
+  , writeToken
+  , removeToken) where
 
 -- Language imports
 import Prelude
 
+-- Data imports
 import Data.Maybe (Maybe)
 
+-- Effects
 import Effect (Effect)
 
+-- Web
 import Web.HTML (window)
 import Web.HTML.Window (localStorage)
 import Web.Storage.Storage (getItem, removeItem, setItem)
@@ -40,10 +44,8 @@ readToken = do
 -- | Write the token to local storage
 writeToken :: Token        -- ^The token to store
            -> Effect Unit  -- ^Unit return
-writeToken (Token str) =
-  setItem tokenKey str =<< localStorage =<< window
+writeToken (Token str) = setItem tokenKey str =<< localStorage =<< window
 
 -- | Remove the token from local storage
 removeToken :: Effect Unit -- ^Unit return
-removeToken =
-  removeItem tokenKey =<< localStorage =<< window
+removeToken = removeItem tokenKey =<< localStorage =<< window

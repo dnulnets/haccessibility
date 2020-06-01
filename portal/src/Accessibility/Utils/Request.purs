@@ -9,29 +9,32 @@ module Accessibility.Utils.Request(RequestMethod(..),
                           mkAuthRequest,
                           mkAuthRequest_) where
 
--- | Language imports
+-- Language imports
 import Prelude
 
+-- Data imports
 import Data.Maybe (Maybe(..))
 import Data.Either (Either(..))
 import Data.Tuple (Tuple(..))
-
 import Data.HTTP.Method (Method(..))
+import Data.Argonaut (
+  Json
+  , class DecodeJson
+  , decodeJson
+  , class EncodeJson
+  , encodeJson)
 
-import Data.Argonaut (Json,
-                      class DecodeJson,
-                      decodeJson,
-                      class EncodeJson,
-                      encodeJson)
-
+-- Effects
 import Effect.Aff (Aff)
 
+-- Aff Rest imports
 import Affjax as AX
 import Affjax.ResponseFormat as AXRF
 import Affjax.RequestBody as AXRB
 import Affjax.RequestHeader as AXRH
 import Affjax.StatusCode as AXS
 
+-- Routing imports
 import Routing.Duplex (print)
 
 --
@@ -46,19 +49,19 @@ import Accessibility.Interface.Authenticate (UserInfo(..))
 -- |type of Authorization 
 newtype Authorization = Bearer String -- ^The constructor for "Authorization: Bearer <token>
 
--- |The request type
-data RequestMethod a
-  = Get
-  | Post (Maybe a)
-  | Put (Maybe a)
-  | Delete
+-- |The request types we support
+data RequestMethod a  = Get             -- ^GET request, make sure you set the type a as Void
+                      | Post (Maybe a)  -- ^POST request
+                      | Put (Maybe a)   -- ^PUT request
+                      | Delete          -- ^DELETE request
 
 -- |The base configuration for a REST call
-defaultRequest ∷ ∀ a. EncodeJson a ⇒ BaseURL 
-               → Endpoint
-               → RequestMethod a
-               → Maybe Authorization
-               → AX.Request Json
+defaultRequest  :: forall a. EncodeJson a
+                => BaseURL              -- ^The URL 
+                -> Endpoint             -- ^The endpoint on the URL
+                -> RequestMethod a      -- ^Request method 
+                -> Maybe Authorization  -- ^The authorization, if any
+                -> AX.Request Json      -- ^The request
 defaultRequest (BaseURL baseUrl) ep reqm auth =
   { method: Left method
   , url: baseUrl <> print endpointCodec ep
@@ -79,25 +82,25 @@ defaultRequest (BaseURL baseUrl) ep reqm auth =
       Delete -> Tuple DELETE Nothing
 
 -- |Makes a request to the backend and return with status and result
-mkRequest ∷ ∀ a v. DecodeJson v
-            ⇒ EncodeJson a
-            ⇒ BaseURL           -- ^The base URL for the endpoint
-            -> Endpoint          -- ^The endpoint to call            
-            -> RequestMethod a   -- ^The request method to use for the call
-            -> Aff (Either String (Tuple AXS.StatusCode v)) -- ^The result of the call
+mkRequest :: forall a v. DecodeJson v
+          => EncodeJson a
+          => BaseURL           -- ^The base URL for the endpoint
+          -> Endpoint          -- ^The endpoint to call            
+          -> RequestMethod a   -- ^The request method to use for the call
+          -> Aff (Either String (Tuple AXS.StatusCode v)) -- ^The result of the call
 mkRequest burl ep rm = do
   response <- AX.request $ defaultRequest burl ep rm Nothing
   pure case response of
-    Left err → Left $ AX.printError err -- Make a string out of affjax errors
-    Right val → (Tuple val.status) <$> (decodeJson val.body)
+    Left err -> Left $ AX.printError err -- Make a string out of affjax errors
+    Right val -> (Tuple val.status) <$> (decodeJson val.body)
 
 -- |Makes a request to the backend and return with status
-mkRequest_ ∷ ∀ a v. DecodeJson v
-            ⇒ EncodeJson a
-            ⇒ BaseURL
-            -> Endpoint
-            → RequestMethod a
-            → Aff (Either String AXS.StatusCode)
+mkRequest_  :: forall a v. DecodeJson v
+            => EncodeJson a
+            => BaseURL           -- ^The base URL for the endpoint
+            -> Endpoint          -- ^The endpoint to call            
+            -> RequestMethod a   -- ^The request method to use for the call
+            -> Aff (Either String AXS.StatusCode) -- ^The result of the call
 mkRequest_ burl ep rm = do
   response <- AX.request $ defaultRequest burl ep rm Nothing
   pure case response of
@@ -109,27 +112,27 @@ mkAuthorization::UserInfo->Authorization
 mkAuthorization (UserInfo t) = Bearer t.token
 
 -- |Makes a request to the backend and return with status and result
-mkAuthRequest ∷ ∀ a v. DecodeJson v
-            ⇒ EncodeJson a
-            ⇒ BaseURL
-            -> Endpoint
-            -> Maybe UserInfo
-            → RequestMethod a
-            → Aff (Either String (Tuple AXS.StatusCode v))
+mkAuthRequest :: forall a v. DecodeJson v
+            => EncodeJson a
+            => BaseURL          -- ^The base URL of the backend
+            -> Endpoint         -- ^The endpoint at the backend
+            -> Maybe UserInfo   -- ^Authorization information
+            -> RequestMethod a  -- ^The request
+            -> Aff (Either String (Tuple AXS.StatusCode v)) -- ^The result of the request
 mkAuthRequest burl ep ui rm = do
   response <- AX.request $ defaultRequest burl ep rm $ mkAuthorization <$> ui
   pure case response of
-    Left err → Left $ AX.printError err -- Make a string out of affjax errors
-    Right val → (Tuple val.status) <$> (decodeJson val.body)
+    Left err -> Left $ AX.printError err -- Make a string out of affjax errors
+    Right val -> (Tuple val.status) <$> (decodeJson val.body)
 
 -- |Makes a request to the backend and return with status and ignore result
-mkAuthRequest_ ∷ ∀ a v. DecodeJson v
-            ⇒ EncodeJson a
-            ⇒ BaseURL
-            -> Endpoint
-            -> Maybe UserInfo
-            → RequestMethod a
-            → Aff (Either String AXS.StatusCode)
+mkAuthRequest_  :: forall a v. DecodeJson v
+                => EncodeJson a
+                => BaseURL          -- ^The base url of the backend
+                -> Endpoint         -- ^The endpoint at the backend
+                -> Maybe UserInfo   -- ^The authorization information
+                -> RequestMethod a  -- ^The request method
+                -> Aff (Either String AXS.StatusCode)  -- ^The result of the request
 mkAuthRequest_ burl ep ui rm = do
   response <- AX.request $ defaultRequest burl ep rm $ mkAuthorization <$> ui
   pure case response of

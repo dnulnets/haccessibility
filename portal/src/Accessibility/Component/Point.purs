@@ -3,10 +3,39 @@
 -- |
 -- | Written by Tomas Stenlund, Sundsvall, Sweden (c) 2020
 -- |
-module Accessibility.Component.Point where
+module Accessibility.Component.Point (component, Operation(..), Slot(..)) where
 
 -- Language imports
 import Prelude
+
+-- Data imports
+import Data.Array (catMaybes, deleteBy)
+import Data.Foldable (foldr)
+import Data.Maybe (Maybe(..), fromMaybe)
+import Data.DateTime.ISO (ISO(..))
+import Data.UUID (genUUID, toString)
+
+-- Monad imports
+import Control.Monad.Reader.Trans (class MonadAsk)
+
+-- Effect imports
+import Effect.Now (nowDateTime)
+import Effect.Aff.Class (class MonadAff)
+import Effect.Console (log)
+
+-- Halogen imports
+import Halogen as H
+import Halogen.HTML as HH
+import Halogen.HTML.Events as HE
+import Halogen.HTML.Properties as HP
+import Halogen.HTML.Properties.ARIA as HPA
+
+-- Web imports
+import Web.Event.Event (Event)
+import Web.Event.Event as Event
+import Accessibility.FFI.Utils (enableTooltips)
+
+-- Our own imports
 import Accessibility.Component.HTML.Utils (css, prop)
 import Accessibility.Interface.Entity (class ManageEntity)
 import Accessibility.Interface.Item (
@@ -21,71 +50,49 @@ import Accessibility.Interface.Item (
   , queryAttributes
   , queryItemAttributes)
 import Accessibility.Interface.Navigate (class ManageNavigation)
-import Control.Monad.Reader.Trans (class MonadAsk)
-import Data.Array (catMaybes, deleteBy)
-import Data.Foldable (foldr)
-import Data.Maybe (Maybe(..), fromMaybe)
-import Data.DateTime.ISO (ISO(..))
-import Data.UUID (genUUID, toString)
-import Effect.Now (nowDateTime)
-import Effect.Aff.Class (class MonadAff)
-import Effect.Console (log)
-import Halogen as H
-import Halogen.HTML as HH
-import Halogen.HTML.Events as HE
-import Halogen.HTML.Properties as HP
-import Halogen.HTML.Properties.ARIA as HPA
--- Web imports
-import Web.Event.Event (Event)
-import Web.Event.Event as Event
-import Accessibility.FFI.OpenLayers
 
 -- | Slot type for the Login component
-type Slot p
-  = ∀ q. H.Slot q Void p
+type Slot p = forall q. H.Slot q Void p
 
 -- |The input type, it contains the item key (Left) or the lola for a new (Right)
-data Operation = 
-  UpdatePOI String
-  | ViewPOI String
-  | AddPOI Number Number
+data Operation = UpdatePOI String -- ^Update the POI
+  | ViewPOI String                -- ^Readonly the POI
+  | AddPOI Number Number          -- ^Add a new POI
 
 derive instance eqOperation :: Eq Operation
 
 -- | State for the component
-type State
-  = { alert::Maybe String,
-      operation::Operation,
-      item::Maybe Item,
-      attrs:: Array AttributeValue,
-      itemAttrs::Array AttributeValue }
+type State =  { alert::Maybe String               -- ^The alert for the component
+                , operation::Operation            -- ^What operational mode the component is in
+                , item::Maybe Item                -- ^The item
+                , attrs:: Array AttributeValue    -- ^Attributes that are not part of the item
+                , itemAttrs::Array AttributeValue -- ^Attributes that are part of the item
+              }
 
 -- | Initial state is no logged in user
-initialState ∷ Operation -- ^The item key if any
-  -> State                  -- ^ The state
-initialState i = {  alert: Nothing,
-                    item: Nothing,
-                    operation: i,
-                    attrs: [],
-                    itemAttrs: []}
+initialState  :: Operation  -- ^The item key if any
+              -> State      -- ^ The state
+initialState i =  { alert: Nothing
+                    , item: Nothing
+                    , operation: i
+                    , attrs: []
+                    , itemAttrs: []
+                  }
 
 -- | Internal form actions
-data Action
-  = Initialize
-  | Finalize
-  | Submit Event
-  | Define Operation
-  | Input
+data Action = Initialize  -- ^The component is initializing
+  | Finalize              -- ^The component is shutting down
+  | Submit Event          -- ^The user has pressed Submit
+  | Define Operation      -- ^An external component want to change operational mode of the component
+  | Input                 -- ^The user has changed the value in an input field
 
 -- | The component definition
-component ∷
-  ∀ r q o m.
-  MonadAff m ⇒
-  ManageNavigation m =>
-  MonadAsk r m =>
-  ManageEntity m =>
-  ManageItem m ⇒
-  H.Component HH.HTML q Operation o m
+component :: forall r q o m. MonadAff m
+          => ManageNavigation m
+          => MonadAsk r m
+          => ManageEntity m
+          => ManageItem m
+          => H.Component HH.HTML q Operation o m
 component =
   H.mkComponent
     { initialState
@@ -100,15 +107,16 @@ component =
               }
     }
 
-nearbyAlert :: forall p i. Maybe String -> HH.HTML p i
+-- |The component alert HTML
+nearbyAlert :: forall p i. Maybe String
+            -> HH.HTML p i
 nearbyAlert (Just t) = HH.div [ css "alert alert-danger" ] [ HH.text $ t ]
-
 nearbyAlert Nothing = HH.div [] []
 
 -- |Creates a HTML element for an input box of a text type
-inputText ∷ forall p. String  -- ^The name of the field
-  -> Maybe String             -- ^The value of the field, if any
-  -> HH.HTML p Action         -- ^The HTML element
+inputText ::  forall p. String  -- ^The name of the field
+          -> Maybe String       -- ^The value of the field, if any
+          -> HH.HTML p Action   -- ^The HTML element
 inputText name v =
   HH.div [ css "form-group" ] [
     HH.label [ HP.for name ] [ HH.text name ]
@@ -126,10 +134,10 @@ inputText name v =
   ]
 
 -- |Creates a HTML element for an input box of a number type
-inputNumber ∷ forall p. String  -- ^The name of the field
-  -> Maybe String                     -- ^The value of the field, if any
-  -> String                     -- ^The unit of the field
-  -> HH.HTML p Action           -- ^The HTML element
+inputNumber ::  forall p. String  -- ^The name of the field
+            -> Maybe String       -- ^The value of the field, if any
+            -> String             -- ^The unit of the field
+            -> HH.HTML p Action   -- ^The HTML element
 inputNumber name val unit =
   HH.div [ css "form-group" ] [
       HH.label [ HP.for name ] [ HH.text name ]
@@ -145,9 +153,9 @@ inputNumber name val unit =
     ]
 
 -- |Creates a HTML element for an input box of a tet type but is a multiline
-inputTextArea ∷ forall p. String  -- ^Name of the field
-  -> Maybe String                 -- ^The value of the field, if any
-  -> HH.HTML p Action             -- ^The HTML element
+inputTextArea :: forall p. String -- ^Name of the field
+              -> Maybe String     -- ^The value of the field, if any
+              -> HH.HTML p Action -- ^The HTML element
 inputTextArea name val =
   HH.div [ css "form-group" ]
     [ HH.label [ HP.for name ] [ HH.text name ]
@@ -162,9 +170,9 @@ inputTextArea name val =
     ]
 
 -- |Creates a HTM element for an input box of type Boolean (Yes/No)
-inputYesNo ∷ forall p. String -- ^The name of the field
-  -> Maybe String             -- ^The value of the field, if any
-  -> HH.HTML p Action         -- ^The HTML element
+inputYesNo  :: forall p. String -- ^The name of the field
+            -> Maybe String     -- ^The value of the field, if any
+            -> HH.HTML p Action -- ^The HTML element
 inputYesNo name val =
   HH.div [ css "form-group" ]
     [ HH.label [ HP.for name ] [ HH.text name ]
@@ -181,18 +189,16 @@ inputYesNo name val =
 
 -- |Creates a HTML element based on the attribute value
 input :: forall p. AttributeValue -- ^The attribute value to geneate an input box for
-  -> HH.HTML p Action             -- ^The HTML element
+      -> HH.HTML p Action         -- ^The HTML element
 input av = case av.typeof of
   TextType -> inputText av.name av.value
   BooleanType -> inputYesNo av.name av.value
   NumberType -> inputNumber av.name av.value av.unit
 
 -- | Render the nearby page
-render ∷
-  ∀ m.
-  MonadAff m ⇒
-  State ->
-  H.ComponentHTML Action () m -- ^ The components HTML
+render  :: forall m . MonadAff m
+  => State                        -- ^The components state
+  -> H.ComponentHTML Action () m  -- ^The components HTML
 render state =
   HH.div
     [ css "container-fluid" ]
@@ -214,13 +220,12 @@ render state =
     ]
 
 -- |Updates the state based on the operation
-updateState::forall r o m.
-  MonadAff m =>
-  ManageNavigation m =>
-  ManageEntity m =>
-  ManageItem m =>
-  MonadAsk r m =>
-  H.HalogenM State Action () o m Unit
+updateState :: forall r o m . MonadAff m
+            => ManageNavigation m
+            => ManageEntity m
+            => ManageItem m
+            => MonadAsk r m
+            => H.HalogenM State Action () o m Unit -- ^Updated state
 updateState = do
   state <- H.get
   a <- queryAttributes
@@ -255,30 +260,27 @@ updateState = do
     _queryItem (AddPOI la lo) = do
       now <- H.liftEffect $ nowDateTime
       uuid <- H.liftEffect $ genUUID
-      pure $ Just {
-        id : Nothing
-        , name: ""
-        , guid: toString uuid
-        , created: ISO now
-        , description: ""
-        , source: Human
-        , modifier: Static
-        , approval: Waiting
-        , latitude: la
-        , longitude: lo
-        , distance: Nothing
-      }
+      pure $ Just { id        : Nothing
+                    , name        : ""
+                    , guid        : toString uuid
+                    , created     : ISO now
+                    , description : ""
+                    , source      : Human
+                    , modifier    : Static
+                    , approval    : Waiting
+                    , latitude    : la
+                    , longitude   : lo
+                    , distance    : Nothing
+                  }
 
 -- | Handles all actions for the login component
-handleAction ∷
-  ∀ r o m.
-  MonadAff m =>
-  ManageNavigation m =>
-  ManageEntity m =>
-  ManageItem m =>
-  MonadAsk r m =>
-  Action ->
-  H.HalogenM State Action () o m Unit -- ^ The handled action
+handleAction  ::  forall r o m . MonadAff m
+              => ManageNavigation m
+              => ManageEntity m
+              => ManageItem m
+              => MonadAsk r m
+              => Action
+              -> H.HalogenM State Action () o m Unit  -- ^ The handled action
 
 -- |Initialize action
 handleAction Initialize = do
