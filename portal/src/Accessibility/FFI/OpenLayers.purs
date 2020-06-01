@@ -3,7 +3,7 @@
 -- |
 -- | Written by Tomas Stenlund, Sundsvall, Sweden (c) 2020
 -- |
-module Accessability.FFI.OpenLayers where
+module Accessibility.FFI.OpenLayers where
 
 import Prelude
 

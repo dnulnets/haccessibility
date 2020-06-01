@@ -3,13 +3,13 @@
 -- |
 -- | Written by Tomas Stenlund, Sundsvall, Sweden (c) 2020
 -- |
-module Accessability.Component.Point where
+module Accessibility.Component.Point where
 
 -- Language imports
 import Prelude
-import Accessability.Component.HTML.Utils (css, prop)
-import Accessability.Interface.Entity (class ManageEntity)
-import Accessability.Interface.Item (
+import Accessibility.Component.HTML.Utils (css, prop)
+import Accessibility.Interface.Entity (class ManageEntity)
+import Accessibility.Interface.Item (
   class ManageItem
   , AttributeType(..)
   , AttributeValue
@@ -20,7 +20,7 @@ import Accessability.Interface.Item (
   , queryItem
   , queryAttributes
   , queryItemAttributes)
-import Accessability.Interface.Navigate (class ManageNavigation)
+import Accessibility.Interface.Navigate (class ManageNavigation)
 import Control.Monad.Reader.Trans (class MonadAsk)
 import Data.Array (catMaybes, deleteBy)
 import Data.Foldable (foldr)
@@ -38,7 +38,7 @@ import Halogen.HTML.Properties.ARIA as HPA
 -- Web imports
 import Web.Event.Event (Event)
 import Web.Event.Event as Event
-import Accessability.FFI.OpenLayers
+import Accessibility.FFI.OpenLayers
 
 -- | Slot type for the Login component
 type Slot p

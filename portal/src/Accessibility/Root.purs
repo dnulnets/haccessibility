@@ -3,7 +3,7 @@
 -- |
 -- | Written by Tomas Stenlund, Sundsvall, Sweden (c) 2019
 -- |
-module Accessability.Root (component,
+module Accessibility.Root (component,
   Query (..)) where
 
 import Prelude
@@ -26,19 +26,19 @@ import Halogen.HTML.Events as HE
 import DOM.HTML.Indexed.ButtonType (ButtonType(..))
 
 -- Our own stuff
-import Accessability.Data.Route (Page(..))
-import Accessability.Component.HTML.Utils (css,
+import Accessibility.Data.Route (Page(..))
+import Accessibility.Component.HTML.Utils (css,
                                   style,
                                   prop,
                                   href)
                                   
-import Accessability.Component.Login as Login
-import Accessability.Component.Nearby as Nearby
-import Accessability.Component.Point as Point
-import Accessability.Interface.Navigate (class ManageNavigation, gotoPage)
-import Accessability.Interface.Authenticate (class ManageAuthentication, UserInfo (..))
-import Accessability.Interface.Item (class ManageItem)
-import Accessability.Interface.Entity (class ManageEntity)
+import Accessibility.Component.Login as Login
+import Accessibility.Component.Nearby as Nearby
+import Accessibility.Component.Point as Point
+import Accessibility.Interface.Navigate (class ManageNavigation, gotoPage)
+import Accessibility.Interface.Authenticate (class ManageAuthentication, UserInfo (..))
+import Accessibility.Interface.Item (class ManageItem)
+import Accessibility.Interface.Entity (class ManageEntity)
 
 
 -- | The state of the root page

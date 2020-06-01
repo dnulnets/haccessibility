@@ -3,7 +3,7 @@
 -- |
 -- | Written by Tomas Stenlund, Sundsvall, Sweden (c) 2019
 -- |
-module Accessability.Component.Login where
+module Accessibility.Component.Login where
 
 -- Language imports
 import Prelude
@@ -28,10 +28,10 @@ import Web.Event.Event (Event)
 import Web.Event.Event as Event
 
 -- Our own stuff
-import Accessability.Data.Route (Page(..))
-import Accessability.Component.HTML.Utils (css, style)
-import Accessability.Interface.Navigate (class ManageNavigation, gotoPage)
-import Accessability.Interface.Authenticate (UserInfo(..),
+import Accessibility.Data.Route (Page(..))
+import Accessibility.Component.HTML.Utils (css, style)
+import Accessibility.Interface.Navigate (class ManageNavigation, gotoPage)
+import Accessibility.Interface.Authenticate (UserInfo(..),
                                     Authenticate(..),
                                     class ManageAuthentication,
                                     login)

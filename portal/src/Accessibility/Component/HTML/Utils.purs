@@ -3,7 +3,7 @@
 -- |
 -- | Written by Tomas Stenlund (c), 2019
 -- |
-module Accessability.Component.HTML.Utils
+module Accessibility.Component.HTML.Utils
     ( css
     , style
     , prop
@@ -28,7 +28,7 @@ import Halogen.HTML.Properties as HP
 import Halogen.HTML.Core (AttrName(..), PropName(..))
 
 -- Our own import
-import Accessability.Data.Route (Page, routeCodec)
+import Accessibility.Data.Route (Page, routeCodec)
 
 -- | Helper function for adding class to HTML tags
 css ∷ forall r i. String → HH.IProp ( class ∷ String | r ) i

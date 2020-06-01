@@ -3,7 +3,7 @@
 -- |
 -- | Written by Tomas Stenlund, Sundsvall, Sweden (c) 2020
 -- |
-module Accessability.Component.Nearby where
+module Accessibility.Component.Nearby where
 
 -- Language imports
 import Prelude
@@ -42,7 +42,7 @@ import Web.Event.EventTarget as ET
 import Web.DOM.ParentNode (QuerySelector(..), querySelector)
 import Web.DOM.Element (toEventTarget)
 
-import Accessability.FFI.OpenLayers (OLMap,
+import Accessibility.FFI.OpenLayers (OLMap,
   OLGeolocation,
   OLLayer,
   createMap,
@@ -59,11 +59,11 @@ import Accessability.FFI.OpenLayers (OLMap,
   POI, POIType(..))
 
 -- Our own stuff
-import Accessability.Data.Route (Page(..)) as ADR
-import Accessability.Component.HTML.Utils (css, style)
-import Accessability.Interface.Navigate (class ManageNavigation, gotoPage)
-import Accessability.Interface.Item (class ManageItem, queryItems, Item)
-import Accessability.Interface.Entity (class ManageEntity, queryEntities, Entity(..))
+import Accessibility.Data.Route (Page(..)) as ADR
+import Accessibility.Component.HTML.Utils (css, style)
+import Accessibility.Interface.Navigate (class ManageNavigation, gotoPage)
+import Accessibility.Interface.Item (class ManageItem, queryItems, Item)
+import Accessibility.Interface.Entity (class ManageEntity, queryEntities, Entity(..))
 
 -- | Slot type for the Login component
 type Slot p = ∀ q . H.Slot q Void p

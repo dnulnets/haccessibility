@@ -3,7 +3,7 @@
 -- |
 -- | Written by Tomas Stenlund, Sundsvall, Sweden (c) 2019
 -- |
-module Accessability.Application(
+module Accessibility.Application(
     Environment,
     runApplication,
     default,
@@ -41,16 +41,16 @@ import Routing.Duplex (print, parse)
 import Routing.Hash (setHash, getHash)
 
 -- Our own imports
-import Accessability.Interface.Endpoint (BaseURL(..))
-import Accessability.Interface.Endpoint as EP
-import Accessability.Interface.Authenticate (UserInfo,class ManageAuthentication)
-import Accessability.Interface.Navigate (class ManageNavigation)
-import Accessability.Interface.Item (class ManageItem)
-import Accessability.Interface.Entity(class ManageEntity)
+import Accessibility.Interface.Endpoint (BaseURL(..))
+import Accessibility.Interface.Endpoint as EP
+import Accessibility.Interface.Authenticate (UserInfo,class ManageAuthentication)
+import Accessibility.Interface.Navigate (class ManageNavigation)
+import Accessibility.Interface.Item (class ManageItem)
+import Accessibility.Interface.Entity(class ManageEntity)
 
-import Accessability.Data.Route (routeCodec, Page(..))
+import Accessibility.Data.Route (routeCodec, Page(..))
 
-import Accessability.Utils.Request (
+import Accessibility.Utils.Request (
   mkRequest, 
   mkAuthRequest,
   RequestMethod (..))

@@ -3,7 +3,7 @@
 -- |
 -- | Written by Tomas Stenlund, Sundsvall, Sweden (c) 2019
 -- |
-module Accessability.Interface.Authenticate (UserInfo(..)
+module Accessibility.Interface.Authenticate (UserInfo(..)
                                    , Authenticate(..)
                                    , class ManageAuthentication, login, logout) where
 

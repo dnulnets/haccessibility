@@ -3,7 +3,7 @@
 -- |
 -- | Written by Tomas Stenlund, Sundsvall, Sweden (c) 2019
 -- |
-module Accessability.Utils.Token (Token
+module Accessibility.Utils.Token (Token
                         , readToken
                         , writeToken
                         , removeToken) where

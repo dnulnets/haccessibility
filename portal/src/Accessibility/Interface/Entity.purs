@@ -3,7 +3,7 @@
 -- |
 -- | Written by Tomas Stenlund, Sundsvall, Sweden (c) 2019
 -- |
-module Accessability.Interface.Entity where
+module Accessibility.Interface.Entity where
 
 -- Language imports
 import Prelude

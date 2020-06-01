@@ -3,7 +3,7 @@
 -- |
 -- | Written by Tomas Stenlund, Sundsvall, Sweden (c) 2019
 -- |
-module Accessability.Data.Route (Page(..), router, routeCodec) where
+module Accessibility.Data.Route (Page(..), router, routeCodec) where
 
 -- Language specifics
 import Prelude hiding ((/))

@@ -3,7 +3,7 @@
 -- |
 -- | Written by Tomas Stenlund, Sundsvall, Sweden (c) 2019
 -- |
-module Accessability.Interface.Navigate (class ManageNavigation, gotoPage) where
+module Accessibility.Interface.Navigate (class ManageNavigation, gotoPage) where
 
 -- Language imports
 import Prelude
@@ -11,7 +11,7 @@ import Control.Monad.Trans.Class (lift)
 -- Halogen imports
 import Halogen (HalogenM)
 -- Heat imports
-import Accessability.Data.Route (Page)
+import Accessibility.Data.Route (Page)
 
 -- |The class for authentication
 class

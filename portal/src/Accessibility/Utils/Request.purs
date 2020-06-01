@@ -3,7 +3,7 @@
 -- |
 -- | Written by Tomas Stenlund, Sundsvall, Sweden (c) 2019
 -- |
-module Accessability.Utils.Request(RequestMethod(..),
+module Accessibility.Utils.Request(RequestMethod(..),
                           mkRequest,
                           mkRequest_,
                           mkAuthRequest,
@@ -37,11 +37,11 @@ import Routing.Duplex (print)
 --
 -- Our own imports
 --
-import Accessability.Interface.Endpoint (
+import Accessibility.Interface.Endpoint (
   Endpoint,
   endpointCodec,
   BaseURL(..))
-import Accessability.Interface.Authenticate (UserInfo(..))
+import Accessibility.Interface.Authenticate (UserInfo(..))
 
 -- |type of Authorization 
 newtype Authorization = Bearer String -- ^The constructor for "Authorization: Bearer <token>

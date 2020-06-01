@@ -3,7 +3,7 @@
 -- |
 -- | Written by Tomas Stenlund, Sundsvall, Sweden (c) 2019
 -- |
-module Accessability.Interface.Endpoint where
+module Accessibility.Interface.Endpoint where
 
 -- | Language imports
 import Prelude (class Show, ($), (<<<))

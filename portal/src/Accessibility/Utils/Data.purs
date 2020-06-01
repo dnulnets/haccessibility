@@ -3,7 +3,7 @@
 -- |
 -- | Written by Tomas Stenlund, Sundsvall, Sweden (c) 2019
 -- |
-module Accessability.Utils.Data (maybeFail) where
+module Accessibility.Utils.Data (maybeFail) where
 
 -- Language imports
 import Data.Maybe (Maybe(..))

@@ -46,10 +46,10 @@ import Routing.Hash (matchesWith)
 import Routing.Duplex (parse)
 
 -- Our own imports
-import Accessability.Application (runApplication, Environment, default)
-import Accessability.Root as Root
-import Accessability.Interface.Endpoint (BaseURL(..))
-import Accessability.Data.Route (routeCodec, Page(..))
+import Accessibility.Application (runApplication, Environment, default)
+import Accessibility.Root as Root
+import Accessibility.Interface.Endpoint (BaseURL(..))
+import Accessibility.Data.Route (routeCodec, Page(..))
 
 -- | Produce events from the browser for route changes
 hashChangeProducer ∷ CR.Producer HCE.HashChangeEvent Aff Unit
