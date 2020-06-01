@@ -193,6 +193,26 @@ instance manageItemApplicationM :: ManageItem ApplicationM where
     where
       ep = EP.Attribute key
 
+  -- |Get the item based on its key
+  queryItem key = do
+    env <- ask
+    ui <- H.liftEffect $ REF.read env.userInfo
+    burl <- EP.backend ep
+
+    response <- liftAff $ parOneOf [
+      mkAuthRequest burl ep ui (Get::RequestMethod Void)
+      , Left "Timeout" <$ (delay env.timeoutBackend)]
+
+    case response of
+      Left err -> do
+        H.liftEffect $ log $ "Error: " <> err
+        pure Nothing
+      Right (Tuple _ item) -> do
+        pure item
+
+    where
+      ep = EP.Item (Just key)
+
   -- |Get all items based on a filter
   queryItems filter = do
     env <- ask

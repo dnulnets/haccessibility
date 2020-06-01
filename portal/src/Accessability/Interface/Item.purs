@@ -194,6 +194,10 @@ type QueryItems
 class Monad m ⇐ ManageItem m where
 
   -- |Fetches a list of items based on the query parameters
+  queryItem ∷ String     -- ^The key
+    -> m (Maybe Item) -- ^List of items
+
+  -- |Fetches a list of items based on the query parameters
   queryItems ∷ QueryItems     -- ^The query
     -> m (Maybe (Array Item)) -- ^List of items
 
@@ -206,6 +210,7 @@ class Monad m ⇐ ManageItem m where
 
 -- |Avoid lift in the components
 instance manageItemHalogenM :: ManageItem m => ManageItem (HalogenM st act slots msg m) where
+  queryItem = lift <<< queryItem
   queryItems = lift <<< queryItems
   queryAttributes = lift queryAttributes
   queryItemAttributes = lift <<< queryItemAttributes

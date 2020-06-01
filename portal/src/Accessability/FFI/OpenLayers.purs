@@ -3,11 +3,11 @@
 -- |
 -- | Written by Tomas Stenlund, Sundsvall, Sweden (c) 2020
 -- |
-module Web.OL.Map where
+module Accessability.FFI.OpenLayers where
 
 import Prelude
 
-import Data.Function.Uncurried (Fn1, Fn2, Fn3, Fn4, Fn5, runFn1, runFn2, runFn3, runFn4, runFn5)
+import Data.Function.Uncurried (Fn0, Fn1, Fn2, Fn3, Fn4, Fn5, runFn0, runFn1, runFn2, runFn3, runFn4, runFn5)
 
 import Effect (Effect)
 import Effect.Aff (Aff)
@@ -190,9 +190,9 @@ setTestMode::OLMap->Boolean->Effect Unit
 setTestMode m b = runFn2 setTestModeImpl m b
 
 --
--- Attach a handler
+-- Enable tooltips
 --
-foreign import attachHandlerImpl :: Fn2 String (Effect Unit) (Effect Unit)
+foreign import enableTooltipsImpl :: Fn0 (Effect Unit)
 
-attachHandler::String->Effect Unit->Effect Unit
-attachHandler a f = runFn2 attachHandlerImpl a f
+enableTooltips::Effect Unit
+enableTooltips = runFn0 enableTooltipsImpl

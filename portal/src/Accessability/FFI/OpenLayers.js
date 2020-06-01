@@ -381,9 +381,8 @@ exports.setTestModeImpl = function (map, b) {
   }
 }
 
-// module Example.Intro
-
-exports.attachHandlerImpl = function(selector, callback) {
-    var el = document.querySelector(selector);
-    el.addEventListener("click", callback);
-};
+exports.enableTooltipsImpl = function() {
+  return function () {
+    $('[data-toggle="tooltip"]').tooltip()
+  }
+}

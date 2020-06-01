@@ -42,7 +42,7 @@ import Web.Event.EventTarget as ET
 import Web.DOM.ParentNode (QuerySelector(..), querySelector)
 import Web.DOM.Element (toEventTarget)
 
-import Web.OL.Map (OLMap,
+import Accessability.FFI.OpenLayers (OLMap,
   OLGeolocation,
   OLLayer,
   createMap,
@@ -230,7 +230,7 @@ handleAction AddItem = do
   H.liftEffect $ log $ "Add and item button clicked"
   state <- H.get
   pos <- H.liftEffect $ sequence $ getCoordinate <$> state.geo
-  sequence_ $ gotoPage <$> (ADR.AddPoint <$> (join $ _.longitude <$> pos) <*> (join $ _.latitude <$> pos))
+  sequence_ $ gotoPage <$> (ADR.AddPoint <$> (join $ _.latitude <$> pos) <*> (join $ _.longitude <$> pos))
 
 -- | Finalize action, clean up the map
 handleAction Finalize = do
