@@ -26,6 +26,12 @@ main {
     top: 65px;
     left: .5em;
   }
+  
+  .refresh {
+    top: 93px;
+    left: .5em;
+  }
+
   .ol-touch .add-item {
     top: 80px;
   }

@@ -233,7 +233,7 @@ putItemAttributesR key = do
             invalidArgs
                 $  ["Unable to update the items parameters ", key]
                 <> splitOn "\n" (pack e)
-        Right _ -> sendResponseNoContent
+        Right _ -> sendResponseStatus status200 Null
   where
     doit
         :: PutItemAttributes
@@ -252,5 +252,3 @@ putItemAttributesR key = do
                 }
             Nothing -> Nothing
         )
-
--- dbUpdateItemAttributes::[(Maybe (Key AttributeValue), Maybe AttributeValue)]-> Handler (Either String ())

@@ -61,8 +61,8 @@ initialState _ =  { alert     : Nothing
                   }
 
 -- | Internal form actions
-data Action = Submit Event        -- ^ Submit of the user
-            | Input (State→State) -- ^ The text boxes has a value
+data Action = Submit Event          -- ^ Submit of the user
+            | Input (State->State)  -- ^ The text boxes has a value
 
 -- | The component definition
 component :: forall r q i m . MonadAff m

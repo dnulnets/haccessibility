@@ -5,23 +5,23 @@ You can edit this file as you like.
 
 { name = "accessibility"
 , dependencies =
-    [ "affjax"
-    , "argonaut"
-    , "bigints"
-    , "console"
-    , "effect"
-    , "generics-rep"
-    , "halogen"
-    , "http-methods"
-    , "psci-support"
-    , "routing"
-    , "routing-duplex"
-    , "coroutines"
-    , "aff-coroutines"
-    , "datetime-iso"
-    , "numbers"
-    , "uuid"
-    ]
+  [ "aff-coroutines"
+  , "affjax"
+  , "argonaut"
+  , "bigints"
+  , "console"
+  , "coroutines"
+  , "datetime-iso"
+  , "effect"
+  , "generics-rep"
+  , "halogen"
+  , "http-methods"
+  , "numbers"
+  , "psci-support"
+  , "routing"
+  , "routing-duplex"
+  , "uuid"
+  ]
 , packages = ./packages.dhall
 , sources = [ "src/**/*.purs", "test/**/*.purs" ]
 }

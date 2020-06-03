@@ -14,6 +14,8 @@ import Data.Foldable (foldr)
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.DateTime.ISO (ISO(..))
 import Data.UUID (genUUID, toString)
+import Data.Set (Set, empty, insert, toUnfoldable)
+import Data.Traversable (sequence)
 
 -- Monad imports
 import Control.Monad.Reader.Trans (class MonadAsk)
@@ -42,10 +44,14 @@ import Accessibility.Interface.Item (
   class ManageItem
   , AttributeType(..)
   , AttributeValue
+  , AttributeChange
   , Item
   , ItemApproval(..)
   , ItemSource(..)
   , ItemModifier(..)
+  , addItem
+  , updateItem
+  , updateItemAttributes
   , queryItem
   , queryAttributes
   , queryItemAttributes)
@@ -54,12 +60,30 @@ import Accessibility.Interface.Navigate (class ManageNavigation)
 -- | Slot type for the Login component
 type Slot p = forall q. H.Slot q Void p
 
--- |The input type, it contains the item key (Left) or the lola for a new (Right)
-data Operation = UpdatePOI String -- ^Update the POI
-  | ViewPOI String                -- ^Readonly the POI
-  | AddPOI Number Number          -- ^Add a new POI
+-- | Internal form actions
+data Action = Initialize  -- ^The component is initializing
+  | Finalize              -- ^The component is shutting down
+  | Submit Event          -- ^The user has pressed Submit
+  | Define Operation      -- ^An external component want to change operational mode of the component
+  | Input (State->State)  -- ^The user has changed the value in an input field, make a state change
 
+-- |The input type, it contains the item key (Left) or the lola for a new (Right)
+data Operation  = UpdatePOI String      -- ^Update the POI
+                | ViewPOI String        -- ^Readonly the POI
+                | AddPOI Number Number  -- ^Add a new POI
 derive instance eqOperation :: Eq Operation
+
+-- |The attribute change structure, holds a change
+data Change = Change AttributeChange
+
+instance eqChange :: Eq Change where
+  eq (Change c1) (Change c2) = c1.attributeId == c2.attributeId
+
+instance ordChange :: Ord Change where
+  compare (Change c1) (Change c2) = compare c1.attributeId c2.attributeId
+
+instance showChange :: Show Change where
+  show (Change c) = "Change " <> (show c)
 
 -- | State for the component
 type State =  { alert::Maybe String               -- ^The alert for the component
@@ -67,6 +91,7 @@ type State =  { alert::Maybe String               -- ^The alert for the componen
                 , item::Maybe Item                -- ^The item
                 , attrs:: Array AttributeValue    -- ^Attributes that are not part of the item
                 , itemAttrs::Array AttributeValue -- ^Attributes that are part of the item
+                , attrChange::Set Change          -- ^A list of all changes in the form
               }
 
 -- | Initial state is no logged in user
@@ -77,14 +102,8 @@ initialState i =  { alert: Nothing
                     , operation: i
                     , attrs: []
                     , itemAttrs: []
+                    , attrChange: empty
                   }
-
--- | Internal form actions
-data Action = Initialize  -- ^The component is initializing
-  | Finalize              -- ^The component is shutting down
-  | Submit Event          -- ^The user has pressed Submit
-  | Define Operation      -- ^An external component want to change operational mode of the component
-  | Input                 -- ^The user has changed the value in an input field
 
 -- | The component definition
 component :: forall r q o m. MonadAff m
@@ -114,86 +133,103 @@ nearbyAlert (Just t) = HH.div [ css "alert alert-danger" ] [ HH.text $ t ]
 nearbyAlert Nothing = HH.div [] []
 
 -- |Creates a HTML element for an input box of a text type
-inputText ::  forall p. String  -- ^The name of the field
-          -> Maybe String       -- ^The value of the field, if any
-          -> HH.HTML p Action   -- ^The HTML element
-inputText name v =
+inputName ::  forall p. Maybe String  -- ^The value
+          -> HH.HTML p Action         -- ^The HTML element
+inputName v =
   HH.div [ css "form-group" ] [
-    HH.label [ HP.for name ] [ HH.text name ]
+    HH.label [ HP.for "Name" ] [ HH.text "Name" ]
     , HH.div [css "input-group"] [
         HH.input ([ css "form-control"
-          , HP.title "This is a tooltip, yeah yeah yeah!!!!"
+          , HP.title "A unique name for the point of interest"
           , prop "data-toggle" "tooltip"
           , prop "data-placement" "top"
-          , HP.id_ name
+          , HP.id_ "Name"
           , HP.type_ HP.InputText
-          , HPA.label name
-          , HP.placeholder name
-          , HE.onValueChange \_ -> Just $ Input] <> catMaybes [HP.value <$> v])
+          , HPA.label "Name"
+          , HP.placeholder "Name"
+          , HE.onValueChange \i -> Just $ Input (change i)] <> catMaybes [HP.value <$> v])
         ]
   ]
-
--- |Creates a HTML element for an input box of a number type
-inputNumber ::  forall p. String  -- ^The name of the field
-            -> Maybe String       -- ^The value of the field, if any
-            -> String             -- ^The unit of the field
-            -> HH.HTML p Action   -- ^The HTML element
-inputNumber name val unit =
-  HH.div [ css "form-group" ] [
-      HH.label [ HP.for name ] [ HH.text name ]
-      , HH.div [css "input-group"] [
-          HH.input ([ css "form-control"
-            , HP.id_ name
-            , HP.type_ HP.InputNumber
-            , HPA.label name
-            , HP.placeholder name
-            , HE.onValueChange \v -> Just $ Input] <> catMaybes [HP.value <$> val])
-          , HH.div [css "input-group-append"] [
-              HH.span [css "input-group-text"] [HH.text unit]]]
-    ]
+  where
+    change::String->State->State
+    change c st = st { item = (_ { name = c }) <$> st.item }
 
 -- |Creates a HTML element for an input box of a tet type but is a multiline
-inputTextArea :: forall p. String -- ^Name of the field
-              -> Maybe String     -- ^The value of the field, if any
-              -> HH.HTML p Action -- ^The HTML element
-inputTextArea name val =
+inputDescription  :: forall p. Maybe String -- ^The value
+                  -> HH.HTML p Action -- ^The HTML element
+inputDescription val =
   HH.div [ css "form-group" ]
-    [ HH.label [ HP.for name ] [ HH.text name ]
+    [ HH.label [ HP.for "Description" ] [ HH.text "Description" ]
     , HH.textarea
         ([ css "form-control"
-        , HP.id_ name
+        , HP.title "A description of the point of interest"
+        , prop "data-toggle" "tooltip"
+        , prop "data-placement" "top"
+        , HP.id_ "Description"
         , HP.rows 5
-        , HPA.label name
-        , HP.placeholder name
-        , HE.onValueChange \v -> Just $ Input
+        , HPA.label "Description"
+        , HP.placeholder "Description"
+        , HE.onValueChange \v -> Just $ Input (change v)
         ] <> catMaybes [HP.value <$> val])
     ]
 
--- |Creates a HTM element for an input box of type Boolean (Yes/No)
-inputYesNo  :: forall p. String -- ^The name of the field
-            -> Maybe String     -- ^The value of the field, if any
-            -> HH.HTML p Action -- ^The HTML element
-inputYesNo name val =
-  HH.div [ css "form-group" ]
-    [ HH.label [ HP.for name ] [ HH.text name ]
-    , HH.select
-        ([ css "form-control"
-        , HP.id_ name
-        , HPA.label name
-        , HE.onValueChange \v -> Just $ Input
-        ] <> catMaybes [HP.value <$> val])
-        [ HH.option [] [ HH.text "Yes" ]
-        , HH.option [] [ HH.text "No" ]
-        ]
-    ]
+  where
+
+    change::String->State->State
+    change v st = st { item = (_ { description = v }) <$> st.item }
 
 -- |Creates a HTML element based on the attribute value
 input :: forall p. AttributeValue -- ^The attribute value to geneate an input box for
       -> HH.HTML p Action         -- ^The HTML element
-input av = case av.typeof of
-  TextType -> inputText av.name av.value
-  BooleanType -> inputYesNo av.name av.value
-  NumberType -> inputNumber av.name av.value av.unit
+input iav =
+  HH.div [ css "form-group" ]
+    [ HH.label [ HP.for iav.name ] [ HH.text iav.name ]
+    , inputField iav]
+
+  where
+
+    inputField av = case av.typeof of
+      BooleanType ->
+        HH.select
+          ([ css "form-control"
+          , HP.id_ av.name
+          , HP.title av.description
+          , prop "data-toggle" "tooltip"
+          , prop "data-placement" "top"
+          , HPA.label av.name
+          , HE.onValueChange \i -> Just $ Input (change i av)
+          ] <> catMaybes [HP.value <$> av.value])
+          [ HH.option [] [ HH.text "Yes" ]
+          , HH.option [] [ HH.text "No" ]
+          ]
+      NumberType ->
+        HH.div [css "input-group"] [
+          HH.input ([ css "form-control"
+            , HP.id_ av.name
+            , HP.type_ HP.InputNumber
+            , HP.title av.description
+            , prop "data-toggle" "tooltip"
+            , prop "data-placement" "top"
+            , HPA.label av.name
+            , HP.placeholder av.name
+            , HE.onValueChange \i -> Just $ Input (change i av)] <> catMaybes [HP.value <$> av.value])
+          , HH.div [css "input-group-append"] [HH.span [css "input-group-text"] [HH.text av.unit]]]
+      TextType ->
+        HH.input ([ css "form-control"
+          , HP.title av.description
+          , prop "data-toggle" "tooltip"
+          , prop "data-placement" "top"
+          , HP.id_ av.name
+          , HP.type_ HP.InputText
+          , HPA.label av.name
+          , HP.placeholder av.name
+          , HE.onValueChange \i -> Just $ Input (change i av)] <> catMaybes [HP.value <$> av.value])
+
+    change::String->AttributeValue->State->State
+    change v cav st = st { attrChange = 
+      insert (Change {  attributeValueId: cav.attributeValueId
+                      , attributeId: cav.attributeId
+                      , value: Just v }) st.attrChange }
 
 -- | Render the nearby page
 render  :: forall m . MonadAff m
@@ -209,8 +245,8 @@ render state =
         ]
     , HH.form [ css "form-signin", HE.onSubmit (Just <<< Submit) ]
         ([ HH.h1 [ css "mt-3" ] [ HH.text "POI Information" ]
-        , inputText "Name" (_.name <$> state.item)
-        , inputTextArea "Description" (_.description <$> state.item)
+        , inputName $ _.name <$> state.item
+        , inputDescription $ _.description <$> state.item
         , HH.h2 [css "mt-3"] [HH.text "Current attributes"]]
         <> (input <$> state.itemAttrs) <>
         [ HH.h2 [css "mt-3"] [HH.text "Available attributes"]]
@@ -296,11 +332,37 @@ handleAction Finalize = do
 handleAction (Submit event) = do
   H.liftEffect $ Event.preventDefault event
   H.liftEffect $ log "Point Form submitted"
+  state <- H.get
+  case state.operation of
+    ViewPOI _ -> do
+      H.liftEffect $ log "ViewPOI cannot update!"
+    UpdatePOI _ -> do
+      H.liftEffect $ log "UpdatePOI not done yet :-)"
+      it <- join <$> (sequence $ updateItem <$> state.item)
+      H.liftEffect $ log $ show it
+      u <- sequence $ updateItemAttributes <$> (join (_.id <$> it)) <*> Just (clean <$> (toUnfoldable state.attrChange))
+      H.liftEffect $ log $ show u
+    AddPOI _ _ -> do
+      H.liftEffect $ log "Add a new item"
+      it <- join <$> (sequence $ addItem <$> state.item)
+      H.liftEffect $ log $ show it
+      u <- sequence $ updateItemAttributes <$> (join (_.id <$> it)) <*> Just (clean <$> (toUnfoldable state.attrChange))
+      H.liftEffect $ log $ show u
+
+  H.liftEffect $ log "Point form handled"
+
+    where
+
+      clean::Change->AttributeChange
+      clean (Change ac) = ac
 
 -- |The input field has changed, we need to save it
-handleAction Input = do
-  state <- H.get
+handleAction (Input f) = do
   H.liftEffect $ log "Input changed"
+  H.modify_ f
+  state <- H.get
+  H.liftEffect $ log $ show state.item
+  H.liftEffect $ log $ show state.attrChange
 
 -- |It has come a new input, we need to update the state in the same manner as we
 -- do for Initialize, but only if the operation has changed.

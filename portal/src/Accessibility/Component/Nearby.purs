@@ -210,7 +210,13 @@ handleAction Initialize = do
   element <- H.liftEffect $ 
     (toParentNode <$> (window >>= document)) >>=
     (querySelector (QuerySelector "#add-item"))  
-  s <- sequence $ subscribe <$> element
+  s <- sequence $ (subscribe AddItem) <$> element
+
+  -- Add a listener to the refresh item button on the map
+  element <- H.liftEffect $ 
+    (toParentNode <$> (window >>= document)) >>=
+    (querySelector (QuerySelector "#refresh"))  
+  s <- sequence $ (subscribe Update) <$> element
 
   -- Update the state
   H.put state { poi = layer
@@ -222,11 +228,11 @@ handleAction Initialize = do
   where
 
     -- Subscribe to a click event for a button
-    subscribe e = H.subscribe do
+    subscribe a e = H.subscribe do
       HQE.eventListenerEventSource
         (E.EventType "click")
         (toEventTarget e)
-        (const (Just AddItem))
+        (const (Just a))
 
 -- | Add an item to the database based on the current position
 handleAction AddItem = do

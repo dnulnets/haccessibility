@@ -160,6 +160,42 @@ instance manageAuthenticationApplicationM :: ManageAuthentication ApplicationM w
 --
 instance manageItemApplicationM :: ManageItem ApplicationM where
 
+  -- |Add an item
+  updateItem item = do
+    env <- ask
+    ui <- H.liftEffect $ REF.read env.userInfo
+    burl <- EP.backend ep
+
+    response <- liftAff $ parOneOf [
+        mkAuthRequest burl ep ui (Put (Just item))
+        , Left "Timeout" <$ (delay env.timeoutBackend)]
+    case response of
+      Left err -> do
+        H.liftEffect $ log $ "Error: " <> err
+        pure Nothing
+      Right (Tuple _ new) -> do
+        pure new
+    where
+      ep = EP.Item item.id
+
+  -- |Add an item
+  addItem item = do
+    env <- ask
+    ui <- H.liftEffect $ REF.read env.userInfo
+    burl <- EP.backend ep
+
+    response <- liftAff $ parOneOf [
+        mkAuthRequest burl ep ui (Post (Just item))
+        , Left "Timeout" <$ (delay env.timeoutBackend)]
+    case response of
+      Left err -> do
+        H.liftEffect $ log $ "Error: " <> err
+        pure Nothing
+      Right (Tuple _ new) -> do
+        pure new
+    where
+      ep = EP.Item Nothing
+
   -- |Gets all available attributes
   queryAttributes = do
     env <- ask
@@ -177,6 +213,24 @@ instance manageItemApplicationM :: ManageItem ApplicationM where
         pure attrs
     where
       ep = EP.Attributes
+
+  -- |Update all attributes in the item
+  updateItemAttributes key arr = do
+    env <- ask
+    ui <- H.liftEffect $ REF.read env.userInfo
+    burl <- EP.backend ep
+
+    response <- liftAff $ parOneOf [
+      mkAuthRequest burl ep ui $ Put (Just arr)
+      , Left "Timeout" <$ (delay env.timeoutBackend)]
+    case response of
+      Left err -> do
+        H.liftEffect $ log $ "Error: " <> err
+        pure Nothing
+      Right (Tuple _ v) -> do      
+        pure $ Just v
+    where
+      ep = EP.Attribute key
 
   -- |Gets all available attributes
   queryItemAttributes key = do

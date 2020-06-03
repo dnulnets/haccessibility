@@ -191,6 +191,13 @@ type QueryItems = { longitude   :: Maybe Number -- ^ The longitude of search cir
 -- |The class for Items management
 class Monad m <= ManageItem m where
 
+  -- |Add an item to the backend
+  addItem :: Item             -- ^The item to be added, id is ignored
+          -> m (Maybe Item)   -- ^The item as stored in the backend with new id
+
+  updateItem  :: Item             -- ^The item to be updated
+              -> m (Maybe Item)   -- ^The item as stored in the backend
+
   -- |Fetches a list of items based on the query parameters
   queryItem :: String         -- ^The key
             -> m (Maybe Item) -- ^List of items
@@ -202,13 +209,21 @@ class Monad m <= ManageItem m where
   -- |Fetches all attributes
   queryAttributes :: m (Maybe (Array AttributeValue)) -- ^List of attributes
 
+  -- |Update the attributes for an item
+  updateItemAttributes  :: String                 -- ^The key to the item
+                        -> Array AttributeChange  -- ^The array of change orders
+                        -> m (Maybe Unit)         -- ^Nothing to return
+
   -- |Fetches all attributes and values for an item
   queryItemAttributes :: String                           -- ^The key to the item
                       -> m (Maybe (Array AttributeValue)) -- ^List of attributes and values for a specific item
 
 -- |Avoid lift in the components
 instance manageItemHalogenM :: ManageItem m => ManageItem (HalogenM st act slots msg m) where
+  addItem = lift <<< addItem
+  updateItem = lift <<< updateItem
   queryItem = lift <<< queryItem
   queryItems = lift <<< queryItems
   queryAttributes = lift queryAttributes
+  updateItemAttributes k a = lift $ updateItemAttributes k a
   queryItemAttributes = lift <<< queryItemAttributes

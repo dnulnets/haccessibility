@@ -17,6 +17,7 @@ var olp = require ('ol/proj');
 var olst = require ('ol/style');
 var olg = require ('ol/geom');
 var olgp = require ('ol/geom/Polygon');
+var oli = require ('ol/interaction');
 
 // The projection we are using
 var projection = 'EPSG:3857';
@@ -28,9 +29,10 @@ const mock_lon = 17.304742;
 const mock_accuracy = 10.0; // 10 meters accuracy
 
 // Our controls
-var AddItemControl = /*@__PURE__*/ (function (Control) {
+var AddItemControl = (function (Control) {
 
-  function AddItemControl(on_click, opt_options) {
+  function AddItemControl(opt_options) {
+    
     var options = opt_options || {};
 
     var button = document.createElement('button');
@@ -44,9 +46,6 @@ var AddItemControl = /*@__PURE__*/ (function (Control) {
       element: element,
       target: options.target
     });
-
-    //button.addEventListener('click', this.handleAddItem.bind(this), false);
-    //button.addEventListener('click', on_click, false);
   }
 
   if ( Control ) AddItemControl.__proto__ = Control;
@@ -55,20 +54,54 @@ var AddItemControl = /*@__PURE__*/ (function (Control) {
 
   return AddItemControl;
 
-}(olc.Control));
+} (olc.Control));
 
-function my_click() {
-  console.log ("Yeaaah!!!")
-}
+var RefreshControl = (function (Control) {
+
+  function RefreshControl(opt_options) {
+    
+    var options = opt_options || {};
+
+    var button = document.createElement('button');
+    button.innerHTML = 'R';
+    button.id = "refresh";
+    var element = document.createElement('div');
+    element.className = 'refresh ol-unselectable ol-control';
+    element.appendChild(button);
+
+    Control.call(this, {
+      element: element,
+      target: options.target
+    });
+  }
+
+  if ( Control ) RefreshControl.__proto__ = Control;
+  RefreshControl.prototype = Object.create( Control && Control.prototype );
+  RefreshControl.prototype.constructor = RefreshControl;
+
+  return RefreshControl;
+
+} (olc.Control));
 
 // Create a map and add it to a DOM element and center it around a longitude and latitude
 // and set initial zoom
 exports.createMapImpl = function (element,lon, lat, z) {
   return function() {
+
+    var select = new oli.Select();
+    select.on('select', function(e) {
+      console.log ("Select on map");
+      console.log(e);
+    });    
+
     return new ol.Map({
       controls: olc.defaults().extend([
-        new AddItemControl(my_click)
-      ]),      
+        new AddItemControl(),
+        new RefreshControl()
+      ]),
+      interactions: oli.defaults().extend([
+        select
+      ]),
       target: element,
       layers: [
         new oll.Tile({
