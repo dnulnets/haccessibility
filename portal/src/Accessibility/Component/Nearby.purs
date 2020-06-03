@@ -9,7 +9,7 @@ module Accessibility.Component.Nearby (component, Slot(..)) where
 import Prelude
 
 -- Data imports
-import Data.Array((!!))
+import Data.Array((!!), catMaybes)
 import Data.Maybe (Maybe(..), maybe, fromMaybe)
 import Data.Foldable (sequence_)
 import Data.Traversable (sequence)
@@ -68,7 +68,7 @@ type Slot p = forall q . H.Slot q Void p
 
 -- | State for the component
 type State =  { alert           ::Maybe String            -- ^ The alert text
-                , subscription  ::Maybe H.SubscriptionId  -- ^The add item button subscription
+                , subscription  ::Array H.SubscriptionId  -- ^The add item button subscription
                 , geo           ::Maybe OLGeolocation     -- ^ The GeoLocator device
                 , map           ::Maybe OLMap             -- ^ The Map on the page
                 , poi           ::Maybe OLLayer           -- ^ The POI Layer
@@ -80,7 +80,7 @@ type State =  { alert           ::Maybe String            -- ^ The alert text
 initialState :: forall i. i -- ^ Initial input
   -> State                  -- ^ The state
 initialState _ =  { alert           : Nothing
-                    , subscription  : Nothing
+                    , subscription  : []
                     , geo           : Nothing
                     , map           : Nothing
                     , poi           : Nothing
@@ -146,26 +146,11 @@ render  :: forall m . MonadAff m
         => State                        -- ^ The state to render
         -> H.ComponentHTML Action () m  -- ^ The components HTML
 render state = HH.div
-               [css "container-fluid"]
+               [css "d-flex flex-column ha-nearby"]
                [HH.div [css "row"] [HH.div[css "col-xs-12 col-md-12"][nearbyAlert state.alert]],
                 HH.div [css "row"] [HH.div[css "col-xs-12 col-md-12"][HH.h2 [][HH.text "Point of interests"]]],
-                HH.div [css "row"] [HH.div[css "col-xs-12 col-md-12"][HH.div [HP.id_ "map"][]]],
-                HH.div [css "row"]
-                 [  HH.div [css "col-xs-3 col-sm-2"] [
-                      HH.button [css "btn btn-lg btn-block btn-warning", style "margin-bottom:5px;", HP.type_ HP.ButtonButton, HE.onClick \_ -> Just Update ] [HH.text "Update"]
-                    ],
-                    HH.div [css "col-xs-3 col-sm-2"] [ 
-                      HH.button [css "btn btn-lg btn-block btn-warning", style "margin-bottom:5px;", HP.type_ HP.ButtonButton, HE.onClick \_ -> Just Center ] [HH.text "Center"]
-                    ],
-                    HH.div [css "col-xs-3 col-sm-2"] [ 
-                      HH.button [css "btn btn-lg btn-block btn-warning", style "margin-bottom:5px;", HP.type_ HP.ButtonButton, HE.onClick \_ -> Just Add ] [HH.text "Add"]
-                    ],
-                    HH.div [css "col-xs-3 col-sm-2"] [ 
-                      HH.input [css "form-check-input", style "margin-bottom:5px;", HP.type_ HP.InputCheckbox, HE.onChecked \b -> Just (Mock b)],                      
-                      HH.label [css "form-check-label"] [HH.text "Test mode"]
-                    ],                    
-                    HH.div [css "col-sm-4"] [ ]
-                    ]]
+                HH.div [css "row flex-grow-1 ha-nearby-map"] [HH.div[css "col-xs-12 col-md-12"][HH.div [HP.id_ "map"][]]]
+                ]
 
 -- | Handles all actions for the login component
 handleAction  :: forall r o m . MonadAff m
@@ -207,20 +192,26 @@ handleAction Initialize = do
     sequence_ $ setCenter <$> olmap <*> (join $ _.longitude <$> pos) <*> (join $ _.latitude <$> pos)  
 
   -- Add a listener to the add item button on the map
-  element <- H.liftEffect $ 
+  eadd <- H.liftEffect $ 
     (toParentNode <$> (window >>= document)) >>=
-    (querySelector (QuerySelector "#add-item"))  
-  s <- sequence $ (subscribe AddItem) <$> element
+    (querySelector (QuerySelector "#map-add-item"))  
+  sadd <- sequence $ (subscribe AddItem) <$> eadd
 
   -- Add a listener to the refresh item button on the map
-  element <- H.liftEffect $ 
+  eupd <- H.liftEffect $ 
     (toParentNode <$> (window >>= document)) >>=
-    (querySelector (QuerySelector "#refresh"))  
-  s <- sequence $ (subscribe Update) <$> element
+    (querySelector (QuerySelector "#map-refresh"))  
+  supd <- sequence $ (subscribe Update) <$> eupd
+
+  -- Add a listener to the refresh item button on the map
+  ecen <- H.liftEffect $ 
+    (toParentNode <$> (window >>= document)) >>=
+    (querySelector (QuerySelector "#map-center"))  
+  scen <- sequence $ (subscribe Center) <$> ecen
 
   -- Update the state
   H.put state { poi = layer
-    , subscription = s
+    , subscription = catMaybes [sadd, supd, scen]
     , map = olmap
     , geo = g
     , alert = maybe (Just "Unable to get a geolocation device") (const Nothing) g}

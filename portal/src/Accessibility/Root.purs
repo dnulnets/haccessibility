@@ -105,11 +105,10 @@ navbarHeader header = [HH.button [css "navbar-toggler",
 -- |The left navigation bar
 navbarLeft∷forall p . State -> HH.HTML p Action
 navbarLeft state = HH.div [css "collapse navbar-collapse", HP.id_ "navbarCollapse"]
-                    [HH.ul [css "navbar-nav mr-auto"] [
-                      HH.li [css "nav-item active"] [HH.a [css "nav-link", href Home] [HH.text "Map"]],
-                      HH.li [css "nav-item"] [HH.a [css "nav-link", href (Point "0000000000000001" false)] [HH.text "Add POI"]],
-                      HH.li [css "nav-item"] [HH.a [css "nav-link", href Home] [HH.text "Not used"]]
-                      ]          
+                    [HH.ul [css "navbar-nav mr-auto"] ([] <>
+                      maybe [] (\_->[HH.li [css "nav-item active"] [HH.a [css "nav-link", href Home] [HH.text "Map"]]]) state.userInfo
+--                      , HH.li [css "nav-item"] [HH.a [css "nav-link", href (Point "0000000000000001" false)] [HH.text "Add POI"]]
+                      <> [])
                     ]
 
 -- |The right navigation bar
@@ -124,9 +123,9 @@ render ∷ ∀ r m . MonadAff m
   => ManageItem m
   => MonadAsk r m
   => State → H.ComponentHTML Action ChildSlots m
-render state = HH.div [] [
+render state = HH.div [css "ha-root"] [
   HH.header [] [navbar $ (navbarHeader "Case 3 Prototype") <> [navbarLeft state, navbarRight state]],
-  HH.main [css "container", HPA.role "main"][view state.page]]
+  HH.main [css "container ha-main", HPA.role "main"][view state.page]]
 
 -- | Render the main view of the page
 view ∷ ∀ r m. MonadAff m

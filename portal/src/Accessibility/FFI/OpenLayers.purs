@@ -12,13 +12,11 @@ import Prelude
 import Data.Nullable (Nullable, toMaybe)
 import Data.Maybe (Maybe(..))
 import Data.Function.Uncurried
-    ( Fn0
-    , Fn1
+    ( Fn1
     , Fn2
     , Fn3
     , Fn4
     , Fn5
-    , runFn0
     , runFn1
     , runFn2
     , runFn3

@@ -37,9 +37,9 @@ var AddItemControl = (function (Control) {
 
     var button = document.createElement('button');
     button.innerHTML = 'A';
-    button.id = "add-item";
+    button.id = "map-add-item";
     var element = document.createElement('div');
-    element.className = 'add-item ol-unselectable ol-control';
+    element.className = 'map-add-item ol-unselectable ol-control';
     element.appendChild(button);
 
     Control.call(this, {
@@ -64,9 +64,9 @@ var RefreshControl = (function (Control) {
 
     var button = document.createElement('button');
     button.innerHTML = 'R';
-    button.id = "refresh";
+    button.id = "map-refresh";
     var element = document.createElement('div');
-    element.className = 'refresh ol-unselectable ol-control';
+    element.className = 'map-refresh ol-unselectable ol-control';
     element.appendChild(button);
 
     Control.call(this, {
@@ -80,6 +80,33 @@ var RefreshControl = (function (Control) {
   RefreshControl.prototype.constructor = RefreshControl;
 
   return RefreshControl;
+
+} (olc.Control));
+
+var CenterControl = (function (Control) {
+
+  function CenterControl(opt_options) {
+    
+    var options = opt_options || {};
+
+    var button = document.createElement('button');
+    button.innerHTML = 'C';
+    button.id = "map-center";
+    var element = document.createElement('div');
+    element.className = 'map-center ol-unselectable ol-control';
+    element.appendChild(button);
+
+    Control.call(this, {
+      element: element,
+      target: options.target
+    });
+  }
+
+  if ( Control ) CenterControl.__proto__ = Control;
+  CenterControl.prototype = Object.create( Control && Control.prototype );
+  CenterControl.prototype.constructor = CenterControl;
+
+  return CenterControl;
 
 } (olc.Control));
 
@@ -97,7 +124,8 @@ exports.createMapImpl = function (element,lon, lat, z) {
     return new ol.Map({
       controls: olc.defaults().extend([
         new AddItemControl(),
-        new RefreshControl()
+        new RefreshControl(),
+        new CenterControl()
       ]),
       interactions: oli.defaults().extend([
         select

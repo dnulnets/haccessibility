@@ -1,5 +1,18 @@
-main {
+.ha-main {
   padding: 60px 15px 0;
+  height: 100%;
+}
+
+.ha-root {
+  height: 100vh;
+}
+
+.ha-nearby {
+  height: 100%;
+}
+
+.ha-nearby-map {
+  height: 100%
 }
 
 .alert-signin {
@@ -18,17 +31,22 @@ main {
 
   #map {
     width: 100%;
-    height: 250px;
+    height: 100%;
     margin-bottom: 5px;
   }
 
-  .add-item {
+  .map-add-item {
     top: 65px;
     left: .5em;
   }
   
-  .refresh {
+  .map-refresh {
     top: 93px;
+    left: .5em;
+  }
+
+  .map-center {
+    top: 121px;
     left: .5em;
   }
 
