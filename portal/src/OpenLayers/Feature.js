@@ -10,3 +10,9 @@
 
 // Get hold of the OpenLayer types and functions
 var ol  = require ('ol');
+
+exports.getImpl = function (name, self) {
+    return function() {
+        return self.get(name);
+    }
+}

@@ -9,7 +9,7 @@ module Accessibility.Component.Nearby (component, Slot(..)) where
 import Prelude
 
 -- Data imports
-import Data.Array((!!), catMaybes, length)
+import Data.Array((!!), catMaybes, length, head)
 import Data.Maybe (Maybe(..), maybe, fromMaybe)
 import Data.Foldable (sequence_)
 import Data.Traversable (sequence)
@@ -19,6 +19,7 @@ import Control.Monad.Reader.Trans (class MonadAsk)
 import Control.Alt ((<|>))
 
 -- Effects
+import Effect (foreachE)
 import Effect.Aff.Class (class MonadAff)
 import Effect.Console (log)
 
@@ -59,6 +60,7 @@ import Accessibility.FFI.OpenLayers
   , POI
   , POIType(..))
 import OpenLayers.Interaction.Select as Select
+import OpenLayers.Feature as Feature
 import Accessibility.Data.Route (Page(..)) as ADR
 import Accessibility.Component.HTML.Utils (css, style)
 import Accessibility.Interface.Navigate (class ManageNavigation, gotoPage)
@@ -103,7 +105,8 @@ data Action = Initialize
 -- | Convert an Item to a POI
 itemToPOI :: Item -- ^The item to be converted
           -> POI  -- ^The POI
-itemToPOI i = { latitude    : i.latitude
+itemToPOI i = { id          : fromMaybe "" i.id
+                , latitude  : i.latitude
                 , longitude : i.longitude
                 , name      : i.name
                 , type      : Point}
@@ -112,6 +115,7 @@ itemToPOI i = { latitude    : i.latitude
 entityToPOI :: Entity -- ^The entity to be converted
             -> POI    -- ^The POI
 entityToPOI (Entity e) = {
+  id: "",
   latitude: fromMaybe 0.0 $ e.location.value.coordinates!!1, 
   longitude: fromMaybe 0.0 $ e.location.value.coordinates!!0,
   name: fromMaybe "?" $ (entityNameTemperature e) <|> (entityNameSnowHeight e),
@@ -185,7 +189,7 @@ handleAction Initialize = do
     distance: Just state.distance,
     limit: Nothing,
     text: Nothing }
-
+  
   -- Merge the two data sources into one layer
   layer <- H.liftEffect $ sequence $ createPOILayer <$> (join $ _.longitude <$> pos) <*> (join $ _.latitude <$> pos) <*> (Just (state.distance*2.0)) <*> ((map (map itemToPOI) items) <> (map (map entityToPOI) entities))
 
@@ -289,6 +293,9 @@ handleAction Center = do
 handleAction (FeatureSelect e) = do
   H.liftEffect $ log "Feature selected!"
   H.liftEffect $ log $ "Selected length is " <> (show (length e.selected))
+  l <- H.liftEffect $ sequence $ (Feature.get "id") <$> e.selected
+  sequence_ $ gotoPage <$> (ADR.Point <$> (head (catMaybes l)) <*> (Just false))
+
 
 -- | Activate or deactivate the test mode of the mobile
 handleAction (Mock b) = do

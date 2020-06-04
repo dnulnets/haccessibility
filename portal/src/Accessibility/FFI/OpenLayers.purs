@@ -54,7 +54,8 @@ data POIType = Point    -- ^A basic point of interest
 
 -- |The data content for a point of information
 type POI = {
-    latitude        :: Number   -- ^The latitude of the POI
+    id              :: String   -- ^The key of the POI
+    , latitude      :: Number   -- ^The latitude of the POI
     , longitude     :: Number   -- ^The longitude of the POI
     , name          :: String   -- ^The name of the POI
     , type          :: POIType  -- ^The type of the POI
@@ -185,6 +186,7 @@ createPOILayer:: forall p . Number  -- ^Longitude
         longitude::Number,
         latitude::Number,
         name::String,
+        id::String,
         type::POIType | p 
         }                           -- ^The list of POI:s
     -> Effect OLLayer               -- ^The returned layer

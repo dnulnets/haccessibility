@@ -388,7 +388,7 @@ exports.createPOILayerImpl = function (npoi, lon, lat, d, pois) {
     var i;
     var lofFeatures = new Array (pois.length+1);
     for (i = 0; i<pois.length; i++) {
-      lofFeatures[i] = new ol.Feature({name: pois[i].name, type: npoi (pois[i].type),
+      lofFeatures[i] = new ol.Feature({name: pois[i].name, id: pois[i].id, type: npoi (pois[i].type),
         geometry: new olg.Point(olp.fromLonLat([pois[i].longitude, pois[i].latitude], projection))});
     }
     lofFeatures[pois.length] = searchArea;

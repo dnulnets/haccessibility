@@ -55,7 +55,8 @@ import Accessibility.Interface.Item (
   , queryItem
   , queryAttributes
   , queryItemAttributes)
-import Accessibility.Interface.Navigate (class ManageNavigation)
+import Accessibility.Interface.Navigate (class ManageNavigation, gotoPage)
+import Accessibility.Data.Route as ADR
 
 -- | Slot type for the Login component
 type Slot p = forall q. H.Slot q Void p
@@ -351,6 +352,7 @@ handleAction (Submit event) = do
       H.liftEffect $ log $ show u
 
   H.liftEffect $ log "Point form handled"
+  gotoPage ADR.Home
 
     where
 

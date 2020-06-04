@@ -3,7 +3,7 @@
 -- |
 -- | Written by Tomas Stenlund, Sundsvall, Sweden (c) 2020
 -- |
-module OpenLayers.Feature (Feature) where
+module OpenLayers.Feature (Feature, get) where
 
 -- Standard import
 import Prelude
@@ -36,3 +36,7 @@ foreign import data Feature :: Type
 --
 -- Function mapping
 --
+foreign import getImpl :: Fn2 String Feature (Effect (Nullable String))
+
+get :: String -> Feature -> Effect (Maybe String)
+get n f = toMaybe <$> runFn2 getImpl n f
