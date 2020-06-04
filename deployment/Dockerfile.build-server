@@ -30,4 +30,5 @@ RUN        apt-get update \
 COPY --from=build /root/.local/bin .
 COPY ./deployment/tls.* ./
 COPY --from=build /opt/build/backend/static/* ./static/
+COPY --from=build /opt/build/backend/hadmin/*.json ./
 CMD ["/opt/accessibility/accessibility-server"]

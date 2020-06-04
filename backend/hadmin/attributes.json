@@ -13,7 +13,7 @@
     },
     {
         "name": "Ramp",
-        "description": "If it exists a ramp",
+        "description": "If there is a ramp",
         "unit": "Yes/No",
         "typeof": "BooleanType"
     }    

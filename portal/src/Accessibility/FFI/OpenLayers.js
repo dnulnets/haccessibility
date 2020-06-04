@@ -110,25 +110,29 @@ var CenterControl = (function (Control) {
 
 } (olc.Control));
 
+exports.createSelect = function () {
+  return new oli.Select();
+}
+
+exports.addInteractionImpl = function (i, self)
+{
+  console.log ("addInteraction");
+  return function () {
+    console.log ("addInteraction Effect");
+    self.addInteraction (i);
+  }
+}
+
 // Create a map and add it to a DOM element and center it around a longitude and latitude
 // and set initial zoom
 exports.createMapImpl = function (element,lon, lat, z) {
   return function() {
-
-    var select = new oli.Select();
-    select.on('select', function(e) {
-      console.log ("Select on map");
-      console.log(e);
-    });    
 
     return new ol.Map({
       controls: olc.defaults().extend([
         new AddItemControl(),
         new RefreshControl(),
         new CenterControl()
-      ]),
-      interactions: oli.defaults().extend([
-        select
       ]),
       target: element,
       layers: [

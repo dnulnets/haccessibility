@@ -28,6 +28,8 @@ import Effect (Effect)
 import Effect.Aff (Aff)
 import Effect.Aff.Compat (EffectFnAff, fromEffectFnAff)
 
+import OpenLayers.Interaction.Select (Select)
+
 --
 -- A coordinate
 --
@@ -196,3 +198,10 @@ foreign import setTestModeImpl :: Fn2 OLMap Boolean (Effect Unit)
 setTestMode::OLMap->Boolean->Effect Unit
 setTestMode m b = runFn2 setTestModeImpl m b
 
+--
+-- Adds an interaction to a map
+--
+foreign import addInteractionImpl :: Fn2 Select OLMap (Effect Unit)
+
+addInteraction::OLMap->Select->Effect Unit
+addInteraction m s = runFn2 addInteractionImpl s m

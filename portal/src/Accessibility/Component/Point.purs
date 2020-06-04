@@ -199,7 +199,8 @@ input iav =
           , HPA.label av.name
           , HE.onValueChange \i -> Just $ Input (change i av)
           ] <> catMaybes [HP.value <$> av.value])
-          [ HH.option [] [ HH.text "Yes" ]
+          [ HH.option [] [ HH.text "" ]
+          , HH.option [] [ HH.text "Yes" ]
           , HH.option [] [ HH.text "No" ]
           ]
       NumberType ->

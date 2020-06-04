@@ -1,7 +1,7 @@
 -- |
 -- | The nearby component
 -- |
--- | Written by Tomas Stenlund, Sundsvall, Sweden (c) 2020
+-- | Written by Tomas Stenlund, Sundsvall,Sweden (c) 2020
 -- |
 module Accessibility.Component.Nearby (component, Slot(..)) where
 
@@ -9,7 +9,7 @@ module Accessibility.Component.Nearby (component, Slot(..)) where
 import Prelude
 
 -- Data imports
-import Data.Array((!!), catMaybes)
+import Data.Array((!!), catMaybes, length)
 import Data.Maybe (Maybe(..), maybe, fromMaybe)
 import Data.Foldable (sequence_)
 import Data.Traversable (sequence)
@@ -55,8 +55,10 @@ import Accessibility.FFI.OpenLayers
   , removeLayerFromMap
   , addLayerToMap
   , setTestMode
+  , addInteraction
   , POI
   , POIType(..))
+import OpenLayers.Interaction.Select as Select
 import Accessibility.Data.Route (Page(..)) as ADR
 import Accessibility.Component.HTML.Utils (css, style)
 import Accessibility.Interface.Navigate (class ManageNavigation, gotoPage)
@@ -94,6 +96,7 @@ data Action = Initialize
   | Update
   | Center
   | AddItem
+  | FeatureSelect Select.SelectEvent
   | Mock Boolean
   | Add
 
@@ -209,9 +212,16 @@ handleAction Initialize = do
     (querySelector (QuerySelector "#map-center"))  
   scen <- sequence $ (subscribe Center) <$> ecen
 
+  -- Subscribe for feature selects on the map
+  s <- H.liftEffect $ Select.create Nothing
+  sfeat <- H.subscribe $ HQE.effectEventSource \emitter -> do
+        key <- Select.onSelect s (\e -> HQE.emit emitter (FeatureSelect e))
+        pure (HQE.Finalizer (Select.unSelect s key))
+  H.liftEffect $ sequence_ $ addInteraction <$> olmap <*> (Just s)
+
   -- Update the state
   H.put state { poi = layer
-    , subscription = catMaybes [sadd, supd, scen]
+    , subscription = (catMaybes [sadd, supd, scen]) <> [sfeat]
     , map = olmap
     , geo = g
     , alert = maybe (Just "Unable to get a geolocation device") (const Nothing) g}
@@ -275,6 +285,10 @@ handleAction Center = do
   state <- H.get
   pos <- H.liftEffect $ sequence $ getCoordinate <$> state.geo
   H.liftEffect $ sequence_ $ setCenter <$> state.map <*> (join $ _.longitude <$> pos) <*> (join $ _.latitude <$> pos)
+
+handleAction (FeatureSelect e) = do
+  H.liftEffect $ log "Feature selected!"
+  H.liftEffect $ log $ "Selected length is " <> (show (length e.selected))
 
 -- | Activate or deactivate the test mode of the mobile
 handleAction (Mock b) = do
