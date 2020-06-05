@@ -89,10 +89,10 @@ render  :: forall m . MonadAff m
         => State                        -- ^ The state to render
         -> H.ComponentHTML Action () m  -- ^ The components HTML
 render state = HH.div
-               []
+               [css "ha-login"]
                [              
                    HH.form
-                   [css "form-signin", HE.onSubmit (Just <<< Submit)]
+                   [css "ha-form-login", HE.onSubmit (Just <<< Submit)]
                    [HH.h1 [css "mt-3"] [HH.text "Login"],
                    loginAlert state.alert,
                    HH.div

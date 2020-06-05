@@ -156,7 +156,7 @@ render state = HH.div
                [css "d-flex flex-column ha-nearby"]
                [HH.div [css "row"] [HH.div[css "col-xs-12 col-md-12"][nearbyAlert state.alert]],
                 HH.div [css "row"] [HH.div[css "col-xs-12 col-md-12"][HH.h2 [][HH.text "Point of interests"]]],
-                HH.div [css "row flex-grow-1 ha-nearby-map"] [HH.div[css "col-xs-12 col-md-12"][HH.div [HP.id_ "map"][]]]
+                HH.div [css "row flex-grow-1 ha-nearby-map"] [HH.div[css "col-xs-12 col-md-12"][HH.div [HP.id_ "ha-map"][]]]
                 ]
 
 -- | Handles all actions for the login component
@@ -174,7 +174,7 @@ handleAction Initialize = do
   state <- H.get
 
   -- Create the map and add a geolocation and start tracking
-  olmap <- H.liftEffect $ createMap "map" 0.0 0.0 18
+  olmap <- H.liftEffect $ createMap "ha-map" 0.0 0.0 18
   g <- H.liftEffect $ join <$> (sequence $ addGeolocationToMap <$> olmap)
   H.liftEffect $ sequence_ $ setTracking <$> g <*> (Just true)
 

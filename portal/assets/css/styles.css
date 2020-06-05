@@ -1,57 +1,95 @@
+/*
+**
+** The CSS for the haccesible prototype case 3
+**
+** Written by Tomas Stenlund
+**
+*/
+
+/* The main */
 .ha-main {
   padding: 60px 15px 0;
-  height: 100%;
+  height: 90%;
 }
 
+/* The root page */
 .ha-root {
   height: 100vh;
 }
 
+/* The nearby page */
 .ha-nearby {
   height: 100%;
 }
 
+/* The map on the nearby page */
 .ha-nearby-map {
   height: 100%
 }
 
-.alert-signin {
+/* The point page */
+.ha-point {
+  height: 100%;
+}
+
+/* The login page */
+.ha-login {
+  height: 100%;
+}
+
+/* Alert class */
+.ha-alert {
   width: 100%;
   max-width: 420px;
   padding: 15px;
   margin: 0 auto;
 }
 
-.form-signin {
+/* The login form */
+.ha-form-login {
     width: 100%;
     max-width: 420px;
     padding: 15px;
     margin: 0 auto;
   }
 
-  #map {
-    width: 100%;
-    height: 100%;
-    margin-bottom: 5px;
-  }
+/* The point view, update and create form */
+.ha-form-point {
+  width: 100%;
+  max-width: 420px;
+  padding: 15px;
+  margin: 0 auto;
+}
 
-  .map-add-item {
-    top: 65px;
-    left: .5em;
-  }
-  
-  .map-refresh {
-    top: 93px;
-    left: .5em;
-  }
+/* Specific map classes */
+#ha-map {
+  width: 100%;
+  height: 100%;
+  margin-bottom: 5px;
+}
 
-  .map-center {
-    top: 121px;
-    left: .5em;
-  }
+/* The add item for the map */
+.ha-map-add-item {
+  top: 4.5em;
+  left: .5em;
+}
 
-  .ol-touch .add-item {
-    top: 80px;
-  }
+/* The refresh item for the map */
+.ha-map-refresh {
+  top: 6.5em;
+  left: .5em;
+}
 
+/* The center item for the map */
+.ha-map-center {
+  top: 8.5em;
+  left: .5em;
+}
+
+/*
+.ol-touch .add-item {
+  top: 80px;
+}
+
+*/
   

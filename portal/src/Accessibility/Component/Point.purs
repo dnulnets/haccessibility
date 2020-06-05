@@ -239,13 +239,13 @@ render  :: forall m . MonadAff m
   -> H.ComponentHTML Action () m  -- ^The components HTML
 render state =
   HH.div
-    [ css "container-fluid" ]
+    [ css "container-fluid ha-point" ]
     [ HH.div [ css "row" ]
         [ HH.div [ css "col-xs-12 col-md-12" ]
             [ nearbyAlert state.alert
             ]
         ]
-    , HH.form [ css "form-signin", HE.onSubmit (Just <<< Submit) ]
+    , HH.form [ css "ha-form-point", HE.onSubmit (Just <<< Submit) ]
         ([ HH.h1 [ css "mt-3" ] [ HH.text "POI Information" ]
         , inputName $ _.name <$> state.item
         , inputDescription $ _.description <$> state.item

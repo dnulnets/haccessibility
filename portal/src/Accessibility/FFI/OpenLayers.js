@@ -39,7 +39,7 @@ var AddItemControl = (function (Control) {
     button.innerHTML = 'A';
     button.id = "map-add-item";
     var element = document.createElement('div');
-    element.className = 'map-add-item ol-unselectable ol-control';
+    element.className = 'ha-map-add-item ol-unselectable ol-control';
     element.appendChild(button);
 
     Control.call(this, {
@@ -66,7 +66,7 @@ var RefreshControl = (function (Control) {
     button.innerHTML = 'R';
     button.id = "map-refresh";
     var element = document.createElement('div');
-    element.className = 'map-refresh ol-unselectable ol-control';
+    element.className = 'ha-map-refresh ol-unselectable ol-control';
     element.appendChild(button);
 
     Control.call(this, {
@@ -93,7 +93,7 @@ var CenterControl = (function (Control) {
     button.innerHTML = 'C';
     button.id = "map-center";
     var element = document.createElement('div');
-    element.className = 'map-center ol-unselectable ol-control';
+    element.className = 'ha-map-center ol-unselectable ol-control';
     element.appendChild(button);
 
     Control.call(this, {
@@ -116,9 +116,7 @@ exports.createSelect = function () {
 
 exports.addInteractionImpl = function (i, self)
 {
-  console.log ("addInteraction");
   return function () {
-    console.log ("addInteraction Effect");
     self.addInteraction (i);
   }
 }
