@@ -127,7 +127,7 @@ handleAction (Submit event) = do
   state <- H.get
   H.liftEffect $ log $ show state
   userInfo <- login $ Authenticate { username: fromMaybe "" state.username
-                                   , password: fromMaybe "" state.password}
+                                   , password: fromMaybe "" state.password}  
   case userInfo of
     Nothing -> do
       H.put state {alert = Just "Wrong credentials"}

@@ -86,7 +86,7 @@ initialState _ = {  userInfo: Nothing
 
 -- |The navigation bar for the page
 navbar∷forall p i . Array (HH.HTML p i) -> HH.HTML p i
-navbar html = HH.nav [css "navbar navbar-dark bg-warning fixed-top navbar-expand-md", HPA.role "navigation"] html
+navbar html = HH.nav [css "navbar navbar-dark bg-warning navbar-expand-md", HPA.role "navigation"] html
 
 -- |The header of the navigation bar
 navbarHeader∷forall p i . String -> Array( HH.HTML p i )

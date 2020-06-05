@@ -30,11 +30,11 @@ data AppSettings = AppSettings {
   , tokenExpiration :: Integer   -- ^The expiration time of the token in seconds
   , passwordCost    :: Integer       -- ^The cost for the bcrypt password hash generation
 
-  }
+  }                
 
 -- |A default setting for our application
 defaultSettings :: AppSettings
 defaultSettings = AppSettings { tokenSecret     = "69fhh)d#%fih"   -- ^The default token secret
-                              , tokenExpiration = 60 * 60      -- ^The default token is only valid for 1 hour
+                              , tokenExpiration = 60 * 60 * 24  -- ^The default token is valid for 24 hour
                               , passwordCost    = 10            -- ^The default password hashing cost
                               }

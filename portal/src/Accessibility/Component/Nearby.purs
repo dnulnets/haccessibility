@@ -217,7 +217,7 @@ handleAction Initialize = do
   scen <- sequence $ (subscribe Center) <$> ecen
 
   -- Subscribe for feature selects on the map
-  s <- H.liftEffect $ Select.create Nothing
+  s <- H.liftEffect $ Select.create $ Just {multi: false}
   sfeat <- H.subscribe $ HQE.effectEventSource \emitter -> do
         key <- Select.onSelect s (\e -> HQE.emit emitter (FeatureSelect e))
         pure (HQE.Finalizer (Select.unSelect s key))
