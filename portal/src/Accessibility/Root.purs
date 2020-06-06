@@ -3,7 +3,7 @@
 -- |
 -- | Written by Tomas Stenlund, Sundsvall, Sweden (c) 2019
 -- |
-module Accessibility.Root (component, Query (..)) where
+module Accessibility.Root (component, Input, Query (..)) where
 
 -- Standard import
 import Prelude
@@ -40,7 +40,9 @@ import Accessibility.Component.Login as Login
 import Accessibility.Component.Nearby as Nearby
 import Accessibility.Component.Point as Point
 import Accessibility.Interface.Navigate (class ManageNavigation, gotoPage)
-import Accessibility.Interface.Authenticate (class ManageAuthentication, UserInfo (..))
+import Accessibility.Interface.Authenticate (class ManageAuthentication
+  , UserInfo (..)
+  , logout)
 import Accessibility.Interface.Item (class ManageItem)
 import Accessibility.Interface.Entity (class ManageEntity)
 
@@ -48,6 +50,9 @@ import Accessibility.Interface.Entity (class ManageEntity)
 -- | The state of the root page
 type State = {  userInfo :: Maybe UserInfo -- ^ User information of the logged in user
               , page :: Page }             -- ^ What page to show in the root container
+
+-- |The user info that comes into the root page
+type Input = Maybe UserInfo
 
 -- | The query that allows us to change page of the root
 data Query a = GotoPageRequest Page a
@@ -71,7 +76,7 @@ component ∷ ∀ r i o m. MonadAff m
   => ManageItem m
   => ManageEntity m
   => MonadAsk r m
-  => H.Component HH.HTML Query i o m
+  => H.Component HH.HTML Query Input o m
 component =
   H.mkComponent
     { initialState
@@ -80,9 +85,9 @@ component =
     }
 
 -- | The root container initial state
-initialState ∷ ∀ i. i → State
-initialState _ = {  userInfo: Nothing
-                  , page: Login }
+initialState ∷ Input → State
+initialState ui = { userInfo: ui
+                    , page: maybe Login (const Home) ui }
 
 -- |The navigation bar for the page
 navbar∷forall p i . Array (HH.HTML p i) -> HH.HTML p i
@@ -180,21 +185,20 @@ handleQuery = case _ of
     pure (Just a)
 
 -- | Handle the root containers actions
-handleAction ∷ ∀ r o m . MonadAff m 
+handleAction ∷ ∀ r o m . MonadAff m
+  => ManageAuthentication m
   => MonadAsk r m
   => ManageNavigation m
   => Action → H.HalogenM State Action ChildSlots o m Unit
+
 handleAction (SetUserAction ui) = do
     H.liftEffect $ log $ "Logged in user " <> show ui
     H.modify_ \st → st { userInfo = ui }
 
 handleAction Logout = do
   state <- H.get
-  H.liftEffect $ log "Trying to logout"
-  case state.userInfo of
-    Just (UserInfo ui) -> do
-      H.liftEffect $ log "Logged out!"
-      gotoPage Login
-    Nothing -> do
-      H.liftEffect $ log "Nothing to logout!"
+  H.liftEffect $ log "Logging out!"
+  logout
   H.put state { userInfo = Nothing }
+  gotoPage Login
+  

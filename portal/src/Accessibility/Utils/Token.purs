@@ -4,7 +4,7 @@
 -- | Written by Tomas Stenlund, Sundsvall, Sweden (c) 2019
 -- |
 module Accessibility.Utils.Token (
-  Token
+  Token(..)
   , readToken
   , writeToken
   , removeToken) where
@@ -33,7 +33,7 @@ instance showToken :: Show Token where
   show (Token _) = "Token {- secret -}"
 
 -- | The name of the localstorage key
-tokenKey = "token" :: String
+tokenKey = "ha-token" :: String
 
 -- | Read the token from local storage
 readToken :: Effect (Maybe Token) -- ^The token

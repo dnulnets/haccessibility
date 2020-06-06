@@ -24,12 +24,12 @@ where
 --
 -- Standard libraries
 --
-import           Control.Monad.Logger           ( runStderrLoggingT )
-import           Control.Monad.Trans.Resource   ( runResourceT )
-import qualified Data.ByteString.Char8         as DB
-import qualified Data.Text                     as DT
+import           Control.Monad.Logger                    (runStderrLoggingT)
+import           Control.Monad.Trans.Resource            (runResourceT)
+import qualified Data.ByteString.Char8                   as DB
+import qualified Data.Text                               as DT
 
-import           System.Environment             ( getEnv )
+import           System.Environment                      (getEnv)
 import           System.Random
 --
 -- Persistence libraries
@@ -39,45 +39,40 @@ import           Database.Persist.Postgresql
 --
 -- The HTTP server and network libraries
 --
-import qualified Network.Wai.Handler.Warp      as WAI
-import qualified Network.Wai.Handler.WarpTLS   as WAIT
-import           WaiAppStatic.Storage.Filesystem
-                                                ( defaultWebAppSettings )
-import           WaiAppStatic.Types             ( StaticSettings(..) )
+import qualified Network.Wai.Handler.Warp                as WAI
+import qualified Network.Wai.Handler.WarpTLS             as WAIT
+import           WaiAppStatic.Storage.Filesystem         (defaultWebAppSettings)
+import           WaiAppStatic.Types                      (StaticSettings (..))
 
 import           Yesod
 import           Yesod.Static
 --
 -- Get our own items
 --
-import           Accessability.Foundation       ( Route(..)
-                                                , Server(..)
-                                                , resourcesServer
-                                                )
+import           Accessability.Foundation                (Route (..),
+                                                          Server (..),
+                                                          resourcesServer)
 
-import           Accessability.Handler.GQL      ( postGQLR )
+import           Accessability.Handler.GQL               (postGQLR)
 
-import           Accessability.Handler.REST.Item
-                                                ( deleteItemR
-                                                , getItemR
-                                                , postCreateItemR
-                                                , postItemsR
-                                                , putItemR
-                                                , getAttributesR
-                                                , getItemAttributesR
-                                                , putItemAttributesR
-                                                )
+import           Accessability.Handler.REST.Item         (deleteItemR,
+                                                          getAttributesR,
+                                                          getItemAttributesR,
+                                                          getItemR,
+                                                          postCreateItemR,
+                                                          postItemsR,
+                                                          putItemAttributesR,
+                                                          putItemR)
 
-import           Accessability.Handler.REST.Authenticate
-                                                ( postAuthenticateR )
+import           Accessability.Handler.REST.Authenticate (getAuthenticateR,
+                                                          postAuthenticateR)
 
-import           Accessability.Settings         ( AppSettings(..)
-                                                , defaultSettings
-                                                )
+import           Accessability.Settings                  (AppSettings (..),
+                                                          defaultSettings)
 
-import           Accessability.Middleware       ( corsified )
+import           Accessability.Middleware                (corsified)
 
-import           Accessability.Model.Database   ( entityDefs )
+import           Accessability.Model.Database            (entityDefs)
 
 --
 -- The dispatcher

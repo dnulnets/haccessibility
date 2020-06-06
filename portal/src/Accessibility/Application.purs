@@ -16,7 +16,7 @@ import Data.Maybe (Maybe(..))
 import Data.Either (Either(..), either)
 import Data.Tuple (Tuple(..))
 import Data.Array(concat)
-import Data.Traversable (sequence)
+import Data.Traversable (sequence, sequence_)
 import Data.Time.Duration (Milliseconds(..))
 
 -- Type imports
@@ -46,13 +46,13 @@ import Routing.Hash (setHash, getHash)
 -- Our own imports
 import Accessibility.Interface.Endpoint (BaseURL(..))
 import Accessibility.Interface.Endpoint as EP
-import Accessibility.Interface.Authenticate (UserInfo,class ManageAuthentication)
+import Accessibility.Interface.Authenticate (UserInfo(..),class ManageAuthentication)
 import Accessibility.Interface.Navigate (class ManageNavigation)
 import Accessibility.Interface.Item (class ManageItem)
 import Accessibility.Interface.Entity(class ManageEntity)
 
 import Accessibility.Data.Route (routeCodec, Page(..))
-
+import Accessibility.Utils.Token (removeToken, writeToken, Token(..))
 import Accessibility.Utils.Request (
   mkRequest, 
   mkAuthRequest,
@@ -142,18 +142,21 @@ instance manageAuthenticationApplicationM :: ManageAuthentication ApplicationM w
       Left err -> do
         H.liftEffect $ log $ "Error: " <> err
         H.liftEffect $ REF.write Nothing env.userInfo
+        H.liftEffect $ removeToken
         pure Nothing
       Right (Tuple _ userInfo) -> do
         H.liftEffect $ REF.write userInfo env.userInfo
+        H.liftEffect $ sequence_ $ writeToken <$> (Token <$> getToken <$> userInfo)
         pure userInfo
-
     where
       ep = EP.Authenticate
+      getToken (UserInfo r) = r.token
 
   -- |Log out the user
   logout = do
     ref <- asks _.userInfo
     H.liftEffect $ REF.write Nothing ref
+    H.liftEffect $ removeToken
 
 --
 --  Add the set of functions that handles items
