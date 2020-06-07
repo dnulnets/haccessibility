@@ -70,7 +70,7 @@ _login = SProxy::SProxy "login"
 _nearby = SProxy::SProxy "nearby"
 _point = SProxy::SProxy "point"
 
-component ∷ ∀ r i o m. MonadAff m
+component ∷ ∀ r o m. MonadAff m
   => ManageAuthentication m
   => ManageNavigation m
   => ManageItem m

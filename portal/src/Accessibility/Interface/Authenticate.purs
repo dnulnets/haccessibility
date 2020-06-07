@@ -14,6 +14,7 @@ module Accessibility.Interface.Authenticate
 import Prelude
 
 -- Data imports
+import Data.Newtype (class Newtype)
 import Data.Maybe (Maybe)
 import Data.Argonaut
   (class DecodeJson
@@ -28,16 +29,21 @@ import Data.Argonaut
 import Halogen (HalogenM, lift)
 
 -- |The user information returned after an authenticate is successful
-data UserInfo = UserInfo { userid     :: String -- ^The user identity key
+newtype UserInfo = UserInfo { userid     :: String -- ^The user identity key
                            , token    :: String -- ^The token used for the API
                            , username :: String -- ^The user name
                            , email    :: String -- ^The email address of the user
                           }
 
+-- We need to be able to unwrap it to make nice looking code ;-)
+derive instance newtypeUserInfo :: Newtype UserInfo _
+
+-- Show of the userinfo
 instance showUserInfo :: Show UserInfo where
   show (UserInfo ui) = "UserInfo { userid=\"" <> ui.userid <> "\", token=\"" <> ui.token 
     <> "\"username=\"" <> ui.username <> "\", email=\"" <> ui.email <> "\"}"
 
+-- JSON decoder for UserInfo
 instance decodeJsonUserInfo :: DecodeJson UserInfo where
   decodeJson json = do
     obj ← decodeJson json

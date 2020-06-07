@@ -4,8 +4,6 @@
 -- | Written by Tomas Stenlund, Sundsvall, Sweden (c) 2019
 -- |
 module Accessibility.Utils.Request(RequestMethod(..),
-                          mkRequest,
-                          mkRequest_,
                           mkAuthRequest,
                           mkAuthRequest_) where
 
@@ -44,7 +42,6 @@ import Accessibility.Interface.Endpoint (
   Endpoint,
   endpointCodec,
   BaseURL(..))
-import Accessibility.Interface.Authenticate (UserInfo(..))
 
 -- |type of Authorization 
 newtype Authorization = Bearer String -- ^The constructor for "Authorization: Bearer <token>
@@ -82,45 +79,15 @@ defaultRequest (BaseURL baseUrl) ep reqm auth =
       Delete -> Tuple DELETE Nothing
 
 -- |Makes a request to the backend and return with status and result
-mkRequest :: forall a v. DecodeJson v
-          => EncodeJson a
-          => BaseURL           -- ^The base URL for the endpoint
-          -> Endpoint          -- ^The endpoint to call            
-          -> RequestMethod a   -- ^The request method to use for the call
-          -> Aff (Either String (Tuple AXS.StatusCode v)) -- ^The result of the call
-mkRequest burl ep rm = do
-  response <- AX.request $ defaultRequest burl ep rm Nothing
-  pure case response of
-    Left err -> Left $ AX.printError err -- Make a string out of affjax errors
-    Right val -> (Tuple val.status) <$> (decodeJson val.body)
-
--- |Makes a request to the backend and return with status
-mkRequest_  :: forall a v. DecodeJson v
-            => EncodeJson a
-            => BaseURL           -- ^The base URL for the endpoint
-            -> Endpoint          -- ^The endpoint to call            
-            -> RequestMethod a   -- ^The request method to use for the call
-            -> Aff (Either String AXS.StatusCode) -- ^The result of the call
-mkRequest_ burl ep rm = do
-  response <- AX.request $ defaultRequest burl ep rm Nothing
-  pure case response of
-    Left err -> Left $ AX.printError err -- Make a string gout of affjax errors
-    Right val -> Right val.status
-
--- |Converts a UserInfo to an Authorization
-mkAuthorization::UserInfo->Authorization
-mkAuthorization (UserInfo t) = Bearer t.token
-
--- |Makes a request to the backend and return with status and result
 mkAuthRequest :: forall a v. DecodeJson v
             => EncodeJson a
             => BaseURL          -- ^The base URL of the backend
             -> Endpoint         -- ^The endpoint at the backend
-            -> Maybe UserInfo   -- ^Authorization information
+            -> Maybe String           -- ^Authorization information
             -> RequestMethod a  -- ^The request
             -> Aff (Either String (Tuple AXS.StatusCode v)) -- ^The result of the request
-mkAuthRequest burl ep ui rm = do
-  response <- AX.request $ defaultRequest burl ep rm $ mkAuthorization <$> ui
+mkAuthRequest burl ep tok rm = do
+  response <- AX.request $ defaultRequest burl ep rm $ Bearer <$> tok
   pure case response of
     Left err -> Left $ AX.printError err -- Make a string out of affjax errors
     Right val -> (Tuple val.status) <$> (decodeJson val.body)
@@ -130,11 +97,11 @@ mkAuthRequest_  :: forall a v. DecodeJson v
                 => EncodeJson a
                 => BaseURL          -- ^The base url of the backend
                 -> Endpoint         -- ^The endpoint at the backend
-                -> Maybe UserInfo   -- ^The authorization information
+                -> Maybe String           -- ^The authorization information
                 -> RequestMethod a  -- ^The request method
                 -> Aff (Either String AXS.StatusCode)  -- ^The result of the request
-mkAuthRequest_ burl ep ui rm = do
-  response <- AX.request $ defaultRequest burl ep rm $ mkAuthorization <$> ui
+mkAuthRequest_ burl ep tok rm = do
+  response <- AX.request $ defaultRequest burl ep rm $ Bearer <$> tok
   pure case response of
     Left err -> Left $ AX.printError err -- Make a string gout of affjax errors
     Right val -> Right val.status

@@ -18,6 +18,7 @@ import Data.Tuple (Tuple(..))
 import Data.Array(concat)
 import Data.Traversable (sequence, sequence_)
 import Data.Time.Duration (Milliseconds(..))
+import Data.Newtype (unwrap)
 
 -- Type imports
 import Type.Equality (class TypeEquals, from)
@@ -54,7 +55,7 @@ import Accessibility.Interface.Entity(class ManageEntity)
 import Accessibility.Data.Route (routeCodec, Page(..))
 import Accessibility.Utils.Token (removeToken, writeToken, Token(..))
 import Accessibility.Utils.Request (
-  mkRequest, 
+--  mkRequest, 
   mkAuthRequest,
   RequestMethod (..))
 
@@ -104,16 +105,16 @@ instance manageNavigationApplicationM ∷ ManageNavigation ApplicationM where
 
   -- |Navigates the app using hash based routing
   gotoPage newPage = do
-    H.liftEffect $ log $ "GotoPage to = " <> (show newPage)
+    H.liftEffect $ log $ "GotoPage: To = " <> (show newPage)
     oldHash <- H.liftEffect $ getHash
-    H.liftEffect $ log $ "Current page = " <> (show $ page oldHash)
+    H.liftEffect $ log $ "Current: Page = " <> (show $ page oldHash)
     
     if newPage /= page oldHash
       then do
-        H.liftEffect $ log $ "Set hash to " <> newHash
+        H.liftEffect $ log $ "Set hash to: " <> newHash
         H.liftEffect $ setHash $ newHash
       else do
-        H.liftEffect $ log $ "Reload hash with " <> oldHash
+        H.liftEffect $ log $ "Reload hash with: " <> oldHash
 
     where
       newHash :: String
@@ -135,7 +136,7 @@ instance manageAuthenticationApplicationM :: ManageAuthentication ApplicationM w
     burl <- EP.backend ep
 
     response <- liftAff $ parOneOf [
-      mkRequest burl ep (Post (Just auth))
+      mkAuthRequest burl ep Nothing (Post (Just auth))
       , Left "Timeout" <$ (delay env.timeoutBackend)]
 
     case response of
@@ -170,7 +171,7 @@ instance manageItemApplicationM :: ManageItem ApplicationM where
     burl <- EP.backend ep
 
     response <- liftAff $ parOneOf [
-        mkAuthRequest burl ep ui (Put (Just item))
+        mkAuthRequest burl ep (_.token <<< unwrap <$> ui) (Put (Just item))
         , Left "Timeout" <$ (delay env.timeoutBackend)]
     case response of
       Left err -> do
@@ -178,7 +179,9 @@ instance manageItemApplicationM :: ManageItem ApplicationM where
         pure Nothing
       Right (Tuple _ new) -> do
         pure new
+
     where
+
       ep = EP.Item item.id
 
   -- |Add an item
@@ -188,7 +191,7 @@ instance manageItemApplicationM :: ManageItem ApplicationM where
     burl <- EP.backend ep
 
     response <- liftAff $ parOneOf [
-        mkAuthRequest burl ep ui (Post (Just item))
+        mkAuthRequest burl ep (_.token <<< unwrap <$> ui) (Post (Just item))
         , Left "Timeout" <$ (delay env.timeoutBackend)]
     case response of
       Left err -> do
@@ -206,7 +209,7 @@ instance manageItemApplicationM :: ManageItem ApplicationM where
     burl <- EP.backend ep
 
     response <- liftAff $ parOneOf [
-      mkAuthRequest burl ep ui (Get::RequestMethod Void)
+      mkAuthRequest burl ep (_.token <<< unwrap <$> ui) (Get::RequestMethod Void)
       , Left "Timeout" <$ (delay env.timeoutBackend)]
     case response of
       Left err -> do
@@ -215,7 +218,7 @@ instance manageItemApplicationM :: ManageItem ApplicationM where
       Right (Tuple _ attrs) -> do
         pure attrs
     where
-      ep = EP.Attributes
+      ep = EP.Attributes      
 
   -- |Update all attributes in the item
   updateItemAttributes key arr = do
@@ -224,7 +227,7 @@ instance manageItemApplicationM :: ManageItem ApplicationM where
     burl <- EP.backend ep
 
     response <- liftAff $ parOneOf [
-      mkAuthRequest burl ep ui $ Put (Just arr)
+      mkAuthRequest burl ep (_.token <<< unwrap <$> ui) $ Put (Just arr)
       , Left "Timeout" <$ (delay env.timeoutBackend)]
     case response of
       Left err -> do
@@ -242,7 +245,7 @@ instance manageItemApplicationM :: ManageItem ApplicationM where
     burl <- EP.backend ep
 
     response <- liftAff $ parOneOf [
-      mkAuthRequest burl ep ui (Get::RequestMethod Void)
+      mkAuthRequest burl ep (_.token <<< unwrap <$> ui) (Get::RequestMethod Void)
       , Left "Timeout" <$ (delay env.timeoutBackend)]
     case response of
       Left err -> do
@@ -260,7 +263,7 @@ instance manageItemApplicationM :: ManageItem ApplicationM where
     burl <- EP.backend ep
 
     response <- liftAff $ parOneOf [
-      mkAuthRequest burl ep ui (Get::RequestMethod Void)
+      mkAuthRequest burl ep (_.token <<< unwrap <$> ui) (Get::RequestMethod Void)
       , Left "Timeout" <$ (delay env.timeoutBackend)]
 
     case response of
@@ -280,7 +283,7 @@ instance manageItemApplicationM :: ManageItem ApplicationM where
     burl <- EP.backend ep
 
     response <- liftAff $ parOneOf [
-      mkAuthRequest burl ep ui (Post (Just filter))
+      mkAuthRequest burl ep (_.token <<< unwrap <$> ui) (Post (Just filter))
       , Left "Timeout" <$ (delay env.timeoutBackend)]
 
     case response of
@@ -307,7 +310,7 @@ instance manageEntityApplicationM :: ManageEntity ApplicationM where
 
     response <- liftAff $ parOneOf [
       (map concat) <$> (sequence <$> parSequence [
-        unpack <$> mkRequest b1 ep1 (Get::RequestMethod Void)
+        unpack <$> mkAuthRequest b1 ep1 Nothing (Get::RequestMethod Void)
 --        , unpack <$> mkRequest b2 ep2 (Get::RequestMethod Void)
       ]),
       Nothing <$ (delay env.timeoutIothub)]

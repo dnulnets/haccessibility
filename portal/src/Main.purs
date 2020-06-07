@@ -12,7 +12,6 @@ import Version (build)
 import Prelude
 import Data.Maybe (Maybe(..))
 import Data.Foldable (traverse_)
-import Data.Traversable (traverse)
 import Data.String.CodeUnits as Str
 import Data.Either (Either(..))
 import Data.Tuple (Tuple(..))
@@ -54,8 +53,7 @@ import Routing.Duplex (parse)
 import Accessibility.Utils.Token (readToken, removeToken, Token(..))
 import Accessibility.Application (runApplication, Environment, default)
 import Accessibility.Root as Root
-import Accessibility.Interface.Endpoint (Endpoint(..), BaseURL(..), backend)
-import Accessibility.Interface.Authenticate (UserInfo(..))
+import Accessibility.Interface.Endpoint (Endpoint(..), BaseURL(..))
 import Accessibility.Data.Route (routeCodec, Page(..))
 import Accessibility.Utils.Request (RequestMethod(..), mkAuthRequest)
 
@@ -91,8 +89,8 @@ main ∷ Effect Unit -- ^ Default return value
 main = do
   cui <- liftEffect $ Ref.new Nothing
   loc <- window >>= location >>= origin
-  log $ "Origin = " <> loc
-  log $ "Build = " <> build
+  log $ "Origin: " <> loc
+  log $ "Build: " <> build
 
   HA.runHalogenAff do
     body <- HA.awaitBody
@@ -102,42 +100,45 @@ main = do
     H.liftEffect readToken >>= traverse_ \(Token tok) -> do
 
       -- Ask the backend for approval by making a GET to the authenticate
-      -- endpoint with the token as an Authroization: Bearer, it will reply
-      -- userInfo if approved, otherwise an error
+      -- endpoint with the token as an Authorization: Bearer, it will reply
+      -- with 200OK and userInfo if approved, everything else is considered
+      -- denied
       res <- H.liftAff $ mkAuthRequest (BaseURL loc) Authenticate 
-        (Just (UserInfo {
-          token: tok
-          , userid:""
-          , email:""
-          , username:""}))
+        (Just tok)
         (Get::RequestMethod Void)
       
       case res of
-        Left err -> do
-          H.liftEffect $ log $ "Error: " <> err
-          H.liftEffect $ log "No resuse of local storage token, did not get good response from backend"
-          H.liftEffect $ removeToken
-          H.liftEffect $ Ref.write Nothing cui
+        Left err -> 
+          H.liftEffect do
+            log $ "Error: " <> err
+            log "No resuse of local storage token, did not get good response from backend"
+            removeToken
+            Ref.write Nothing cui
         Right (Tuple (AXS.StatusCode 200) userInfo) -> do
-          H.liftEffect $ log $ "Reuse of local storage token"
-          H.liftEffect $ log $ show userInfo
-          H.liftEffect $ Ref.write userInfo cui
+          H.liftEffect do
+            log $ "Reuse of local storage token"
+            log $ "User is: " <> (show userInfo)
+            Ref.write userInfo cui
         Right (Tuple sc _) -> do
-          H.liftEffect $ log $ "Error: " <> (show sc)
-          H.liftEffect $ log "No resuse of local storage token, did not get good response from backend"
-          H.liftEffect $ removeToken
-          H.liftEffect $ Ref.write Nothing cui
+          H.liftEffect do 
+            log $ "Error responsecode: " <> (show sc)
+            log "No resuse of local storage token, did not get good response from backend"
+            removeToken
+            Ref.write Nothing cui
 
+    -- Get the authenticated user if we already have one
+    ui <- H.liftEffect $ Ref.read cui
+
+    -- Run the root component
     let
       env ∷ Environment
       env = (default cui) { baseURL = BaseURL loc }
-
-    ui <- H.liftEffect $ Ref.read cui
-    H.liftEffect $ log $ show ui
     io <- runUI (rootComponent env) ui body
 
+    -- Our router, based on what is typed in the browser navigational feed
     void $ liftEffect $ matchesWith (parse routeCodec) \old new -> do
-      liftEffect $ log $ "Router at " <> show old
-      liftEffect $ log $ "Router change to " <> show new
+      liftEffect do
+        log $ "Router: URL At: " <> show old
+        log $ "Router: URL Change to: " <> show new
       when (old /= Just new) do
         launchAff_ $ io.query $ H.tell $ Root.GotoPageRequest new
