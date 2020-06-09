@@ -32,6 +32,10 @@ import Halogen.HTML as HH
 import Halogen.Aff as HA
 import Halogen.VDom.Driver (runUI)
 
+-- Routing
+import Routing.Hash (setHash, getHash)
+import Routing.Duplex (print, parse)
+
 -- Web imports
 import Web.HTML (window)
 import Web.HTML.Window (location, toEventTarget)
@@ -114,17 +118,22 @@ main = do
             log "No resuse of local storage token, did not get good response from backend"
             removeToken
             Ref.write Nothing cui
+            setHash $ print routeCodec Login
+
         Right (Tuple (AXS.StatusCode 200) userInfo) -> do
           H.liftEffect do
             log $ "Reuse of local storage token"
             log $ "User is: " <> (show userInfo)
             Ref.write userInfo cui
+            setHash $ print routeCodec Home
+
         Right (Tuple sc _) -> do
           H.liftEffect do 
             log $ "Error responsecode: " <> (show sc)
             log "No resuse of local storage token, did not get good response from backend"
             removeToken
             Ref.write Nothing cui
+            setHash $ print routeCodec Login
 
     -- Get the authenticated user if we already have one
     ui <- H.liftEffect $ Ref.read cui

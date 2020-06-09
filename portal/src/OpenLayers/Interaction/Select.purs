@@ -62,13 +62,13 @@ create opts = runFn1 createImpl (toNullable opts)
 --
 foreign import onImpl :: forall v a. Fn3 String (v -> Effect a) Select (Effect Key)
 
-onSelect :: forall a v. Select -> (SelectEvent -> Effect Unit) -> Effect Key
-onSelect self fn = runFn3 onImpl "select" fn self
+onSelect :: (SelectEvent -> Effect Unit) -> Select -> Effect Key
+onSelect fn self = runFn3 onImpl "select" fn self
 
 --
 -- All un_ functions
 --
 foreign import unImpl :: forall v a. Fn3 String Key Select (Effect Unit)
 
-unSelect :: forall a v. Select -> Key -> Effect Unit
-unSelect self key = runFn3 unImpl "select" key self
+unSelect :: forall a v. Key -> Select -> Effect Unit
+unSelect key self = runFn3 unImpl "select" key self

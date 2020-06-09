@@ -3,7 +3,14 @@
 -- |
 -- | Written by Tomas Stenlund, Sundsvall, Sweden (c) 2020
 -- |
-module OpenLayers.Proj (Code(..), fromLonLat) where
+module OpenLayers.Proj (
+  SRS
+  
+  , epsg_3857
+  , epsg_4326
+
+  , fromLonLat
+  , toLonLat ) where
 
 -- Standard import
 import Prelude
@@ -35,23 +42,19 @@ import Effect.Aff.Compat (EffectFnAff, fromEffectFnAff)
 --
 -- Own datatypes
 --
-
-data Code = EPSG_3857 | EPSG_4326
-
--- |Code to string interface
-instance showCode :: Show Code where
-  show EPSG_3857 = "EPSG:3857"
-  show EPSG_4326 = "EPSG:4326"
+newtype SRS = SRS String
+foreign import epsg_3857::SRS
+foreign import epsg_4326::SRS
 
 --
 -- Function mapping
 --
-foreign import fromLonLatImpl :: Fn2 (Array Number) (Nullable String) (Array Number)
+foreign import fromLonLatImpl :: Fn2 (Array Number) (Nullable SRS) (Array Number)
 
-fromLonLat :: Array Number->Maybe Code-> Array Number
-fromLonLat c s = runFn2 fromLonLatImpl c $ toNullable (show <$> s)
+fromLonLat :: Array Number->Maybe SRS-> Array Number
+fromLonLat c s = runFn2 fromLonLatImpl c $ toNullable s
 
-foreign import toLonLatImpl :: Fn2 (Array Number) (Nullable String) (Array Number)
+foreign import toLonLatImpl :: Fn2 (Array Number) (Nullable SRS) (Array Number)
 
-toLonLat :: Array Number->Maybe Code-> Array Number
-toLonLat c s = runFn2 toLonLatImpl c $ toNullable (show <$> s)
+toLonLat :: Array Number->Maybe SRS-> Array Number
+toLonLat c s = runFn2 toLonLatImpl c $ toNullable s

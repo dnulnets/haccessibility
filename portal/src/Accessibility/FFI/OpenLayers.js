@@ -140,7 +140,7 @@ exports.createMapImpl = function (element,lon, lat, z) {
       ],
       view: new ol.View({
         projection: projection ,
-        center: [lon, lat],
+//        center: [lon, lat],
         center: olp.fromLonLat([lon, lat], projection),
         zoom: z
       })            

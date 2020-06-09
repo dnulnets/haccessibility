@@ -3,7 +3,7 @@
 -- |
 -- | Written by Tomas Stenlund, Sundsvall, Sweden (c) 2020
 -- |
-module OpenLayers.Map (Map, create, getView) where
+module OpenLayers.View (View, create, getProjection) where
 
 -- Standard import
 import Prelude
@@ -28,32 +28,24 @@ import Effect (Effect)
 import Effect.Aff (Aff)
 import Effect.Aff.Compat (EffectFnAff, fromEffectFnAff)
 
--- Openlayers
-import OpenLayers.View as View
-
 --
 -- Foreign data types
 -- 
-foreign import data Map :: Type
-instance showTile :: Show Map where
-  show _ = "Map"
-
+foreign import data View :: Type
+instance showView :: Show View where
+  show _ = "View"
 --
 -- Function mapping
 --
-foreign import createImpl :: forall r . Fn1 {|r} (Effect (Nullable Map))
+foreign import createImpl :: forall r . Fn1 {|r} (Effect (Nullable View))
 
-create :: forall r . {|r} -> Effect (Maybe Map)
+create :: forall r . {|r} -> Effect (Maybe View)
 create o = toMaybe <$> runFn1 createImpl o
 
 --
--- get functions
+-- get functins
 --
-foreign import getViewImpl :: Fn1 Map (Effect (Nullable View.View))
+foreign import getProjectionImpl :: Fn1 View (Effect (Nullable String))
 
-getView :: Map -> Effect (Maybe View.View)
-getView o = toMaybe <$> runFn1 getViewImpl o
-
-
-
-
+getProjection :: View -> Effect (Maybe String)
+getProjection self = toMaybe <$> runFn1 getProjectionImpl self

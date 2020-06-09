@@ -9,23 +9,15 @@
 "use strict";
 
 // Get hold of the OpenLayer types and functions
-/*var ol  = require ('ol');
-var oll = require ('ol/layer');
-var olc = require ('ol/control')
-var ols = require ('ol/source');
-var olp = require ('ol/proj');
-var olst = require ('ol/style');
-var olg = require ('ol/geom');
-var olgp = require ('ol/geom/Polygon');*/
-
 var ol  = require ('ol');
-var oli = require ('ol/interaction');
 
-exports.createImpl = function (opts) {
+exports.createImpl = function (opt) {
     return function() {
-        return new oli.Select (opts);
+        console.log ('Geolocation:', opt);
+        return new ol.Geolocation(opt);
     }
 }
+
 
 exports.onImpl = function (event, f, self) {
     return function () {
@@ -39,4 +31,22 @@ exports.unImpl = function (event, key, self) {
     return function () {
         return self.un (event, key);
     }    
+}
+
+exports.getAccuracyGeometryImpl = function (self) {
+    return function () {
+        return self.getAccuracyGeometry();
+    }
+}
+
+exports.getPositionImpl = function (self) {
+    return function () {
+        return self.getPosition();
+    }
+}
+
+exports.setTrackingImpl = function (onoff, self) {
+    return function () {
+        self.setTracking (onoff);
+    }
 }

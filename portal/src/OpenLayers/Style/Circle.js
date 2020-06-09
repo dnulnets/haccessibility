@@ -1,5 +1,5 @@
 //
-// The Openlayers Map API mapping for purescript.
+// The Openlayers Interaction Select API mapping for purescript.
 //
 // This is just a very crude mapping and only helps out with what I need for this application. It is no
 // complete mapping.
@@ -10,16 +10,10 @@
 
 // Get hold of the OpenLayer types and functions
 var ol  = require ('ol');
+var olst  = require ('ol/style');
 
 exports.createImpl = function (opt) {
     return function() {
-        var r = new ol.Map(opt);
-        return r;
-    }
-}
-
-exports.getViewImpl = function (self) {
-    return function() {
-        return self.getView();
+        return new olst.Circle(opt);
     }
 }

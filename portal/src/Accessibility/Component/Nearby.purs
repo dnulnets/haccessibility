@@ -11,8 +11,9 @@ import Prelude
 -- Data imports
 import Data.Array((!!), catMaybes, length, head)
 import Data.Maybe (Maybe(..), maybe, fromMaybe)
-import Data.Foldable (sequence_)
+import Data.Foldable (sequence_, oneOfMap)
 import Data.Traversable (sequence)
+import Data.Unfoldable (fromMaybe) as DU
 
 -- Control Monad
 import Control.Monad.Reader.Trans (class MonadAsk)
@@ -59,8 +60,16 @@ import Accessibility.FFI.OpenLayers
   , addInteraction
   , POI
   , POIType(..))
+
 import OpenLayers.Interaction.Select as Select
 import OpenLayers.Feature as Feature
+import OpenLayers.Source.OSM as OSM
+import OpenLayers.Layer.Tile as Tile
+import OpenLayers.Proj as Proj
+import OpenLayers.View as View
+import OpenLayers.Map as Map
+import OpenLayers.Geolocation as Geolocation
+
 import Accessibility.Data.Route (Page(..)) as ADR
 import Accessibility.Component.HTML.Utils (css, style)
 import Accessibility.Interface.Navigate (class ManageNavigation, gotoPage)
@@ -101,6 +110,9 @@ data Action = Initialize
   | FeatureSelect Select.SelectEvent
   | Mock Boolean
   | Add
+  | GPSError
+  | GPSPosition
+  | GPSAccuracy
 
 -- | Convert an Item to a POI
 itemToPOI :: Item -- ^The item to be converted
@@ -173,13 +185,63 @@ handleAction Initialize = do
   H.liftEffect $ log "Initialize Nearby component"
   state <- H.get
 
+  -- This is my playground for the OpenLayers conversion
+  osm <- H.liftEffect $ OSM.create {}
+  H.liftEffect $ log $ show osm
+
+  tile <- H.liftEffect $ sequence $ Tile.create <$> ((\o->{source: o }) <$> osm )
+  H.liftEffect $ log $ show tile
+
+  view <- H.liftEffect $ View.create { projection: Proj.epsg_3857 
+                                      , center: Proj.fromLonLat [0.0, 0.0] (Just Proj.epsg_3857)
+                                      , zoom: 18 }
+  H.liftEffect $ log $ show view
+
+  hamap <- H.liftEffect $ sequence $ Map.create <$> ((\t v -> {
+      target: "ha-map"
+      , layers: [ t ]
+      , view: v
+    }) <$> (join tile) <*> view)
+
+  H.liftEffect $ log $ show hamap
+
+  -- Get the geolocation device
+  mgeo <- H.liftEffect $ Geolocation.create {
+      trackingOptions: { enableHighAccuracy: true}
+      , projection: Proj.epsg_3857
+    }
+
+  -- Add an error listener to the geolocation device
+  case mgeo of
+    Just geo -> do 
+      void $ H.subscribe $ HQE.effectEventSource \emitter -> do
+        key <- Geolocation.onError (\_ -> HQE.emit emitter GPSError) geo
+        pure (HQE.Finalizer (Geolocation.unError key geo))
+
+      void $ H.subscribe $ HQE.effectEventSource \emitter -> do
+        key <- Geolocation.onChangePosition (\_ -> HQE.emit emitter GPSPosition) geo
+        pure (HQE.Finalizer (Geolocation.unChangePosition key geo))
+
+      void $ H.subscribe $ HQE.effectEventSource \emitter -> do
+        key <- Geolocation.onChangeAccuracyGeometry (\_ -> HQE.emit emitter GPSAccuracy) geo
+        pure (HQE.Finalizer (Geolocation.unChangeAccuracyGeometry key geo))
+
+      -- Turn on the geo location device
+      H.liftEffect $ Geolocation.setTracking true geo
+
+    Nothing -> do
+      H.liftEffect $ log "No error subscription"
+  
   -- Create the map and add a geolocation and start tracking
-  olmap <- H.liftEffect $ createMap "ha-map" 0.0 0.0 18
+  -- olmap <- H.liftEffect $ createMap "ha-map" 0.0 0.0 18
+  olmap <- pure Nothing
   g <- H.liftEffect $ join <$> (sequence $ addGeolocationToMap <$> olmap)
   H.liftEffect $ sequence_ $ setTracking <$> g <*> (Just true)
 
+  -- Get te position from the GPS
+  pos <- H.liftAff $ sequence $ _getCoordinate <$> g
+
   -- Get the weather data from the IoT Hb and add it to our POI layer
-  pos <- H.liftAff $ sequence $ _getCoordinate <$> g 
   entities <- queryEntities "WeatherObserved"
 
   -- Get all items within our radius
@@ -195,7 +257,7 @@ handleAction Initialize = do
 
   -- Add the layer to the map and center it around our location
   H.liftEffect do
-    sequence_ $ addLayerToMap <$> olmap <*> layer
+    -- sequence_ $ addLayerToMap <$> olmap <*> layer
     sequence_ $ setCenter <$> olmap <*> (join $ _.longitude <$> pos) <*> (join $ _.latitude <$> pos)  
 
   -- Add a listener to the add item button on the map
@@ -219,8 +281,8 @@ handleAction Initialize = do
   -- Subscribe for feature selects on the map
   s <- H.liftEffect $ Select.create $ Just {multi: false}
   sfeat <- H.subscribe $ HQE.effectEventSource \emitter -> do
-        key <- Select.onSelect s (\e -> HQE.emit emitter (FeatureSelect e))
-        pure (HQE.Finalizer (Select.unSelect s key))
+        key <- Select.onSelect (\e -> HQE.emit emitter (FeatureSelect e)) s
+        pure (HQE.Finalizer (Select.unSelect key s))
   H.liftEffect $ sequence_ $ addInteraction <$> olmap <*> (Just s)
 
   -- Update the state
@@ -296,13 +358,13 @@ handleAction (FeatureSelect e) = do
   l <- H.liftEffect $ sequence $ (Feature.get "id") <$> e.selected
   sequence_ $ gotoPage <$> (ADR.Point <$> (head (catMaybes l)) <*> (Just false))
 
-
 -- | Activate or deactivate the test mode of the mobile
 handleAction (Mock b) = do
   state <- H.get
-  H.liftEffect $ log "Test mode on/off"
-  H.liftEffect $ sequence_ $ setTracking <$> state.geo <*> (Just $ not b)  
-  H.liftEffect $ sequence_ $ (flip setTestMode b) <$> state.map
+  H.liftEffect do
+    log "Test mode on/off"
+    sequence_ $ setTracking <$> state.geo <*> (Just $ not b)  
+    sequence_ $ (flip setTestMode b) <$> state.map
   pos <- H.liftEffect $ sequence $ getCoordinate <$> state.geo
   entities <- queryEntities "WeatherObserved"
   items <- queryItems {
@@ -313,9 +375,10 @@ handleAction (Mock b) = do
     text: Nothing }
   H.liftEffect $ sequence_ $ removeLayerFromMap <$> state.map <*> state.poi
   layer <- H.liftEffect $ sequence $ createPOILayer <$> (join $ _.longitude <$> pos) <*> (join $ _.latitude <$> pos) <*> (Just (state.distance*2.0)) <*> ((map (map itemToPOI) items) <> (map (map entityToPOI) entities))
-  H.liftEffect $ sequence_ $ removeLayerFromMap <$> state.map <*> state.poi
-  H.liftEffect $ sequence_ $ addLayerToMap <$> state.map <*> layer
-  H.liftEffect $ sequence_ $ setCenter <$> state.map <*> (join $ _.longitude <$> pos) <*> (join $ _.latitude <$> pos)
+  H.liftEffect do
+    sequence_ $ removeLayerFromMap <$> state.map <*> state.poi
+    sequence_ $ addLayerToMap <$> state.map <*> layer
+    sequence_ $ setCenter <$> state.map <*> (join $ _.longitude <$> pos) <*> (join $ _.latitude <$> pos)
   H.put state { mock = b, poi = layer }
 
 -- | Find the items
@@ -325,3 +388,14 @@ handleAction Add = do
   pos <- H.liftEffect $ sequence $ getCoordinate <$> state.geo
   H.liftEffect $ log $ show pos
 
+-- | GPS Error
+handleAction GPSError = do
+  H.liftEffect $ log "GPS Error!!!"
+
+-- | GPS Position
+handleAction GPSPosition = do
+  H.liftEffect $ log "GPS Position!!!"
+
+-- | GPS Accuracy
+handleAction GPSAccuracy = do
+  H.liftEffect $ log "GPS Accuracy!!!"

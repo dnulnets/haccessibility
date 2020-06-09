@@ -1,5 +1,5 @@
 //
-// The Openlayers Map API mapping for purescript.
+// The Openlayers Overlay API mapping for purescript.
 //
 // This is just a very crude mapping and only helps out with what I need for this application. It is no
 // complete mapping.
@@ -13,13 +13,7 @@ var ol  = require ('ol');
 
 exports.createImpl = function (opt) {
     return function() {
-        var r = new ol.Map(opt);
-        return r;
-    }
-}
-
-exports.getViewImpl = function (self) {
-    return function() {
-        return self.getView();
+        var r = new ol.Overlay(opt);
+        return r;        
     }
 }

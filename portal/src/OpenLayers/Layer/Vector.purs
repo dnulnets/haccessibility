@@ -3,7 +3,7 @@
 -- |
 -- | Written by Tomas Stenlund, Sundsvall, Sweden (c) 2020
 -- |
-module OpenLayers.Map (Map, create, getView) where
+module OpenLayers.Layer.Vector (Vector, create) where
 
 -- Standard import
 import Prelude
@@ -28,32 +28,15 @@ import Effect (Effect)
 import Effect.Aff (Aff)
 import Effect.Aff.Compat (EffectFnAff, fromEffectFnAff)
 
--- Openlayers
-import OpenLayers.View as View
-
 --
 -- Foreign data types
 -- 
-foreign import data Map :: Type
-instance showTile :: Show Map where
-  show _ = "Map"
+foreign import data Vector :: Type
 
 --
 -- Function mapping
 --
-foreign import createImpl :: forall r . Fn1 {|r} (Effect (Nullable Map))
+foreign import createImpl :: forall r . Fn1 {|r} (Effect (Nullable Vector))
 
-create :: forall r . {|r} -> Effect (Maybe Map)
+create :: forall r . {|r} -> Effect (Maybe Vector)
 create o = toMaybe <$> runFn1 createImpl o
-
---
--- get functions
---
-foreign import getViewImpl :: Fn1 Map (Effect (Nullable View.View))
-
-getView :: Map -> Effect (Maybe View.View)
-getView o = toMaybe <$> runFn1 getViewImpl o
-
-
-
-
