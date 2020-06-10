@@ -18,6 +18,13 @@ exports.createImpl = function (opt) {
     }
 }
 
+exports.addLayerImpl = function (layer, self) {
+    return function() {
+        console.log ('Map.addLayer:', layer, self)
+        self.addLayer(layer);
+    }
+}
+
 exports.getViewImpl = function (self) {
     return function() {
         return self.getView();

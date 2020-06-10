@@ -14,6 +14,7 @@ import Data.Maybe (Maybe(..), maybe, fromMaybe)
 import Data.Foldable (sequence_, oneOfMap)
 import Data.Traversable (sequence)
 import Data.Unfoldable (fromMaybe) as DU
+import Data.Nullable
 
 -- Control Monad
 import Control.Monad.Reader.Trans (class MonadAsk)
@@ -69,6 +70,13 @@ import OpenLayers.Proj as Proj
 import OpenLayers.View as View
 import OpenLayers.Map as Map
 import OpenLayers.Geolocation as Geolocation
+import OpenLayers.Style.Style as Style
+import OpenLayers.Style.Fill as Fill
+import OpenLayers.Style.Circle as Circle
+import OpenLayers.Style.Stroke as Stroke
+import OpenLayers.Geom.Point as Point
+import OpenLayers.Layer.Vector as VectorLayer
+import OpenLayers.Source.Vector as VectorSource
 
 import Accessibility.Data.Route (Page(..)) as ADR
 import Accessibility.Component.HTML.Utils (css, style)
@@ -111,7 +119,7 @@ data Action = Initialize
   | Mock Boolean
   | Add
   | GPSError
-  | GPSPosition
+  | GPSPosition Geolocation.Geolocation Feature.Feature
   | GPSAccuracy
 
 -- | Convert an Item to a POI
@@ -187,15 +195,12 @@ handleAction Initialize = do
 
   -- This is my playground for the OpenLayers conversion
   osm <- H.liftEffect $ OSM.create {}
-  H.liftEffect $ log $ show osm
 
   tile <- H.liftEffect $ sequence $ Tile.create <$> ((\o->{source: o }) <$> osm )
-  H.liftEffect $ log $ show tile
 
   view <- H.liftEffect $ View.create { projection: Proj.epsg_3857 
                                       , center: Proj.fromLonLat [0.0, 0.0] (Just Proj.epsg_3857)
                                       , zoom: 18 }
-  H.liftEffect $ log $ show view
 
   hamap <- H.liftEffect $ sequence $ Map.create <$> ((\t v -> {
       target: "ha-map"
@@ -203,24 +208,43 @@ handleAction Initialize = do
       , view: v
     }) <$> (join tile) <*> view)
 
-  H.liftEffect $ log $ show hamap
-
   -- Get the geolocation device
   mgeo <- H.liftEffect $ Geolocation.create {
       trackingOptions: { enableHighAccuracy: true}
       , projection: Proj.epsg_3857
     }
 
-  -- Add an error listener to the geolocation device
+  -- Add listeners to the geolocation device
   case mgeo of
-    Just geo -> do 
+    Just geo -> do
+
       void $ H.subscribe $ HQE.effectEventSource \emitter -> do
         key <- Geolocation.onError (\_ -> HQE.emit emitter GPSError) geo
         pure (HQE.Finalizer (Geolocation.unError key geo))
 
-      void $ H.subscribe $ HQE.effectEventSource \emitter -> do
-        key <- Geolocation.onChangePosition (\_ -> HQE.emit emitter GPSPosition) geo
-        pure (HQE.Finalizer (Geolocation.unChangePosition key geo))
+      -- Create the GPS Position Feature
+      pfill <- H.liftEffect $ Fill.create { color: "#3399CC" }
+      pstroke <- H.liftEffect $ Stroke.create { color: "#fff", width: 2}
+      pcircle <- H.liftEffect $ Circle.create {
+        radius: 6
+        , fill: fromMaybe null $ notNull <$> pfill
+        , stroke: fromMaybe null $ notNull <$> pstroke
+        }
+      pstyle <- H.liftEffect $ Style.create {image: fromMaybe null $ notNull <$> pcircle}
+      pfeat <- H.liftEffect $ Feature.create {}
+      H.liftEffect $ sequence_ $ (Feature.setStyle pstyle) <$> pfeat
+      psvector <- H.liftEffect $ VectorSource.create {features: (DU.fromMaybe pfeat)::(Array Feature.Feature)}
+      plvector <- H.liftEffect $ VectorLayer.create { source: fromMaybe null $ notNull <$> psvector }
+      H.liftEffect $ sequence_ $ Map.addLayer <$> plvector <*> (join hamap)
+
+      -- Event handler for GPS Position
+      case pfeat of
+        Just feat -> do
+          void $ H.subscribe $ HQE.effectEventSource \emitter -> do
+            key <- Geolocation.onChangePosition (\_ -> HQE.emit emitter (GPSPosition geo feat)) geo
+            pure (HQE.Finalizer (Geolocation.unChangePosition key geo))
+        Nothing -> do
+          H.liftEffect $ log "No GPS Position handler"
 
       void $ H.subscribe $ HQE.effectEventSource \emitter -> do
         key <- Geolocation.onChangeAccuracyGeometry (\_ -> HQE.emit emitter GPSAccuracy) geo
@@ -231,7 +255,7 @@ handleAction Initialize = do
 
     Nothing -> do
       H.liftEffect $ log "No error subscription"
-  
+
   -- Create the map and add a geolocation and start tracking
   -- olmap <- H.liftEffect $ createMap "ha-map" 0.0 0.0 18
   olmap <- pure Nothing
@@ -393,8 +417,13 @@ handleAction GPSError = do
   H.liftEffect $ log "GPS Error!!!"
 
 -- | GPS Position
-handleAction GPSPosition = do
-  H.liftEffect $ log "GPS Position!!!"
+handleAction (GPSPosition g f) = do
+  pos <- H.liftEffect $ Geolocation.getPosition g
+  mp <- H.liftEffect $ sequence $ Point.create <$> pos <*> (Just Nothing)
+  H.liftEffect $ Feature.setGeometry (join mp) f
+  H.liftEffect $ log $ "GPS Position: " <> (show pos)
+
+-- positionFeature.setGeometry(new olg.Point(olp.fromLonLat([mock_lon, mock_lat], mock_accuracy)));
 
 -- | GPS Accuracy
 handleAction GPSAccuracy = do

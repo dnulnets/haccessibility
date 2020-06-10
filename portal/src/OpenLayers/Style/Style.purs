@@ -3,11 +3,7 @@
 -- |
 -- | Written by Tomas Stenlund, Sundsvall, Sweden (c) 2020
 -- |
-module OpenLayers.Layer.Tile (
-  Tile
-  , RawTile
-
-  , create) where
+module OpenLayers.Style.Style (Style, create) where
 
 -- Standard import
 import Prelude
@@ -32,19 +28,15 @@ import Effect (Effect)
 import Effect.Aff (Aff)
 import Effect.Aff.Compat (EffectFnAff, fromEffectFnAff)
 
--- Import own modules
-import OpenLayers.Layer.BaseTileLayer as BaseTileLayer
-
 --
 -- Foreign data types
 -- 
-foreign import data RawTile :: Type
-type Tile = BaseTileLayer.BaseTileLayer RawTile
+foreign import data Style :: Type
 
 --
 -- Function mapping
 --
-foreign import createImpl :: forall r . Fn1 {|r} (Effect (Nullable Tile))
+foreign import createImpl :: forall r . Fn1 {|r} (Effect (Nullable Style))
 
-create :: forall r . {|r} -> Effect (Maybe Tile)
+create :: forall r . {|r} -> Effect (Maybe Style)
 create o = toMaybe <$> runFn1 createImpl o

@@ -14,7 +14,9 @@ var oll  = require ('ol/layer');
 
 exports.createImpl = function (opt) {
     return function() {
+        console.log ('Layer.Vector.create:', opt)
         var r = new oll.Vector(opt);
-        return r;
+        console.log ('Layer.Vector.create.return:', r)
+        return r; 
     }
 }

@@ -90,7 +90,6 @@ setTracking onoff g = runFn2 setTrackingImpl onoff g
 --
 -- Getters
 --
-
 foreign import getAccuracyGeometryImpl :: Fn1 Geolocation (Effect (Nullable Polygon.Polygon))
 getAccuracyGeometry :: Geolocation -> Effect (Maybe Polygon.Polygon)
 getAccuracyGeometry self = toMaybe <$> runFn1 getAccuracyGeometryImpl self
@@ -98,6 +97,18 @@ getAccuracyGeometry self = toMaybe <$> runFn1 getAccuracyGeometryImpl self
 foreign import getPositionImpl :: Fn1 Geolocation (Effect (Nullable (Array Number)))
 getPosition :: Geolocation -> Effect (Maybe (Array Number))
 getPosition self = toMaybe <$> runFn1 getPositionImpl self
+
+foreign import getAltitudeImpl :: Fn1 Geolocation (Effect (Nullable Number))
+getAltitude :: Geolocation -> Effect (Maybe Number)
+getAltitude self = toMaybe <$> runFn1 getAltitudeImpl self
+
+foreign import getAltitudeAccuracyImpl :: Fn1 Geolocation (Effect (Nullable Number))
+getAltitudeAccuracy :: Geolocation -> Effect (Maybe Number)
+getAltitudeAccuracy self = toMaybe <$> runFn1 getAltitudeAccuracyImpl self
+
+foreign import getAccuracyImpl :: Fn1 Geolocation (Effect (Nullable Number))
+getAccuracy :: Geolocation -> Effect (Maybe Number)
+getAccuracy self = toMaybe <$> runFn1 getAccuracyImpl self
 
 --
 -- Event handlers setup

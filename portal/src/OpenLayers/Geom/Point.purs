@@ -3,7 +3,11 @@
 -- |
 -- | Written by Tomas Stenlund, Sundsvall, Sweden (c) 2020
 -- |
-module OpenLayers.Geom.Point ( Point, RawPoint ) where
+module OpenLayers.Geom.Point (
+  Point
+  , RawPoint 
+  
+  , create ) where
 
 -- Standard import
 import Prelude

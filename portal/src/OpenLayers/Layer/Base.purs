@@ -1,13 +1,9 @@
 -- |
--- | The OpenLayers Feature module
+-- | The OpenLayers Geometry module
 -- |
 -- | Written by Tomas Stenlund, Sundsvall, Sweden (c) 2020
 -- |
-module OpenLayers.Layer.Tile (
-  Tile
-  , RawTile
-
-  , create) where
+module OpenLayers.Layer.Base ( Base, RawBase ) where
 
 -- Standard import
 import Prelude
@@ -32,19 +28,14 @@ import Effect (Effect)
 import Effect.Aff (Aff)
 import Effect.Aff.Compat (EffectFnAff, fromEffectFnAff)
 
--- Import own modules
-import OpenLayers.Layer.BaseTileLayer as BaseTileLayer
-
 --
 -- Foreign data types
 -- 
-foreign import data RawTile :: Type
-type Tile = BaseTileLayer.BaseTileLayer RawTile
+foreign import data RawBase :: Type -> Type
+
+-- |The actual abstract basetype for geometry
+type Base a = RawBase a
 
 --
 -- Function mapping
 --
-foreign import createImpl :: forall r . Fn1 {|r} (Effect (Nullable Tile))
-
-create :: forall r . {|r} -> Effect (Maybe Tile)
-create o = toMaybe <$> runFn1 createImpl o

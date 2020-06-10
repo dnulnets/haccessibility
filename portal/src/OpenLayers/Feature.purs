@@ -40,6 +40,7 @@ import Effect.Aff.Compat (EffectFnAff, fromEffectFnAff)
 -- Our own imports
 --
 import OpenLayers.Geom.Geometry as Geometry
+import OpenLayers.Style.Style as Style
 
 --
 -- Foreign data types
@@ -61,9 +62,9 @@ foreign import getImpl :: Fn2 String Feature (Effect (Nullable String))
 --
 -- setters
 --
-foreign import setStyleImpl :: forall r . Fn2 (Nullable {|r}) Feature (Effect Unit)
-setStyle::forall r . Maybe {|r}->Feature->Effect Unit
-setStyle r self = runFn2 setStyleImpl (toNullable r) self
+foreign import setStyleImpl :: Fn2 (Nullable Style.Style) Feature (Effect Unit)
+setStyle::Maybe Style.Style->Feature->Effect Unit
+setStyle st self = runFn2 setStyleImpl (toNullable st) self
 
 foreign import setPropertiesImpl :: forall r . Fn2 {|r} Feature (Effect Unit)
 setProperties::forall r . {|r} -> Feature -> Effect Unit

@@ -3,7 +3,11 @@
 -- |
 -- | Written by Tomas Stenlund, Sundsvall, Sweden (c) 2020
 -- |
-module OpenLayers.Layer.Vector (Vector, create) where
+module OpenLayers.Layer.Vector (
+  Vector
+  , RawVector
+  
+  ,create) where
 
 -- Standard import
 import Prelude
@@ -28,10 +32,14 @@ import Effect (Effect)
 import Effect.Aff (Aff)
 import Effect.Aff.Compat (EffectFnAff, fromEffectFnAff)
 
+-- Our own imports
+import OpenLayers.Layer.BaseVectorLayer as BaseVectorLayer
+
 --
 -- Foreign data types
 -- 
-foreign import data Vector :: Type
+foreign import data RawVector :: Type
+type Vector = BaseVectorLayer.BaseVectorLayer RawVector
 
 --
 -- Function mapping

@@ -45,6 +45,24 @@ exports.getPositionImpl = function (self) {
     }
 }
 
+exports.getAltitudeImpl = function (self) {
+    return function () {
+        return self.getAltitude();
+    }
+}
+
+exports.getAltitudeAccuracyImpl = function (self) {
+    return function () {
+        return self.getAltitudeAccuracy();
+    }
+}
+
+exports.getAccuracyImpl = function (self) {
+    return function () {
+        return self.getAccuracy();
+    }
+}
+
 exports.setTrackingImpl = function (onoff, self) {
     return function () {
         self.setTracking (onoff);

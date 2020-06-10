@@ -19,6 +19,7 @@ exports.createImpl = function (opt) {
 
 exports.setStyleImpl = function (r, self) {
     return function () {
+        console.log ('Feature.setStyle:', r, self)
         self.setStyle (r);
     }
 }

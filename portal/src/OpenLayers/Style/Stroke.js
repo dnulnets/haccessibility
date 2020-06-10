@@ -14,9 +14,9 @@ var olst  = require ('ol/style');
 
 exports.createImpl = function (opt) {
     return function() {
-        console.log ('Circle.create:', opt)
-        var r = new olst.Circle(opt);
-        console.log ('Circle.create.return:', r)
+        console.log ('Stroke.create:', opt)
+        var r = new olst.Stroke(opt);
+        console.log ('Stroke.create:', r)
         return r;
     }
 }
