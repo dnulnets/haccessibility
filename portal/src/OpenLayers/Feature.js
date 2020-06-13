@@ -32,6 +32,7 @@ exports.setPropertiesImpl = function (r, self) {
 
 exports.setGeometryImpl = function (r, self) {
     return function () {
+        console.log ("Feature.setGeometry", r, self);
         self.setGeometry (r);
     }
 }

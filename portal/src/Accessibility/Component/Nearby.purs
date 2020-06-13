@@ -120,7 +120,7 @@ data Action = Initialize
   | Add
   | GPSError
   | GPSPosition Geolocation.Geolocation Feature.Feature
-  | GPSAccuracy
+  | GPSAccuracy Geolocation.Geolocation Feature.Feature
 
 -- | Convert an Item to a POI
 itemToPOI :: Item -- ^The item to be converted
@@ -232,23 +232,35 @@ handleAction Initialize = do
         }
       pstyle <- H.liftEffect $ Style.create {image: fromMaybe null $ notNull <$> pcircle}
       pfeat <- H.liftEffect $ Feature.create {}
+      pafeat <- H.liftEffect $ Feature.create {}
       H.liftEffect $ sequence_ $ (Feature.setStyle pstyle) <$> pfeat
-      psvector <- H.liftEffect $ VectorSource.create {features: (DU.fromMaybe pfeat)::(Array Feature.Feature)}
+      psvector <- H.liftEffect $ VectorSource.create {features: catMaybes [pfeat, pafeat]}
       plvector <- H.liftEffect $ VectorLayer.create { source: fromMaybe null $ notNull <$> psvector }
       H.liftEffect $ sequence_ $ Map.addLayer <$> plvector <*> (join hamap)
 
-      -- Event handler for GPS Position
+      -- Event handlers for the GPS Position
       case pfeat of
         Just feat -> do
+
+          -- Change of Position
           void $ H.subscribe $ HQE.effectEventSource \emitter -> do
             key <- Geolocation.onChangePosition (\_ -> HQE.emit emitter (GPSPosition geo feat)) geo
             pure (HQE.Finalizer (Geolocation.unChangePosition key geo))
+
         Nothing -> do
           H.liftEffect $ log "No GPS Position handler"
 
-      void $ H.subscribe $ HQE.effectEventSource \emitter -> do
-        key <- Geolocation.onChangeAccuracyGeometry (\_ -> HQE.emit emitter GPSAccuracy) geo
-        pure (HQE.Finalizer (Geolocation.unChangeAccuracyGeometry key geo))
+      -- Event handlers for the GPS Position
+      case pafeat of
+        Just afeat -> do
+
+          -- Change of Accuracy
+          void $ H.subscribe $ HQE.effectEventSource \emitter -> do
+            key <- Geolocation.onChangeAccuracyGeometry (\_ -> HQE.emit emitter (GPSAccuracy geo afeat)) geo
+            pure (HQE.Finalizer (Geolocation.unChangeAccuracyGeometry key geo))
+
+        Nothing -> do
+          H.liftEffect $ log "No GPS Accuracy handler"
 
       -- Turn on the geo location device
       H.liftEffect $ Geolocation.setTracking true geo
@@ -426,5 +438,7 @@ handleAction (GPSPosition g f) = do
 -- positionFeature.setGeometry(new olg.Point(olp.fromLonLat([mock_lon, mock_lat], mock_accuracy)));
 
 -- | GPS Accuracy
-handleAction GPSAccuracy = do
+handleAction (GPSAccuracy g f) = do
+  polygon <- H.liftEffect $ Geolocation.getAccuracyGeometry g
+  H.liftEffect $ Feature.setGeometry polygon f
   H.liftEffect $ log "GPS Accuracy!!!"
