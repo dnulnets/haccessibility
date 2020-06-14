@@ -1,5 +1,5 @@
 -- |
--- | The OpenLayers Feature module
+-- | The OpenLayers Geolocation module
 -- |
 -- | Written by Tomas Stenlund, Sundsvall, Sweden (c) 2020
 -- |
@@ -20,7 +20,7 @@ module OpenLayers.Geolocation (
     , onChangeAccuracyGeometry
     , onChangePosition
     , onError
-    
+
     , onceChangePosition
 
     , unChangeAccuracyGeometry
@@ -32,24 +32,18 @@ module OpenLayers.Geolocation (
 import Prelude
 
 -- Data imports
-import Data.Nullable (Nullable, toMaybe, toNullable)
-import Data.Maybe (Maybe(..))
+import Data.Nullable (Nullable, toMaybe)
+import Data.Maybe (Maybe)
 import Data.Function.Uncurried
   ( Fn1
   , Fn2
   , Fn3
-  , Fn4
-  , Fn5
   , runFn1
   , runFn2
-  , runFn3
-  , runFn4
-  , runFn5)
+  , runFn3)
 
 -- Effect imports
 import Effect (Effect)
-import Effect.Aff (Aff)
-import Effect.Aff.Compat (EffectFnAff, fromEffectFnAff)
 
 -- Own imports
 import OpenLayers.Geom.Polygon as Polygon

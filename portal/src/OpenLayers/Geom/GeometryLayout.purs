@@ -1,5 +1,5 @@
 -- |
--- | The OpenLayers Geometry module
+-- | The OpenLayers GeometryLayout module
 -- |
 -- | Written by Tomas Stenlund, Sundsvall, Sweden (c) 2020
 -- |

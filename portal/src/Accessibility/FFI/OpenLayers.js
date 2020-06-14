@@ -110,10 +110,6 @@ var CenterControl = (function (Control) {
 
 } (olc.Control));
 
-exports.createSelect = function () {
-  return new oli.Select();
-}
-
 exports.addInteractionImpl = function (i, self)
 {
   return function () {

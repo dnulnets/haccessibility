@@ -11,10 +11,9 @@ import Prelude
 -- Data imports
 import Data.Array((!!), catMaybes, length, head)
 import Data.Maybe (Maybe(..), maybe, fromMaybe)
-import Data.Foldable (sequence_, oneOfMap)
+import Data.Foldable (sequence_)
 import Data.Traversable (sequence)
-import Data.Unfoldable (fromMaybe) as DU
-import Data.Nullable
+import Data.Nullable (notNull, null, toNullable)
 import Data.Tuple (Tuple(..), fst, snd)
 
 -- Control Monad
@@ -30,38 +29,10 @@ import Effect.Console (log)
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Properties as HP
-import Halogen.HTML.Events as HE
 import Halogen.Query.EventSource as HQE
 
--- Web imports
-import Web.HTML (window)
-import Web.HTML.Window (document)
-import Web.HTML.HTMLDocument (toParentNode)
-
-import Web.Event.Event as E
-
-import Web.DOM.ParentNode (QuerySelector(..), querySelector)
-import Web.DOM.Element (toEventTarget)
-
 -- Our own imports
-import Accessibility.FFI.OpenLayers
-  ( OLMap
-  , OLGeolocation
-  , OLLayer
-  , createMap
-  , createPOILayer
-  , removeTarget
-  , setCenter
-  , addGeolocationToMap
-  , setTracking
-  , getCoordinate
-  , _getCoordinate
-  , removeLayerFromMap
-  , addLayerToMap
-  , setTestMode
-  , addInteraction
-  , POI
-  , POIType(..))
+import Accessibility.FFI.OpenLayers (POI, POIType(..))
 
 import OpenLayers.Interaction.Select as Select
 import OpenLayers.Feature as Feature
@@ -81,7 +52,7 @@ import OpenLayers.Layer.Vector as VectorLayer
 import OpenLayers.Source.Vector as VectorSource
 
 import Accessibility.Data.Route (Page(..)) as ADR
-import Accessibility.Component.HTML.Utils (css, style)
+import Accessibility.Component.HTML.Utils (css)
 import Accessibility.Interface.Navigate (class ManageNavigation, gotoPage)
 import Accessibility.Interface.Item (class ManageItem, queryItems, Item)
 import Accessibility.Interface.Entity (class ManageEntity, queryEntities, Entity(..))

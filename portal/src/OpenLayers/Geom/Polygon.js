@@ -10,4 +10,10 @@
 
 // Get hold of the OpenLayer types and functions
 var ol  = require ('ol');
-var olgp = require ('ol/geom/Polygon');
+var olg = require ('ol/geom');
+
+exports.createImpl = function (ap, la) {
+    return function () {
+        return new olg.Polygon (ap,la);
+    }
+}

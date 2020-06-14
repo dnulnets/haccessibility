@@ -33,8 +33,8 @@ import Halogen.Aff as HA
 import Halogen.VDom.Driver (runUI)
 
 -- Routing
-import Routing.Hash (setHash, getHash)
-import Routing.Duplex (print, parse)
+import Routing.Hash (setHash, matchesWith)
+import Routing.Duplex (parse, print)
 
 -- Web imports
 import Web.HTML (window)
@@ -48,10 +48,6 @@ import Web.Event.EventTarget (eventListener, addEventListener)
 import Control.Coroutine as CR
 import Control.Coroutine.Aff (emit)
 import Control.Coroutine.Aff as CRA
-
--- | Routing imports
-import Routing.Hash (matchesWith)
-import Routing.Duplex (parse)
 
 -- Our own imports
 import Accessibility.Utils.Token (readToken, removeToken, Token(..))
