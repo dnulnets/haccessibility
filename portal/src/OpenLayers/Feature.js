@@ -13,13 +13,13 @@ var ol  = require ('ol');
 
 exports.createImpl = function (opt) {
     return function() {
+        console.log ('Feature.create:', opt)
         return new ol.Feature(opt);
     }
 }
 
 exports.setStyleImpl = function (r, self) {
     return function () {
-        console.log ('Feature.setStyle:', r, self)
         self.setStyle (r);
     }
 }
@@ -32,7 +32,6 @@ exports.setPropertiesImpl = function (r, self) {
 
 exports.setGeometryImpl = function (r, self) {
     return function () {
-        console.log ("Feature.setGeometry", r, self);
         self.setGeometry (r);
     }
 }

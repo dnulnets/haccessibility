@@ -3,7 +3,14 @@
 -- |
 -- | Written by Tomas Stenlund, Sundsvall, Sweden (c) 2020
 -- |
-module OpenLayers.View (View, create, getProjection) where
+module OpenLayers.View (
+  View,
+
+  create, 
+
+  setCenter,
+
+  getProjection) where
 
 -- Standard import
 import Prelude
@@ -41,6 +48,14 @@ foreign import createImpl :: forall r . Fn1 {|r} (Effect (Nullable View))
 
 create :: forall r . {|r} -> Effect (Maybe View)
 create o = toMaybe <$> runFn1 createImpl o
+
+--
+-- set functions
+--
+foreign import setCenterImpl :: Fn2(Array Number) View (Effect Unit)
+
+setCenter :: Array Number -> View -> Effect Unit
+setCenter pos self = runFn2 setCenterImpl pos self
 
 --
 -- get functins

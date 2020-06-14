@@ -27,6 +27,14 @@ exports.onImpl = function (event, f, self) {
     }    
 }
 
+exports.onceImpl = function (event, f, self) {
+    return function () {
+        return self.once (event, function(e) {
+            f(e)();
+        });
+    }    
+}
+
 exports.unImpl = function (event, key, self) {
     return function () {
         return self.un (event, key);

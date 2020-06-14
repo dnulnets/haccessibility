@@ -1,5 +1,5 @@
 //
-// The Openlayers Overlay API mapping for purescript.
+// The Openlayers Interaction Text API mapping for purescript.
 //
 // This is just a very crude mapping and only helps out with what I need for this application. It is no
 // complete mapping.
@@ -10,20 +10,13 @@
 
 // Get hold of the OpenLayer types and functions
 var ol  = require ('ol');
+var olst  = require ('ol/style');
 
-// Helper functions for purescripts FFI
-var p = require ('./src/OpenLayers/ffi.js')
-
-// new operator for a View
 exports.createImpl = function (opt) {
     return function() {
-        var r = new ol.View(opt);
+        console.log ('Text.create:', opt)
+        var r = new olst.Text(opt);
+        console.log ('Text.create.return', r);
         return r;
     }
 }
-
-// Setters
-exports.setCenterImpl = p.effize("setCenter");
-
-// Getters
-exports.getProjectionImpl = p.effize("getProjection");

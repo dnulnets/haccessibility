@@ -1,5 +1,5 @@
 -- |
--- | The Main module
+-- | The Main module of the HAccessibility project
 -- |
 -- | Written by Tomas Stenlund, Sundsvall, Sweden (c) 2019
 -- |

@@ -14,9 +14,18 @@ var oll  = require ('ol/layer');
 
 exports.createImpl = function (opt) {
     return function() {
-        console.log ('Layer.Vector.create:', opt)
+        console.log ('Vector.create:', opt)
         var r = new oll.Vector(opt);
-        console.log ('Layer.Vector.create.return:', r)
+        console.log ('Vector.create.return:', r)
         return r; 
     }
 }
+
+exports.setStyleImpl = function (s, self) {
+    return function() {
+        console.log ('Vector.setStyle:', s, self)
+        self.setStyle(s);
+    }
+}
+exports.setStyleFImpl = exports.setStyleImpl
+exports.setStyleAImpl = exports.setStyleImpl

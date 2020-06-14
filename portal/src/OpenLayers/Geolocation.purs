@@ -20,6 +20,8 @@ module OpenLayers.Geolocation (
     , onChangeAccuracyGeometry
     , onChangePosition
     , onError
+    
+    , onceChangePosition
 
     , unChangeAccuracyGeometry
     , unChangePosition
@@ -117,6 +119,7 @@ getAccuracy self = toMaybe <$> runFn1 getAccuracyImpl self
 -- All on_ functions
 --
 foreign import onImpl :: forall v a. Fn3 String (v -> Effect a) Geolocation (Effect Key)
+foreign import onceImpl :: forall v a. Fn3 String (v -> Effect a) Geolocation (Effect Key)
 
 onError :: (ErrorEvent -> Effect Unit) -> Geolocation -> Effect Key
 onError fn self = runFn3 onImpl "error" fn self
@@ -127,6 +130,8 @@ onChangeAccuracyGeometry fn self = runFn3 onImpl "change:accuracyGeometry" fn se
 onChangePosition :: (ChangePositionEvent -> Effect Unit) -> Geolocation -> Effect Key
 onChangePosition fn self = runFn3 onImpl "change:position" fn self
 
+onceChangePosition :: (ChangePositionEvent -> Effect Unit) -> Geolocation -> Effect Key
+onceChangePosition fn self = runFn3 onceImpl "change:position" fn self
 --
 -- All un_ functions
 --
