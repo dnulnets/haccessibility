@@ -13,14 +13,12 @@ var ol  = require ('ol');
 
 exports.createImpl = function (opt) {
     return function() {
-        var r = new ol.Map(opt);
-        return r;
+        return new ol.Map(opt);
     }
 }
 
 exports.addLayerImpl = function (layer, self) {
     return function() {
-        console.log ('Map.addLayer:', layer, self)
         self.addLayer(layer);
     }
 }

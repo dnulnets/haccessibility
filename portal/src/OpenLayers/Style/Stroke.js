@@ -14,9 +14,6 @@ var olst  = require ('ol/style');
 
 exports.createImpl = function (opt) {
     return function() {
-        console.log ('Stroke.create:', opt)
-        var r = new olst.Stroke(opt);
-        console.log ('Stroke.create:', r)
-        return r;
+        return new olst.Stroke(opt);
     }
 }

@@ -13,7 +13,6 @@ var ol  = require ('ol');
 
 exports.createImpl = function (opt) {
     return function() {
-        console.log ('Geolocation:', opt);
         return new ol.Geolocation(opt);
     }
 }

@@ -7,7 +7,6 @@ module OpenLayers.Layer.Vector (
   Vector
   , Style(..)
   , RawVector
-  , StyleFunc
 
   , create
   
@@ -36,9 +35,8 @@ import OpenLayers.Feature as Feature
 --
 -- Our own data types
 --
-type StyleFunc = Feature.Feature->Number->Effect (Nullable Style.Style)
 data Style =  Style Style.Style
-            | StyleFunction StyleFunc
+            | StyleFunction (Feature.Feature->Number->Effect (Nullable Style.Style))
             | StyleArray (Array Style.Style)
 --
 -- Foreign data types
@@ -58,7 +56,7 @@ create o = toMaybe <$> runFn1 createImpl o
 -- Setters
 --
 foreign import setStyleImpl :: Fn2 Style.Style Vector (Effect Unit)
-foreign import setStyleFImpl :: Fn2 StyleFunc Vector (Effect Unit)
+foreign import setStyleFImpl :: Fn2 (Feature.Feature->Number->Effect (Nullable Style.Style)) Vector (Effect Unit)
 foreign import setStyleAImpl :: Fn2 (Array Style.Style) Vector (Effect Unit)
 
 setStyle::Style->Vector->Effect Unit

@@ -14,18 +14,23 @@ var oll  = require ('ol/layer');
 
 exports.createImpl = function (opt) {
     return function() {
-        console.log ('Vector.create:', opt)
-        var r = new oll.Vector(opt);
-        console.log ('Vector.create.return:', r)
-        return r; 
+        return new oll.Vector(opt);
     }
 }
 
 exports.setStyleImpl = function (s, self) {
     return function() {
-        console.log ('Vector.setStyle:', s, self)
         self.setStyle(s);
     }
 }
-exports.setStyleFImpl = exports.setStyleImpl
+
+exports.setStyleFImpl = function (sf, self) {
+    return function() {
+        self.setStyle(function (feature, resolution) {
+            return sf(feature)(resolution)();
+        });
+    }
+}
+
 exports.setStyleAImpl = exports.setStyleImpl
+

@@ -13,7 +13,6 @@ var ol  = require ('ol');
 
 exports.createImpl = function (opt) {
     return function() {
-        console.log ('Feature.create:', opt)
         return new ol.Feature(opt);
     }
 }

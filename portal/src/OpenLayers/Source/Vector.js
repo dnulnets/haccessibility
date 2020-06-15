@@ -14,9 +14,6 @@ var ols  = require ('ol/source');
 
 exports.createImpl = function (opt) {
     return function() {
-        console.log ('Source.Vector.create:', opt)
-        var r = new ols.Vector (opt);
-        console.log ('Source.Vector.create.return:', r)
-        return r;
+        return new ols.Vector (opt);
     }
 }

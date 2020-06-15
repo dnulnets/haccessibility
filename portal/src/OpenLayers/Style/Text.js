@@ -14,9 +14,7 @@ var olst  = require ('ol/style');
 
 exports.createImpl = function (opt) {
     return function() {
-        console.log ('Text.create:', opt)
         var r = new olst.Text(opt);
-        console.log ('Text.create.return', r);
         return r;
     }
 }

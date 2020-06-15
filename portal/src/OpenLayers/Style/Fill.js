@@ -14,9 +14,6 @@ var olst  = require ('ol/style');
 
 exports.createImpl = function (opt) {
     return function() {
-        console.log ('Fill.create:', opt)
-        var r = new olst.Fill(opt);
-        console.log ('Fill.create.return', r);
-        return r;
+        return new olst.Fill(opt);
     }
 }

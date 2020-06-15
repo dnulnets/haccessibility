@@ -13,7 +13,7 @@ import Data.Array((!!), catMaybes, length, head)
 import Data.Maybe (Maybe(..), maybe, fromMaybe)
 import Data.Foldable (sequence_)
 import Data.Traversable (sequence)
-import Data.Nullable (notNull, null, toNullable)
+import Data.Nullable (Nullable, notNull, null, toNullable)
 import Data.Tuple (Tuple(..), fst, snd)
 
 -- Control Monad
@@ -172,26 +172,8 @@ handleAction Initialize = do
   hamap <- H.liftEffect $ createNearbyMap
   gps <- createNearbyGPS hamap
 
-  -- Create the styles for the POI and IOT Hub Entities
-  style <- H.liftEffect $ do
-    olPOIFill <- Fill.create {color: "#32CD32"}
-    olIOTFill <- Fill.create {color: "#0080FF"}
-    olSYMStroke <- Stroke.create {color: "#000000", width:2}
-    olPOIStyle <- Circle.create { radius: 6
-      , fill: toNullable olPOIFill
-      , stroke: toNullable olSYMStroke }
-    olIOTStyle <- Circle.create { radius: 6
-      , fill: toNullable olIOTFill
-      , stroke: toNullable olSYMStroke }
-    olTextStyle <- Text.create {text: "Mandel"
-                                , offsetY: 15
-                                , font: "12px Calibri, sans-serif" }
-
-    olStyle <- Style.create { image: toNullable olPOIStyle, text: toNullable olTextStyle}
-    pure $ olStyle
-
   -- Create the layer
-  void $ sequence_ $ addNearbyPOI <$> hamap <*> style
+  void $ sequence_ $ addNearbyPOI <$> hamap
 
   -- Add a listener to the add item button on the map
 --  eadd <- H.liftEffect $ 
@@ -426,12 +408,11 @@ addNearbyPOI:: forall r o m . MonadAff m
               => ManageItem m
               => MonadAsk r m
               => Map.Map
-              -> Style.Style
               -> H.HalogenM State Action () o m Unit
-addNearbyPOI map style = do
+addNearbyPOI map = do
 
   -- Get the weather data from the IoT Hb and our own backend
-  entities <- queryEntities "WeatherObserved"
+  entities <- (fromMaybe []) <$> queryEntities "WeatherObserved"
 
   -- Get all items within our radius
   items <- (fromMaybe []) <$> queryItems {longitude : Nothing
@@ -440,19 +421,66 @@ addNearbyPOI map style = do
                                           , limit: Nothing
                                           , text: Nothing }
   
-  -- Create the features and vectors
-  H.liftEffect $ log $ "Creating POI"
-  flist <- H.liftEffect $ sequence $ toFeature <$> items
-  H.liftEffect $ log $ show $ flist
+  -- Create the styles
+  olPOIFill <- H.liftEffect $ Fill.create {color: "#32CD32"}
+  olIOTFill <- H.liftEffect $ Fill.create {color: "#0080FF"}
+  olSYMStroke <- H.liftEffect $ Stroke.create {color: "#000000", width:2}
+  olPOIStyle <- H.liftEffect $ Circle.create { radius: 6
+    , fill: toNullable olPOIFill
+    , stroke: toNullable olSYMStroke }
+  olIOTStyle <- H.liftEffect $ Circle.create { radius: 6
+    , fill: toNullable olIOTFill
+    , stroke: toNullable olSYMStroke }
+
+  -- Create the POI layer
+  flist <- H.liftEffect $ sequence $ fromItem <$> items
   vs <- H.liftEffect $ VectorSource.create { features: catMaybes flist }
   vl <- H.liftEffect $ VectorLayer.create { source: toNullable vs}
-  H.liftEffect $ sequence_ $ VectorLayer.setStyle <$> (Just (VectorLayer.Style style)) <*> vl
+  H.liftEffect $ sequence_ $ VectorLayer.setStyle <$> (Just (VectorLayer.StyleFunction (poiStyle olPOIStyle) )) <*> vl
+
+  -- Create the IoT Hub Layer
+  ilist <- H.liftEffect $ sequence $ fromEntity <$> entities
+  ivs <- H.liftEffect $ VectorSource.create { features: catMaybes ilist }
+  ivl <- H.liftEffect $ VectorLayer.create { source: toNullable ivs}
+  H.liftEffect $ sequence_ $ VectorLayer.setStyle <$> (Just (VectorLayer.StyleFunction (poiStyle olIOTStyle) )) <*> ivl
+
+  -- Add them to the map
   H.liftEffect $ sequence_ $ Map.addLayer <$> vl <*> (Just map)
+  H.liftEffect $ sequence_ $ Map.addLayer <$> ivl <*> (Just map)
 
   where
 
-    toFeature::Item->Effect (Maybe Feature.Feature)
-    toFeature i = do
+    -- The style function for the vector layers, returns th estyle based on the feature
+    poiStyle::Maybe Circle.Circle->Feature.Feature->Number->Effect (Nullable Style.Style)
+    poiStyle poi f r = do
+      name <- Feature.get "name" f
+      text <- Text.create { text: toNullable name
+                            , offsetY: 15
+                            , font: "12px Calibri, sans-serif"}
+      style <- Style.create { image: toNullable poi,
+                              text: toNullable text }
+      pure $ toNullable style
+
+    -- Converts from an Entity to a Feature that can b eadded to the IoT Hub Layer
+    fromEntity::Entity->Effect (Maybe Feature.Feature)
+    fromEntity (Entity e) = do
+      -- Not really beautiful to use !! for array access :-(
+      point <- Point.create 
+        (Proj.fromLonLat [fromMaybe 0.0 $ e.location.value.coordinates!!0
+                          , fromMaybe 0.0 $ e.location.value.coordinates!!1]
+                          (Just Proj.epsg_3857))
+        Nothing      
+      Feature.create {name: fromMaybe "?" $ (entityNameTemperature e) <|> (entityNameSnowHeight e)
+                      , id: ""
+                      , geometry: toNullable point }    
+
+    -- Create the names for the IoTHub entities
+    entityNameTemperature en = (flip append "C") <$> (((append "T:") <<< show <<< _.value) <$> en.temperature)
+    entityNameSnowHeight  en  = (flip append "mm") <$> (((append "d:") <<< show <<< _.value) <$> en.snowHeight)
+
+    -- Converts from an Item to a Feature that can be added to the Item Layer
+    fromItem::Item->Effect (Maybe Feature.Feature)
+    fromItem i = do
       point <- Point.create 
         (Proj.fromLonLat [i.longitude, i.latitude] (Just Proj.epsg_3857))
         Nothing

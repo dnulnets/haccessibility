@@ -28,7 +28,6 @@ exports.effize = function (method) {
         var me = arguments[arguments.length - 1];
         var args = Array.prototype.slice.call(arguments, 0, -1);
         return function () {
-            console.log ('EFFIZE:', method, me, args);
             return me[method].apply(me, args);
         };
     };
@@ -49,7 +48,6 @@ exports.effize = function (method) {
 exports.effgetfield = function(field) {
     return function (self) {
         return function () {
-            console.log ('EFFGETFIELD:', field, self);
             return self[field];
         };
     };
@@ -71,7 +69,6 @@ exports.effsetfield = function(field) {
     return function (value) {
         return function (self) {
             return function () {
-                console.log ('EFFSETFIELD:', value, field, self);
                 self[field]=value;
             };
         };

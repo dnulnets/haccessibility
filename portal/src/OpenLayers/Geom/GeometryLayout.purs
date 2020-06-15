@@ -10,9 +10,6 @@ module OpenLayers.Geom.GeometryLayout (
     , xym
     , xyzm ) where
 
--- Standard import
-import Prelude
-
 --
 -- Type definitions for gemoetry layout
 --
