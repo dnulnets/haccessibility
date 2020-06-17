@@ -67,28 +67,45 @@
   height: 100%;
 }
 
-/* The add item for the map */
+.ha-map-ctrl {
+  top: 4.5em;
+  left: .5em;
+}
+
+.ha-map-add-item {
+  border-radius: 2px 2px 0 0;
+}
+
+/* The refresh item for the map */
+.ha-map-refresh {
+  border-radius: 0 0 0 0;
+}
+
+/* The center item for the map */
+.ha-map-center {
+  border-radius: 0 0 2px 2px;
+}
+
+/*
 .ha-map-add-item {
   top: 4.5em;
   left: .5em;
 }
 
-/* The refresh item for the map */
 .ha-map-refresh {
   top: 6.75em;
   left: .5em;
 }
 
-/* The center item for the map */
 .ha-map-center {
   top: 9em;
   left: .5em;
 }
+*/
 
 /*
 .ol-touch .add-item {
   top: 80px;
 }
-
 */
   

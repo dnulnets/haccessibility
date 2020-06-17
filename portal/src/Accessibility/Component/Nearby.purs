@@ -31,9 +31,16 @@ import Halogen.HTML as HH
 import Halogen.HTML.Properties as HP
 import Halogen.Query.EventSource as HQE
 
--- Our own imports
-import Accessibility.FFI.OpenLayers (POI, POIType(..))
+-- DOM and HTML imports
+import Web.HTML (window)
+import Web.HTML.Window as WHW
+import Web.HTML.HTMLDocument as WHHD
+import Web.DOM.Document as WDD
+import Web.DOM.Element as WDE
+import Web.DOM.Node as WDN
+import Web.DOM.Text as WDT
 
+-- Our own imports
 import OpenLayers.Interaction.Select as Select
 import OpenLayers.Feature as Feature
 import OpenLayers.Source.OSM as OSM
@@ -50,6 +57,9 @@ import OpenLayers.Style.Text as Text
 import OpenLayers.Geom.Point as Point
 import OpenLayers.Layer.Vector as VectorLayer
 import OpenLayers.Source.Vector as VectorSource
+import OpenLayers.Control.Control as Control
+import OpenLayers.Control as Ctrl
+import OpenLayers.Collection as Collection
 
 import Accessibility.Data.Route (Page(..)) as ADR
 import Accessibility.Component.HTML.Utils (css)
@@ -62,13 +72,10 @@ type Slot p = forall q . H.Slot q Void p
 
 -- | State for the component
 type State =  { alert           ::Maybe String            -- ^ The alert text
-                , subscription  ::Array H.SubscriptionId  -- ^ The add item button subscription
-                , geo           ::Maybe Geolocation.Geolocation     -- ^ The GeoLocator device
+                , subscription  ::Array H.SubscriptionId  -- ^ The map button subscriptions
+                , geo           ::Maybe Geolocation.Geolocation     -- ^ The GPS device
                 , map           ::Maybe Map.Map                     -- ^ The Map on the page
-                , poi           ::Maybe VectorLayer.Vector          -- ^ The POI Layer
                 , distance      ::Number                  -- ^ The max search distance
-                , poiStyle      ::Maybe Circle.Circle     -- ^ The POI Style
-                , iotStyle      ::Maybe Circle.Circle     -- ^ The IoT Hub Style
               }
 
 -- | Initial state is no logged in user
@@ -78,11 +85,7 @@ initialState _ =  { alert           : Nothing
                     , subscription  : []
                     , geo           : Nothing
                     , map           : Nothing
-                    , poi           : Nothing
-                    , distance : 300.0
-                    , poiStyle : Nothing
-                    , iotStyle : Nothing
-                  }
+                    , distance : 300.0}
 
 -- | Internal form actions
 data Action = Initialize
@@ -96,30 +99,6 @@ data Action = Initialize
   | GPSPosition Geolocation.Geolocation Feature.Feature
   | GPSAccuracy Geolocation.Geolocation Feature.Feature
   | GPSCenter Geolocation.Geolocation Map.Map
-
--- | Convert an Item to a POI
-itemToPOI :: Item -- ^The item to be converted
-          -> POI  -- ^The POI
-itemToPOI i = { id          : fromMaybe "" i.id
-                , latitude  : i.latitude
-                , longitude : i.longitude
-                , name      : i.name
-                , type      : Point}
-
--- | Convert an Entity to a POI
-entityToPOI :: Entity -- ^The entity to be converted
-            -> POI    -- ^The POI
-entityToPOI (Entity e) = {
-  id: "",
-  latitude: fromMaybe 0.0 $ e.location.value.coordinates!!1, 
-  longitude: fromMaybe 0.0 $ e.location.value.coordinates!!0,
-  name: fromMaybe "?" $ (entityNameTemperature e) <|> (entityNameSnowHeight e),
-  type: Weather}
-
-  where
-
-    entityNameTemperature en = (flip append "C") <$> (((append "T:") <<< show <<< _.value) <$> en.temperature)
-    entityNameSnowHeight  en  = (flip append "mm") <$> (((append "d:") <<< show <<< _.value) <$> en.snowHeight)
 
 -- | The component definition
 component :: forall r q i o m . MonadAff m
@@ -138,12 +117,13 @@ component =
      }
     }
 
+-- The alert banner if there are any problems with this page
 nearbyAlert ::forall p i . Maybe String
             -> HH.HTML p i
 nearbyAlert (Just t) = HH.div [css "alert alert-danger"] [HH.text $ t]
 nearbyAlert Nothing = HH.div [] []
 
--- | Render the nearby page
+-- |Render the nearby page
 render  :: forall m . MonadAff m
         => State                        -- ^ The state to render
         -> H.ComponentHTML Action () m  -- ^ The components HTML
@@ -154,7 +134,7 @@ render state = HH.div
                 HH.div [css "row flex-grow-1 ha-nearby-map"] [HH.div[css "col-xs-12 col-md-12"][HH.div [HP.id_ "ha-map"][]]]
                 ]
 
--- | Handles all actions for the login component
+-- |Handles all actions for the login component
 handleAction  :: forall r o m . MonadAff m
               => ManageNavigation m
               => ManageEntity m
@@ -166,7 +146,6 @@ handleAction  :: forall r o m . MonadAff m
 -- | Initialize action
 handleAction Initialize = do
   H.liftEffect $ log "Initialize Nearby component"
-  state <- H.get
 
   -- Create the OpenLayers Map items
   hamap <- H.liftEffect $ createNearbyMap
@@ -201,6 +180,7 @@ handleAction Initialize = do
 --  H.liftEffect $ sequence_ $ addInteraction <$> olmap <*> (Just s)
 
   -- Update the state
+  state <- H.get
   H.put state { subscription = [] -- (catMaybes [sadd, supd, scen]) <> [sfeat]
                 , map = hamap
                 , geo = gps
@@ -305,19 +285,53 @@ handleAction (GPSCenter geo map) = H.liftEffect $ do
 --
 createNearbyMap::Effect (Maybe Map.Map)
 createNearbyMap = do
+
   -- Use OpenStreetMap as a source
   osm <- OSM.create {}
   tile <- join <$> (sequence $ Tile.create <$> ((\o->{source: o }) <$> osm ))
 
-  -- Create the map and view
+  -- Create the view around our world center (should get it from the GPS)
   view <- View.create { projection: Proj.epsg_3857 
                         , center: Proj.fromLonLat [0.0, 0.0] (Just Proj.epsg_3857)
                         , zoom: 18 }
+
+  -- Extend the map with a set of buttons
+  ctrl <- Ctrl.defaults {}
+  elemAdd <- createMapButton "A" "add-item" "ha-map-add-item"
+  elemCenter <- createMapButton "C" "center" "ha-map-center"
+  elemRefresh <- createMapButton "R" "refresh" "ha-map-refresh"
+  domDocument <- window >>= WHW.document <#> WHHD.toDocument
+  elem <- WDD.createElement "div" domDocument
+  WDE.setClassName "ha-map-ctrl ol-unselectable ol-control" elem
+  void $ WDN.appendChild (WDE.toNode elemAdd) (WDE.toNode elem)
+  void $ WDN.appendChild (WDE.toNode elemRefresh) (WDE.toNode elem)
+  void $ WDN.appendChild (WDE.toNode elemCenter) (WDE.toNode elem)
+  ctrlButtons <- Control.create { element: elem }
+
+  -- Create the map and set up the controls, layers and view
   join <$> (sequence $ Map.create <$> ((\t v -> {
       target: "ha-map"
+      , controls: Collection.extend (catMaybes [ctrlButtons]) ctrl
       , layers: [ t ]
-      , view: v
-    }) <$> tile <*> view))
+      , view: v}) <$> tile <*> view))
+
+  where
+
+    -- Create a button with the given name in the DOM that can be used in the map
+    createMapButton :: String                           -- ^The name of the button
+                    -> String                           -- ^The id of the map
+                    -> String                           -- ^The class name
+                    -> Effect WDE.Element   -- ^The map's control
+    createMapButton name idt cls = do
+
+      domDocument <- window >>= WHW.document <#> WHHD.toDocument
+
+      txt <- WDD.createTextNode name domDocument
+      button <- WDD.createElement "button" domDocument
+      WDE.setClassName cls button
+      WDE.setId idt button
+      void $ WDN.appendChild (WDT.toNode txt) (WDE.toNode button)
+      pure button
 
 --
 -- Create the GPS and add all handlers
@@ -331,14 +345,17 @@ createNearbyGPS:: forall r o m . MonadAff m
               -> H.HalogenM State Action () o m (Maybe Geolocation.Geolocation)
 createNearbyGPS Nothing = pure Nothing
 createNearbyGPS (Just map) = do
+
   -- Create the GPS device
   mgeo <- H.liftEffect $ Geolocation.create {
       trackingOptions: { enableHighAccuracy: true}
       , projection: Proj.epsg_3857
     }
+
   -- Set up all handlers and features
   setupNearbyGPS mgeo
   pure mgeo
+
   where
 
     setupNearbyGPSPositionHandler _ Nothing = H.liftEffect $ do
@@ -413,40 +430,40 @@ addNearbyPOI map = do
 
   -- Get the weather data from the IoT Hb and our own backend
   entities <- (fromMaybe []) <$> queryEntities "WeatherObserved"
-
-  -- Get all items within our radius
   items <- (fromMaybe []) <$> queryItems {longitude : Nothing
                                           , latitude: Nothing
                                           , distance: Nothing
                                           , limit: Nothing
                                           , text: Nothing }
   
-  -- Create the styles
-  olPOIFill <- H.liftEffect $ Fill.create {color: "#32CD32"}
-  olIOTFill <- H.liftEffect $ Fill.create {color: "#0080FF"}
-  olSYMStroke <- H.liftEffect $ Stroke.create {color: "#000000", width:2}
-  olPOIStyle <- H.liftEffect $ Circle.create { radius: 6
-    , fill: toNullable olPOIFill
-    , stroke: toNullable olSYMStroke }
-  olIOTStyle <- H.liftEffect $ Circle.create { radius: 6
-    , fill: toNullable olIOTFill
-    , stroke: toNullable olSYMStroke }
+  H.liftEffect do
 
-  -- Create the POI layer
-  flist <- H.liftEffect $ sequence $ fromItem <$> items
-  vs <- H.liftEffect $ VectorSource.create { features: catMaybes flist }
-  vl <- H.liftEffect $ VectorLayer.create { source: toNullable vs}
-  H.liftEffect $ sequence_ $ VectorLayer.setStyle <$> (Just (VectorLayer.StyleFunction (poiStyle olPOIStyle) )) <*> vl
+    -- Create the styles
+    olPOIFill <- Fill.create {color: "#32CD32"}
+    olIOTFill <- Fill.create {color: "#0080FF"}
+    olSYMStroke <- Stroke.create {color: "#000000", width:2}
+    olPOIStyle <- Circle.create { radius: 6
+      , fill: toNullable olPOIFill
+      , stroke: toNullable olSYMStroke }
+    olIOTStyle <- Circle.create { radius: 6
+      , fill: toNullable olIOTFill
+      , stroke: toNullable olSYMStroke }
 
-  -- Create the IoT Hub Layer
-  ilist <- H.liftEffect $ sequence $ fromEntity <$> entities
-  ivs <- H.liftEffect $ VectorSource.create { features: catMaybes ilist }
-  ivl <- H.liftEffect $ VectorLayer.create { source: toNullable ivs}
-  H.liftEffect $ sequence_ $ VectorLayer.setStyle <$> (Just (VectorLayer.StyleFunction (poiStyle olIOTStyle) )) <*> ivl
+    -- Create the POI layer
+    flist <- sequence $ fromItem <$> items
+    vs <- VectorSource.create { features: catMaybes flist }
+    vl <- VectorLayer.create { source: toNullable vs}
+    sequence_ $ VectorLayer.setStyle <$> (Just (VectorLayer.StyleFunction (poiStyle olPOIStyle) )) <*> vl
 
-  -- Add them to the map
-  H.liftEffect $ sequence_ $ Map.addLayer <$> vl <*> (Just map)
-  H.liftEffect $ sequence_ $ Map.addLayer <$> ivl <*> (Just map)
+    -- Create the IoT Hub Layer
+    ilist <- sequence $ fromEntity <$> entities
+    ivs <- VectorSource.create { features: catMaybes ilist }
+    ivl <- VectorLayer.create { source: toNullable ivs}
+    sequence_ $ VectorLayer.setStyle <$> (Just (VectorLayer.StyleFunction (poiStyle olIOTStyle) )) <*> ivl
+
+    -- Add them to the map
+    sequence_ $ Map.addLayer <$> vl <*> (Just map)
+    sequence_ $ Map.addLayer <$> ivl <*> (Just map)
 
   where
 
