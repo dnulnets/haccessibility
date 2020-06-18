@@ -4,12 +4,23 @@
 -- | Written by Tomas Stenlund, Sundsvall, Sweden (c) 2020
 -- |
 module OpenLayers.Interaction.Select
-  ( Select
-  , SelectEvent
-  , Key
-  , create
-  , onSelect
-  , unSelect ) where
+  ( module Interaction
+    , module Event
+    , module Observable
+
+    , Select
+    , RawSelect
+    , SelectEvent
+    , RawSelectEvent
+
+    -- SelectEvent
+    , getSelected
+    , getDeselected
+    
+    -- Select
+    , create
+    , onSelect
+    , unSelect ) where
 
 -- Standard import
 import Prelude
@@ -28,21 +39,28 @@ import Effect (Effect)
 
 -- own imports
 import OpenLayers.Feature as Feature
+import OpenLayers.Interaction.Interaction (Interaction) as Interaction
+import OpenLayers.Events (EventsKey, ListenerFunction) as Events
+import OpenLayers.Events.Event (BaseEvent) as Event
+import OpenLayers.Observable (on, un) as Observable
 
 --
 -- Foreign data types
 -- 
-foreign import data Select :: Type
-foreign import data Key :: Type
+foreign import data RawSelect :: Type
+type Select = Interaction.Interaction RawSelect
 
-type SelectEvent = {
-  selected :: Array Feature.Feature       -- ^Array of selected features
-  , deselected :: Array Feature.Feature   -- ^Array of deselected features
-  , type :: String                -- ^Type of event
-}
+foreign import data RawSelectEvent :: Type
+type SelectEvent = Event.BaseEvent RawSelectEvent
 
 --
--- Function mapping
+-- Function mapping SelectEvent
+--
+foreign import getSelected :: SelectEvent->Effect (Array Feature.Feature)
+foreign import getDeselected :: SelectEvent->Effect (Array Feature.Feature)
+
+--
+-- Function mapping Select
 --
 foreign import createImpl :: forall r . Fn1 (Nullable {|r}) (Effect Select)
 
@@ -50,17 +68,14 @@ create :: forall r . Maybe {|r} -> Effect Select
 create opts = runFn1 createImpl (toNullable opts)
 
 --
--- All on_ functions
---
-foreign import onImpl :: forall v a. Fn3 String (v -> Effect a) Select (Effect Key)
+-- All on functions
 
-onSelect :: (SelectEvent -> Effect Unit) -> Select -> Effect Key
-onSelect fn self = runFn3 onImpl "select" fn self
+onSelect :: (SelectEvent -> Effect Boolean) -> Select -> Effect Events.EventsKey
+onSelect = Observable.on "select"
 
 --
--- All un_ functions
+-- All un functions
 --
-foreign import unImpl :: Fn3 String Key Select (Effect Unit)
 
-unSelect :: Key -> Select -> Effect Unit
-unSelect key self = runFn3 unImpl "select" key self
+unSelect :: Events.EventsKey -> Select -> Effect Unit
+unSelect key self = Observable.un "select" key self

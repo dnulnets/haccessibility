@@ -54,9 +54,6 @@ import OpenLayers.Geom.Polygon as Polygon
 foreign import data Geolocation :: Type
 foreign import data Key :: Type
 
-instance showGeolocation :: Show Geolocation where
-  show _ = "Geolocation"
-
 --
 -- Data types
 --

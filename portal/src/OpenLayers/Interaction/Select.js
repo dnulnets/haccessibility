@@ -21,22 +21,21 @@ var olgp = require ('ol/geom/Polygon');*/
 var ol  = require ('ol');
 var oli = require ('ol/interaction');
 
+// Helper functions for purescripts FFI
+var p = require ('./src/OpenLayers/ffi.js');
+const { SelectEvent } = require('ol/interaction/Select');
+
+//
+// Select
+//
 exports.createImpl = function (opts) {
     return function() {
         return new oli.Select (opts);
     }
 }
 
-exports.onImpl = function (event, f, self) {
-    return function () {
-        return self.on (event, function(e) {
-            f(e)();
-        });
-    }    
-}
-
-exports.unImpl = function (event, key, self) {
-    return function () {
-        return self.un (event, key);
-    }    
-}
+//
+// SelectEvent
+//
+exports.getSelected=p.effgetfield("selected");
+exports.getDeselected=p.effgetfield("deselected");

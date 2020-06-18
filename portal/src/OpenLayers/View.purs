@@ -31,8 +31,7 @@ import Effect (Effect)
 -- Foreign data types
 -- 
 foreign import data View :: Type
-instance showView :: Show View where
-  show _ = "View"
+
 --
 -- Function mapping
 --

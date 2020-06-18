@@ -32,13 +32,18 @@ import Halogen.HTML.Properties as HP
 import Halogen.Query.EventSource as HQE
 
 -- DOM and HTML imports
+import Web.Event.Event as WEE
+
 import Web.HTML (window)
 import Web.HTML.Window as WHW
 import Web.HTML.HTMLDocument as WHHD
+import Web.HTML.HTMLButtonElement as WHHBE
+
 import Web.DOM.Document as WDD
 import Web.DOM.Element as WDE
 import Web.DOM.Node as WDN
 import Web.DOM.Text as WDT
+import Web.DOM.ParentNode as WDPN
 
 -- Our own imports
 import OpenLayers.Interaction.Select as Select
@@ -155,45 +160,47 @@ handleAction Initialize = do
   void $ sequence_ $ addNearbyPOI <$> hamap
 
   -- Add a listener to the add item button on the map
---  eadd <- H.liftEffect $ 
---    (toParentNode <$> (window >>= document)) >>=
---    (querySelector (QuerySelector "#map-add-item"))  
---  sadd <- sequence $ (subscribe AddItem) <$> eadd
+  eadd <- H.liftEffect $ 
+    (WHHD.toParentNode <$> (window >>= WHW.document)) >>=
+    (WDPN.querySelector (WDPN.QuerySelector "#ha-id-add-item"))  
+  sadd <- sequence $ (subscribe AddItem) <$> eadd
 
   -- Add a listener to the refresh item button on the map
---  eupd <- H.liftEffect $ 
---    (toParentNode <$> (window >>= document)) >>=
---    (querySelector (QuerySelector "#map-refresh"))  
---  supd <- sequence $ (subscribe Update) <$> eupd
+  eupd <- H.liftEffect $ 
+    (WHHD.toParentNode <$> (window >>= WHW.document)) >>=
+    (WDPN.querySelector (WDPN.QuerySelector "#ha-id-refresh"))  
+  supd <- sequence $ (subscribe Update) <$> eupd
 
   -- Add a listener to the refresh item button on the map
---  ecen <- H.liftEffect $ 
---    (toParentNode <$> (window >>= document)) >>=
---    (querySelector (QuerySelector "#map-center"))  
---  scen <- sequence $ (subscribe Center) <$> ecen
+  ecen <- H.liftEffect $ 
+    (WHHD.toParentNode <$> (window >>= WHW.document)) >>=
+    (WDPN.querySelector (WDPN.QuerySelector "#ha-id-center"))  
+  scen <- sequence $ (subscribe Center) <$> ecen
 
   -- Subscribe for feature selects on the map
---  s <- H.liftEffect $ Select.create $ Just {multi: false}
---  sfeat <- H.subscribe $ HQE.effectEventSource \emitter -> do
---        key <- Select.onSelect (\e -> HQE.emit emitter (FeatureSelect e)) s
---        pure (HQE.Finalizer (Select.unSelect key s))
---  H.liftEffect $ sequence_ $ addInteraction <$> olmap <*> (Just s)
+  s <- H.liftEffect $ Select.create $ Just {multi: false}
+  sfeat <- H.subscribe $ HQE.effectEventSource \emitter -> do
+        key <- Select.onSelect (\e -> do
+          HQE.emit emitter (FeatureSelect e)
+          pure true) s
+        pure (HQE.Finalizer (Select.unSelect key s))
+  H.liftEffect $ sequence_ $ Map.addInteraction <$> (Just s) <*> hamap
 
   -- Update the state
   state <- H.get
-  H.put state { subscription = [] -- (catMaybes [sadd, supd, scen]) <> [sfeat]
+  H.put state { subscription = (catMaybes [sadd, supd, scen]) -- <> [sfeat]
                 , map = hamap
                 , geo = gps
                 , alert = maybe (Just "Unable to get a geolocation device") (const Nothing) gps}
 
---  where
+  where
 
     -- Subscribe to a click event for a button
---    subscribe a e = H.subscribe do
---      HQE.eventListenerEventSource
---        (E.EventType "click")
---        (toEventTarget e)
---        (const (Just a))
+    subscribe a e = H.subscribe do
+      HQE.eventListenerEventSource
+        (WEE.EventType "click")
+        (WDE.toEventTarget e)
+        (const (Just a))
 
 -- | Add an item to the database based on the current position
 handleAction AddItem = do
@@ -248,9 +255,10 @@ handleAction Center = do
 
 handleAction (FeatureSelect e) = do
   H.liftEffect $ log "Feature selected!"
-  H.liftEffect $ log $ "Selected length is " <> (show (length e.selected))
-  l <- H.liftEffect $ sequence $ (Feature.get "id") <$> e.selected
-  sequence_ $ gotoPage <$> (ADR.Point <$> (head (catMaybes l)) <*> (Just false))
+  l <- H.liftEffect $ Select.getSelected e
+  s <- H.liftEffect $ sequence $ (Feature.get "id") <$> l
+  H.liftEffect $ log $ "Selected length is " <> (show (length s))
+  sequence_ $ gotoPage <$> (ADR.Point <$> (head (catMaybes s)) <*> (Just false))
 
 -- | Find the items
 handleAction Add = do
@@ -297,9 +305,9 @@ createNearbyMap = do
 
   -- Extend the map with a set of buttons
   ctrl <- Ctrl.defaults {}
-  elemAdd <- createMapButton "A" "add-item" "ha-map-add-item"
-  elemCenter <- createMapButton "C" "center" "ha-map-center"
-  elemRefresh <- createMapButton "R" "refresh" "ha-map-refresh"
+  elemAdd <- createMapButton "A" "ha-id-add-item" "ha-map-add-item"
+  elemCenter <- createMapButton "C" "ha-id-center" "ha-map-center"
+  elemRefresh <- createMapButton "R" "ha-id-refresh" "ha-map-refresh"
   domDocument <- window >>= WHW.document <#> WHHD.toDocument
   elem <- WDD.createElement "div" domDocument
   WDE.setClassName "ha-map-ctrl ol-unselectable ol-control" elem

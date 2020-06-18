@@ -38,8 +38,6 @@ import OpenLayers.Style.Style as Style
 -- Foreign data types
 -- 
 foreign import data Feature :: Type
-instance showTile :: Show Feature where
-  show _ = "Feature"
 
 --
 -- Function mapping

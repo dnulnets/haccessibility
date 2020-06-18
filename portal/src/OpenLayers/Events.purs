@@ -1,9 +1,11 @@
 -- |
--- | The OpenLayers Openstreetmap API module
+-- | The OpenLayers Control module
 -- |
 -- | Written by Tomas Stenlund, Sundsvall, Sweden (c) 2020
 -- |
-module OpenLayers.Source.OSM (OSM, create) where
+module OpenLayers.Events (
+    EventsKey
+    , ListenerFunction) where
 
 -- Standard import
 import Prelude
@@ -18,15 +20,12 @@ import Data.Function.Uncurried
 -- Effect imports
 import Effect (Effect)
 
+-- Import our own stuff
+import OpenLayers.Events.Event (BaseEvent) as Event
+
 --
 -- Foreign data types
 -- 
-foreign import data OSM :: Type
+foreign import data EventsKey :: Type
 
---
--- Function mapping
---
-foreign import createImpl :: forall r . Fn1 {|r} (Effect (Nullable OSM))
-
-create :: forall r . {|r} -> Effect (Maybe OSM)
-create o = toMaybe <$> runFn1 createImpl o
+type ListenerFunction a = Event.BaseEvent a->Effect Boolean
