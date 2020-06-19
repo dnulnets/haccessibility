@@ -9,7 +9,7 @@ module Accessibility.Component.Nearby (component, Slot(..)) where
 import Prelude
 
 -- Data imports
-import Data.Array((!!), catMaybes, length, head)
+import Data.Array((!!), catMaybes, length, head, index)
 import Data.Maybe (Maybe(..), maybe, fromMaybe)
 import Data.Foldable (sequence_)
 import Data.Traversable (sequence)
@@ -188,7 +188,7 @@ handleAction Initialize = do
 
   -- Update the state
   state <- H.get
-  H.put state { subscription = (catMaybes [sadd, supd, scen]) -- <> [sfeat]
+  H.put state { subscription = (catMaybes [sadd, supd, scen]) <> [sfeat]
                 , map = hamap
                 , geo = gps
                 , alert = maybe (Just "Unable to get a geolocation device") (const Nothing) gps}
@@ -204,10 +204,11 @@ handleAction Initialize = do
 
 -- | Add an item to the database based on the current position
 handleAction AddItem = do
-  H.liftEffect $ log $ "Add and item button clicked"
---  state <- H.get
---  pos <- H.liftEffect $ sequence $ getCoordinate <$> state.geo
---  sequence_ $ gotoPage <$> (ADR.AddPoint <$> (join $ _.latitude <$> pos) <*> (join $ _.longitude <$> pos))
+  state <- H.get
+  pos <- H.liftEffect do
+    log $ "Add and item button clicked"
+    join <$> (sequence $ Geolocation.getPosition <$> state.geo)
+  sequence_ $ gotoPage <$> (ADR.AddPoint <$> (join (map ((flip index) 1) pos)) <*> (join (map ((flip index) 0) pos)))
 
 -- | Finalize action, clean up the map
 handleAction Finalize = do
@@ -248,16 +249,17 @@ handleAction Update = do
 
 -- | Find the items
 handleAction Center = do
-  H.liftEffect $ log "Center the map around the GPS location"
---  state <- H.get
---  pos <- H.liftEffect $ sequence $ getCoordinate <$> state.geo
---  H.liftEffect $ sequence_ $ setCenter <$> state.map <*> (join $ _.longitude <$> pos) <*> (join $ _.latitude <$> pos)
+  state <- H.get
+  H.liftEffect do
+    log "Center the map around the GPS location"
+    view <- join <$> (sequence $ Map.getView <$> state.map)
+    pos <- join <$> (sequence $ Geolocation.getPosition <$> state.geo)
+    sequence_ $ View.setCenter <$> pos <*> view
 
 handleAction (FeatureSelect e) = do
   H.liftEffect $ log "Feature selected!"
   l <- H.liftEffect $ Select.getSelected e
   s <- H.liftEffect $ sequence $ (Feature.get "id") <$> l
-  H.liftEffect $ log $ "Selected length is " <> (show (length s))
   sequence_ $ gotoPage <$> (ADR.Point <$> (head (catMaybes s)) <*> (Just false))
 
 -- | Find the items
@@ -372,7 +374,9 @@ createNearbyGPS (Just map) = do
     setupNearbyGPSPositionHandler geo (Just feat) = do    
       -- Change of Position
       void $ H.subscribe $ HQE.effectEventSource \emitter -> do
-        key <- Geolocation.onChangePosition (\_ -> HQE.emit emitter (GPSPosition geo feat)) geo
+        key <- Geolocation.onChangePosition (\_ -> do
+          HQE.emit emitter (GPSPosition geo feat)
+          pure true) geo
         pure (HQE.Finalizer (Geolocation.unChangePosition key geo))
 
     setupNearbyGPSAccuracyHandler _ Nothing = H.liftEffect $ do
@@ -381,7 +385,9 @@ createNearbyGPS (Just map) = do
     setupNearbyGPSAccuracyHandler geo (Just feat) = do
       -- Change of Accuracy
       void $ H.subscribe $ HQE.effectEventSource \emitter -> do
-        key <- Geolocation.onChangeAccuracyGeometry (\_ -> HQE.emit emitter (GPSAccuracy geo feat)) geo
+        key <- Geolocation.onChangeAccuracyGeometry (\_ -> do
+          HQE.emit emitter (GPSAccuracy geo feat)
+          pure true) geo
         pure (HQE.Finalizer (Geolocation.unChangeAccuracyGeometry key geo))
 
     setupNearbyGPS Nothing = H.liftEffect $ do
@@ -391,7 +397,9 @@ createNearbyGPS (Just map) = do
 
       -- Create the GPS Error handler
       void $ H.subscribe $ HQE.effectEventSource \emitter -> do
-        key <- Geolocation.onError (\_ -> HQE.emit emitter GPSError) geo
+        key <- Geolocation.onError (\_ -> do
+          HQE.emit emitter GPSError
+          pure true) geo
         pure (HQE.Finalizer (Geolocation.unError key geo))
 
       -- Create the GPS Position Feature, a dot with a circle
@@ -421,7 +429,9 @@ createNearbyGPS (Just map) = do
 
       -- Get the current position and position the map
       void $ H.subscribe' $ \_ -> (HQE.effectEventSource \emitter -> do
-        key <- Geolocation.onceChangePosition (\_ -> HQE.emit emitter (GPSCenter geo map)) geo
+        key <- Geolocation.onceChangePosition (\_ -> do
+          HQE.emit emitter (GPSCenter geo map)
+          pure true) geo
         pure (HQE.Finalizer (Geolocation.unChangePosition key geo)))
 
 --

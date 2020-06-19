@@ -16,7 +16,7 @@ module OpenLayers.Interaction.Select
     -- SelectEvent
     , getSelected
     , getDeselected
-    
+
     -- Select
     , create
     , onSelect
@@ -70,7 +70,7 @@ create opts = runFn1 createImpl (toNullable opts)
 --
 -- All on functions
 
-onSelect :: (SelectEvent -> Effect Boolean) -> Select -> Effect Events.EventsKey
+onSelect :: Events.ListenerFunction SelectEvent -> Select -> Effect Events.EventsKey
 onSelect = Observable.on "select"
 
 --

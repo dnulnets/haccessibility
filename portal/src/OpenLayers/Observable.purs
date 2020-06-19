@@ -29,6 +29,7 @@ import Effect (Effect)
 
 -- Import our own stuff
 import OpenLayers.Events.Target (Target) as Target
+import OpenLayers.Events.Event as Event
 import OpenLayers.Events as Events
 
 --
@@ -37,14 +38,14 @@ import OpenLayers.Events as Events
 foreign import data RawObservable :: Type -> Type
 type Observable a = Target.Target (RawObservable a)
 
-foreign import onImpl :: forall e o . Fn3 String (Events.ListenerFunction e) (Observable o) (Effect Events.EventsKey)
+foreign import onImpl :: forall e o . Fn3 String (Events.ListenerFunction (Event.BaseEvent e)) (Observable o) (Effect Events.EventsKey)
 
-on::forall e o . String->Events.ListenerFunction e->Observable o->Effect Events.EventsKey
+on::forall e o . String->Events.ListenerFunction (Event.BaseEvent e)->Observable o->Effect Events.EventsKey
 on s ef o = runFn3 onImpl s ef o
 
-foreign import onceImpl :: forall e o . Fn3 String (Events.ListenerFunction e) (Observable o) (Effect Events.EventsKey)
+foreign import onceImpl :: forall e o . Fn3 String (Events.ListenerFunction (Event.BaseEvent e)) (Observable o) (Effect Events.EventsKey)
 
-once::forall e o . String->Events.ListenerFunction e->Observable o->Effect Events.EventsKey
+once::forall e o . String->Events.ListenerFunction (Event.BaseEvent e)->Observable o->Effect Events.EventsKey
 once s ef o = runFn3 onceImpl s ef o
 
 foreign import unImpl :: forall o . Fn3 String Events.EventsKey (Observable o) (Effect Unit)

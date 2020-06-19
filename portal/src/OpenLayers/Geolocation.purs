@@ -4,13 +4,12 @@
 -- | Written by Tomas Stenlund, Sundsvall, Sweden (c) 2020
 -- |
 module OpenLayers.Geolocation (
-    Geolocation
-    , create
+    module Object
+    , module Observable
 
-    , ChangeAccuracyGeometryEvent
-    , ChangePositionEvent
-    , ErrorEvent
-    , Key
+    , Geolocation
+    , RawGeolocation
+    , create
 
     , setTracking
     
@@ -47,22 +46,17 @@ import Effect (Effect)
 
 -- Own imports
 import OpenLayers.Geom.Polygon as Polygon
+import OpenLayers.FFI as FFI
+import OpenLayers.Object(BaseObject, ObjectEvent) as Object
+import OpenLayers.Observable (on, un, once) as Observable
+import OpenLayers.Events (EventsKey, ListenerFunction) as Events
+import OpenLayers.Events.Event (BaseEvent) as Event
 
 --
 -- Foreign data types
 -- 
-foreign import data Geolocation :: Type
-foreign import data Key :: Type
-
---
--- Data types
---
-
--- Geolocation events
-
-type ErrorEvent = {}
-type ChangeAccuracyGeometryEvent = {}
-type ChangePositionEvent = {}
+foreign import data RawGeolocation :: Type
+type Geolocation = Object.BaseObject RawGeolocation
 
 --
 -- Function mapping
@@ -75,7 +69,6 @@ create o = toMaybe <$> runFn1 createImpl o
 --
 -- Setters
 --
-
 foreign import setTrackingImpl :: Fn2 Boolean Geolocation (Effect Unit)
 setTracking::Boolean->Geolocation->Effect Unit
 setTracking onoff g = runFn2 setTrackingImpl onoff g
@@ -87,21 +80,21 @@ foreign import getAccuracyGeometryImpl :: Fn1 Geolocation (Effect (Nullable Poly
 getAccuracyGeometry :: Geolocation -> Effect (Maybe Polygon.Polygon)
 getAccuracyGeometry self = toMaybe <$> runFn1 getAccuracyGeometryImpl self
 
-foreign import getPositionImpl :: Fn1 Geolocation (Effect (Nullable (Array Number)))
+foreign import getPositionImpl :: Fn1 Geolocation (Effect (FFI.NullableOrUndefined (Array Number)))
 getPosition :: Geolocation -> Effect (Maybe (Array Number))
-getPosition self = toMaybe <$> runFn1 getPositionImpl self
+getPosition self = FFI.toMaybe <$> runFn1 getPositionImpl self
 
-foreign import getAltitudeImpl :: Fn1 Geolocation (Effect (Nullable Number))
+foreign import getAltitudeImpl :: Fn1 Geolocation (Effect (FFI.NullableOrUndefined Number))
 getAltitude :: Geolocation -> Effect (Maybe Number)
-getAltitude self = toMaybe <$> runFn1 getAltitudeImpl self
+getAltitude self = FFI.toMaybe <$> runFn1 getAltitudeImpl self
 
-foreign import getAltitudeAccuracyImpl :: Fn1 Geolocation (Effect (Nullable Number))
+foreign import getAltitudeAccuracyImpl :: Fn1 Geolocation (Effect (FFI.NullableOrUndefined Number))
 getAltitudeAccuracy :: Geolocation -> Effect (Maybe Number)
-getAltitudeAccuracy self = toMaybe <$> runFn1 getAltitudeAccuracyImpl self
+getAltitudeAccuracy self = FFI.toMaybe <$> runFn1 getAltitudeAccuracyImpl self
 
-foreign import getAccuracyImpl :: Fn1 Geolocation (Effect (Nullable Number))
+foreign import getAccuracyImpl :: Fn1 Geolocation (Effect (FFI.NullableOrUndefined Number))
 getAccuracy :: Geolocation -> Effect (Maybe Number)
-getAccuracy self = toMaybe <$> runFn1 getAccuracyImpl self
+getAccuracy self = FFI.toMaybe <$> runFn1 getAccuracyImpl self
 
 --
 -- Event handlers setup
@@ -109,30 +102,30 @@ getAccuracy self = toMaybe <$> runFn1 getAccuracyImpl self
 --
 -- All on_ functions
 --
-foreign import onImpl :: forall v a. Fn3 String (v -> Effect a) Geolocation (Effect Key)
-foreign import onceImpl :: forall v a. Fn3 String (v -> Effect a) Geolocation (Effect Key)
+--foreign import onImpl :: forall v a. Fn3 String (v -> Effect a) Geolocation (Effect Key)
+--foreign import onceImpl :: forall v a. Fn3 String (v -> Effect a) Geolocation (Effect Key)
 
-onError :: (ErrorEvent -> Effect Unit) -> Geolocation -> Effect Key
-onError fn self = runFn3 onImpl "error" fn self
+onError :: forall e . Events.ListenerFunction (Event.BaseEvent e) -> Geolocation -> Effect Events.EventsKey
+onError fn self = Observable.on "error" fn self
 
-onChangeAccuracyGeometry :: (ChangeAccuracyGeometryEvent-> Effect Unit) -> Geolocation -> Effect Key
-onChangeAccuracyGeometry fn self = runFn3 onImpl "change:accuracyGeometry" fn self
+onChangeAccuracyGeometry :: forall e . Events.ListenerFunction (Object.ObjectEvent e) -> Geolocation -> Effect Events.EventsKey
+onChangeAccuracyGeometry fn self = Observable.on "change:accuracyGeometry" fn self
 
-onChangePosition :: (ChangePositionEvent -> Effect Unit) -> Geolocation -> Effect Key
-onChangePosition fn self = runFn3 onImpl "change:position" fn self
+onChangePosition :: forall e . Events.ListenerFunction (Object.ObjectEvent e) -> Geolocation -> Effect Events.EventsKey
+onChangePosition fn self = Observable.on "change:position" fn self
 
-onceChangePosition :: (ChangePositionEvent -> Effect Unit) -> Geolocation -> Effect Key
-onceChangePosition fn self = runFn3 onceImpl "change:position" fn self
+onceChangePosition :: forall e . Events.ListenerFunction (Object.ObjectEvent e) -> Geolocation -> Effect Events.EventsKey
+onceChangePosition fn self = Observable.once "change:position" fn self
 --
 -- All un_ functions
 --
-foreign import unImpl :: Fn3 String Key Geolocation (Effect Unit)
+--foreign import unImpl :: Fn3 String Key Geolocation (Effect Unit)
 
-unError :: Key -> Geolocation -> Effect Unit
-unError key self = runFn3 unImpl "error" key self
+unError :: Events.EventsKey -> Geolocation -> Effect Unit
+unError key self = Observable.un "error" key self
 
-unChangeAccuracyGeometry :: Key -> Geolocation -> Effect Unit
-unChangeAccuracyGeometry key self = runFn3 unImpl "change:accuracyGeometry" key self
+unChangeAccuracyGeometry :: Events.EventsKey -> Geolocation -> Effect Unit
+unChangeAccuracyGeometry key self = Observable.un "change:accuracyGeometry" key self
 
-unChangePosition :: Key -> Geolocation -> Effect Unit
-unChangePosition key self = runFn3 unImpl "change:position" key self
+unChangePosition :: Events.EventsKey -> Geolocation -> Effect Unit
+unChangePosition key self = Observable.un "change:position" key self

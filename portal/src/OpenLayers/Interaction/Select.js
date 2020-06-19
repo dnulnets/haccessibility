@@ -22,7 +22,7 @@ var ol  = require ('ol');
 var oli = require ('ol/interaction');
 
 // Helper functions for purescripts FFI
-var p = require ('./src/OpenLayers/ffi.js');
+var p = require ('./src/OpenLayers/FFI.js');
 const { SelectEvent } = require('ol/interaction/Select');
 
 //

@@ -12,7 +12,7 @@
 var ol  = require ('ol');
 
 // Helper functions for purescripts FFI
-var p = require ('./src/OpenLayers/ffi.js')
+var p = require ('./src/OpenLayers/FFI.js')
 
 // new operator for a View
 exports.createImpl = function (opt) {

@@ -28,4 +28,4 @@ import OpenLayers.Events.Event (BaseEvent) as Event
 -- 
 foreign import data EventsKey :: Type
 
-type ListenerFunction a = Event.BaseEvent a->Effect Boolean
+type ListenerFunction a = a->Effect Boolean

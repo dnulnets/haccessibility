@@ -28,7 +28,7 @@ import Routing.Duplex.Generic.Syntax ((/))
 data Page = Home          -- ^ The home page
           | Login         -- ^ The login page
           | Point String Boolean -- ^ The point management page, contains item key and readonly boolean
-          | AddPoint Number Number -- ^The addpoint page, contains the lola of the point
+          | AddPoint Number Number -- ^The addpoint page, contains the latitude and longitude of the point
           | Error                  -- ^ The Error page
 
 derive instance genericRoute :: Generic Page _

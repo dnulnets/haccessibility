@@ -23,6 +23,23 @@
 ** setCenter pos self = runFn2 setCenterImpl pos self
 **
 */
+"use strict";
+
+exports["null"] = null;
+exports["undefined"] = undefined;
+
+exports.nullableOrUndefined = function (val, nothing, just) {
+    if(val === null || val === undefined){
+        return nothing;
+    } else {
+        return just(val);
+    }
+};
+
+exports.notNullOrUndefined = function (x) {
+  return x;
+};
+
 exports.effize = function (method) {
     return function () {
         var me = arguments[arguments.length - 1];

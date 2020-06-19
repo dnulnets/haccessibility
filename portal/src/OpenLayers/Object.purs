@@ -5,8 +5,13 @@
 -- |
 module OpenLayers.Object (
     module Observable
+    , module Event
+    
     , BaseObject
-    , RawBaseObject) where
+    , RawBaseObject
+
+    , ObjectEvent
+    , RawObjectEvent) where
 
 -- Standard import
 import Prelude
@@ -23,9 +28,13 @@ import Effect (Effect)
 
 -- Our own imports
 import OpenLayers.Observable (Observable) as Observable
+import OpenLayers.Events.Event(BaseEvent) as Event
 
 --
 -- Foreign data types
 -- 
 foreign import data RawBaseObject :: Type -> Type
 type BaseObject a = Observable.Observable (RawBaseObject a)
+
+foreign import data RawObjectEvent :: Type -> Type
+type ObjectEvent a = Event.BaseEvent a
