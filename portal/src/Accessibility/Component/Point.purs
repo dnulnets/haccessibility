@@ -35,10 +35,9 @@ import Halogen.HTML.Properties.ARIA as HPA
 -- Web imports
 import Web.Event.Event (Event)
 import Web.Event.Event as Event
-import Accessibility.FFI.Utils (enableTooltips)
 
 -- Our own imports
-import Accessibility.Component.HTML.Utils (css, prop)
+import Accessibility.Component.HTML.Utils (css, prop, enableTooltips)
 import Accessibility.Interface.Entity (class ManageEntity)
 import Accessibility.Interface.Item (
   class ManageItem

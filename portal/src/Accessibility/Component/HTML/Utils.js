@@ -16,3 +16,4 @@ exports.enableTooltipsImpl = function() {
       $('[data-toggle="tooltip"]').tooltip()
     }
   }
+  

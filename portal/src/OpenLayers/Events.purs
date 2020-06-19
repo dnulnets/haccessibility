@@ -21,11 +21,14 @@ import Data.Function.Uncurried
 import Effect (Effect)
 
 -- Import our own stuff
-import OpenLayers.Events.Event (BaseEvent) as Event
+-- import OpenLayers.Events.Event (BaseEvent) as Event
 
 --
 -- Foreign data types
 -- 
 foreign import data EventsKey :: Type
 
+--
+-- The event listener function
+--
 type ListenerFunction a = a->Effect Boolean

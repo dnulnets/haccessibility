@@ -13,11 +13,16 @@ module Accessibility.Component.HTML.Utils
   , maybeElem_
   , maybeOrElem_
   , whenElem
+  , enableTooltips
   ) where
 
 -- Language imports
 import Prelude
 import Data.Maybe (Maybe(..))
+import Data.Function.Uncurried (Fn0, runFn0)
+
+-- Effect imports
+import Effect (Effect)
 
 -- Routing imports
 import Routing.Duplex (print)
@@ -85,3 +90,10 @@ whenElem ∷ forall p i. Boolean
  -> (Unit -> HH.HTML p i)
  -> HH.HTML p i
 whenElem cond f = if cond then f unit else HH.text ""
+
+-- |Enable Bootstrap 4 tooltips
+foreign import enableTooltipsImpl :: Fn0 (Effect Unit)
+
+-- |Enable Bootstrap 4 tooltips
+enableTooltips::Effect Unit
+enableTooltips = runFn0 enableTooltipsImpl

@@ -8,22 +8,9 @@
 //
 "use strict";
 
-/*
-** Example:
-**
-** Javascript
-**
-** exports.setCenterImpl = effize("setCenter");
-**
-** Purescript
-**
-** foreign import setCenterImpl :: Fn2(Array Number) View (Effect Unit)
-**
-** setCenter :: Array Number -> View -> Effect Unit
-** setCenter pos self = runFn2 setCenterImpl pos self
-**
-*/
-"use strict";
+//
+// An ugly version of toMaybe and handling of undefined
+//
 
 exports["null"] = null;
 exports["undefined"] = undefined;
@@ -40,6 +27,21 @@ exports.notNullOrUndefined = function (x) {
   return x;
 };
 
+/*
+** Example:
+**
+** Javascript
+**
+** exports.setCenterImpl = effize("setCenter");
+**
+** Purescript
+**
+** foreign import setCenterImpl :: Fn2(Array Number) View (Effect Unit)
+**
+** setCenter :: Array Number -> View -> Effect Unit
+** setCenter pos self = runFn2 setCenterImpl pos self
+**
+*/
 exports.effize = function (method) {
     return function () {
         var me = arguments[arguments.length - 1];
