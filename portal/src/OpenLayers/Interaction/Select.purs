@@ -19,6 +19,7 @@ module OpenLayers.Interaction.Select
 
     -- Select
     , create
+    , create'
     , onSelect
     , unSelect ) where
 
@@ -38,6 +39,7 @@ import Data.Function.Uncurried (
 import Effect (Effect)
 
 -- own imports
+import OpenLayers.FFI as FFI
 import OpenLayers.Feature as Feature
 import OpenLayers.Interaction.Interaction (Interaction) as Interaction
 import OpenLayers.Events (EventsKey, ListenerFunction) as Events
@@ -62,10 +64,13 @@ foreign import getDeselected :: SelectEvent->Effect (Array Feature.Feature)
 --
 -- Function mapping Select
 --
-foreign import createImpl :: forall r . Fn1 (Nullable {|r}) (Effect Select)
+foreign import createImpl :: forall r . Fn1 (FFI.NullableOrUndefined  {|r}) (Effect Select)
 
 create :: forall r . Maybe {|r} -> Effect Select
-create opts = runFn1 createImpl (toNullable opts)
+create opts = runFn1 createImpl (FFI.toNullable opts)
+
+create' :: Effect Select
+create' = runFn1 createImpl FFI.undefined
 
 --
 -- All on functions

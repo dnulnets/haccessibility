@@ -3,7 +3,10 @@
 -- |
 -- | Written by Tomas Stenlund, Sundsvall, Sweden (c) 2020
 -- |
-module OpenLayers.Source.Vector (Vector, create) where
+module OpenLayers.Source.Vector (
+  Vector
+  , create
+  , create') where
 
 -- Standard import
 import Prelude
@@ -18,6 +21,9 @@ import Data.Function.Uncurried
 -- Effect imports
 import Effect (Effect)
 
+-- Own imports
+import OpenLayers.FFI as FFI
+
 --
 -- Foreign data types
 -- 
@@ -26,7 +32,10 @@ foreign import data Vector :: Type
 --
 -- Function mapping
 --
-foreign import createImpl :: forall r . Fn1 {|r} (Effect (Nullable Vector))
+foreign import createImpl :: forall r . Fn1 (FFI.NullableOrUndefined {|r}) (Effect Vector)
 
-create :: forall r . {|r} -> Effect (Maybe Vector)
-create o = toMaybe <$> runFn1 createImpl o
+create :: forall r . Maybe {|r} -> Effect Vector
+create o = runFn1 createImpl (FFI.toNullable o)
+
+create' :: Effect Vector
+create' = runFn1 createImpl FFI.undefined

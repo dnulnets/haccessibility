@@ -1,13 +1,15 @@
 -- |
--- | The OpenLayers Control module
+-- | The OpenLayers Collection module
 -- |
 -- | Written by Tomas Stenlund, Sundsvall, Sweden (c) 2020
 -- |
 module OpenLayers.Collection (
     Collection
     , RawCollection
-    
+
     , create
+    , create'
+
     , extend) where
 
 -- Standard import
@@ -25,6 +27,9 @@ import Data.Function.Uncurried
 -- Effect imports
 import Effect (Effect)
 
+-- Own imports
+import OpenLayers.FFI as FFI
+
 --
 -- Foreign data types
 -- 
@@ -34,10 +39,13 @@ type Collection a = RawCollection a
 --
 -- Function mapping
 --
-foreign import createImpl :: forall r t . Fn1 {|r} (Effect (Nullable (Collection t)))
+foreign import createImpl :: forall r t . Fn1 (FFI.NullableOrUndefined {|r}) (Effect (Collection t))
 
-create :: forall r t . {|r} -> Effect (Maybe (Collection t))
-create o = toMaybe <$> runFn1 createImpl o
+create :: forall r t . Maybe {|r} -> Effect (Collection t)
+create o = runFn1 createImpl (FFI.toNullable o)
+
+create' :: forall t . Effect (Collection t)
+create' = runFn1 createImpl FFI.undefined
 
 foreign import extendImpl :: forall t . Fn2 (Array t) (Collection t) (Collection t)
 

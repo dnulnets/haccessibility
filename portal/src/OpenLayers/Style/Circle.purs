@@ -6,6 +6,7 @@
 module OpenLayers.Style.Circle (
   Circle
   , create
+  , create'
   ) where
 
 -- Standard import
@@ -21,6 +22,9 @@ import Data.Function.Uncurried
 -- Effect imports
 import Effect (Effect)
 
+-- Own imports
+import OpenLayers.FFI as FFI
+
 --
 -- Foreign data types
 -- 
@@ -29,7 +33,10 @@ foreign import data Circle :: Type
 --
 -- Function mapping
 --
-foreign import createImpl :: forall r . Fn1 {|r} (Effect (Nullable Circle))
+foreign import createImpl :: forall r . Fn1 (FFI.NullableOrUndefined {|r}) (Effect Circle)
 
-create :: forall r . {|r} -> Effect (Maybe Circle)
-create o = toMaybe <$> runFn1 createImpl o
+create :: forall r . Maybe {|r} -> Effect Circle
+create r = runFn1 createImpl (FFI.toNullable r)
+
+create' :: Effect Circle
+create' = runFn1 createImpl FFI.undefined

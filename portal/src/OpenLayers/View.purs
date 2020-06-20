@@ -4,13 +4,14 @@
 -- | Written by Tomas Stenlund, Sundsvall, Sweden (c) 2020
 -- |
 module OpenLayers.View (
-  View,
+  View
 
-  create, 
+  , create
+  , create'
 
-  setCenter,
+  , setCenter
 
-  getProjection) where
+  , getProjection) where
 
 -- Standard import
 import Prelude
@@ -27,6 +28,9 @@ import Data.Function.Uncurried
 -- Effect imports
 import Effect (Effect)
 
+-- Our own imports
+import OpenLayers.FFI as FFI
+
 --
 -- Foreign data types
 -- 
@@ -35,10 +39,13 @@ foreign import data View :: Type
 --
 -- Function mapping
 --
-foreign import createImpl :: forall r . Fn1 {|r} (Effect (Nullable View))
+foreign import createImpl :: forall r . Fn1 (FFI.NullableOrUndefined {|r}) (Effect View)
 
-create :: forall r . {|r} -> Effect (Maybe View)
-create o = toMaybe <$> runFn1 createImpl o
+create :: forall r . Maybe {|r} -> Effect View
+create o = runFn1 createImpl (FFI.toNullable o)
+
+create' :: Effect View
+create' = runFn1 createImpl FFI.undefined
 
 --
 -- set functions

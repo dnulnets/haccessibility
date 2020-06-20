@@ -6,6 +6,7 @@
 module OpenLayers.Style.Fill (
   Fill
   , create
+  , create'
   ) where
 
 -- Standard import
@@ -21,6 +22,9 @@ import Data.Function.Uncurried
 -- Effect imports
 import Effect (Effect)
 
+-- Own imports
+import OpenLayers.FFI as FFI
+
 --
 -- Foreign data types
 -- 
@@ -29,7 +33,10 @@ foreign import data Fill :: Type
 --
 -- Function mapping
 --
-foreign import createImpl :: forall r . Fn1 {|r} (Effect (Nullable Fill))
+foreign import createImpl :: forall r . Fn1 (FFI.NullableOrUndefined {|r}) (Effect Fill)
 
-create :: forall r . {|r} -> Effect (Maybe Fill)
-create o = toMaybe <$> runFn1 createImpl o
+create :: forall r . Maybe {|r} -> Effect Fill
+create r = runFn1 createImpl (FFI.toNullable r)
+
+create' :: Effect Fill
+create' = runFn1 createImpl FFI.undefined

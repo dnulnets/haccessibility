@@ -157,7 +157,7 @@ handleAction Initialize = do
   gps <- createNearbyGPS hamap
 
   -- Create the layer
-  void $ sequence_ $ addNearbyPOI <$> hamap
+  addNearbyPOI hamap
 
   -- Add a listener to the add item button on the map
   eadd <- H.liftEffect $ 
@@ -184,14 +184,13 @@ handleAction Initialize = do
           HQE.emit emitter (FeatureSelect e)
           pure true) s
         pure (HQE.Finalizer (Select.unSelect key s))
-  H.liftEffect $ sequence_ $ Map.addInteraction <$> (Just s) <*> hamap
+  H.liftEffect $ Map.addInteraction s hamap
 
   -- Update the state
   state <- H.get
   H.put state { subscription = (catMaybes [sadd, supd, scen]) <> [sfeat]
-                , map = hamap
-                , geo = gps
-                , alert = maybe (Just "Unable to get a geolocation device") (const Nothing) gps}
+                , map = Just hamap
+                , geo = Just gps}
 
   where
 
@@ -276,8 +275,8 @@ handleAction GPSError = H.liftEffect $ do
 -- | GPS Position - Position the current location on the map
 handleAction (GPSPosition geo feature) = H.liftEffect $ do
   pos <- Geolocation.getPosition geo
-  point <- join <$> (sequence $ Point.create <$> pos <*> (Just Nothing))
-  Feature.setGeometry point feature
+  point <- sequence $ Point.create' <$> pos
+  sequence_ $ Feature.setGeometry <$> point <*> (Just feature)
 
 -- | GPS Accuracy - Position the accuracy polygon on the map
 handleAction (GPSAccuracy geo feature) = H.liftEffect $ do
@@ -293,20 +292,20 @@ handleAction (GPSCenter geo map) = H.liftEffect $ do
 --
 -- Creates the map and attaches openstreetmap as a source
 --
-createNearbyMap::Effect (Maybe Map.Map)
+createNearbyMap::Effect Map.Map
 createNearbyMap = do
 
   -- Use OpenStreetMap as a source
-  osm <- OSM.create {}
-  tile <- join <$> (sequence $ Tile.create <$> ((\o->{source: o }) <$> osm ))
+  osm <- OSM.create'
+  tile <- Tile.create $ Just {source: osm }
 
   -- Create the view around our world center (should get it from the GPS)
-  view <- View.create { projection: Proj.epsg_3857 
-                        , center: Proj.fromLonLat [0.0, 0.0] (Just Proj.epsg_3857)
-                        , zoom: 18 }
+  view <- View.create $ Just { projection: Proj.epsg_3857 
+                              , center: Proj.fromLonLat [0.0, 0.0] (Just Proj.epsg_3857)
+                              , zoom: 18 }
 
   -- Extend the map with a set of buttons
-  ctrl <- Ctrl.defaults {}
+  ctrl <- Ctrl.defaults'
   elemAdd <- createMapButton "A" "ha-id-add-item" "ha-map-add-item"
   elemCenter <- createMapButton "C" "ha-id-center" "ha-map-center"
   elemRefresh <- createMapButton "R" "ha-id-refresh" "ha-map-refresh"
@@ -319,11 +318,11 @@ createNearbyMap = do
   ctrlButtons <- Control.create { element: elem }
 
   -- Create the map and set up the controls, layers and view
-  join <$> (sequence $ Map.create <$> ((\t v -> {
+  Map.create $ Just {
       target: "ha-map"
-      , controls: Collection.extend (catMaybes [ctrlButtons]) ctrl
-      , layers: [ t ]
-      , view: v}) <$> tile <*> view))
+      , controls: Collection.extend ([ctrlButtons]) ctrl
+      , layers: [ tile ]
+      , view: view}
 
   where
 
@@ -351,27 +350,23 @@ createNearbyGPS:: forall r o m . MonadAff m
               => ManageEntity m
               => ManageItem m
               => MonadAsk r m
-              => Maybe Map.Map
-              -> H.HalogenM State Action () o m (Maybe Geolocation.Geolocation)
-createNearbyGPS Nothing = pure Nothing
-createNearbyGPS (Just map) = do
+              => Map.Map
+              -> H.HalogenM State Action () o m Geolocation.Geolocation
+createNearbyGPS map = do
 
   -- Create the GPS device
-  mgeo <- H.liftEffect $ Geolocation.create {
+  gps <- H.liftEffect $ Geolocation.create $ Just {
       trackingOptions: { enableHighAccuracy: true}
       , projection: Proj.epsg_3857
     }
 
   -- Set up all handlers and features
-  setupNearbyGPS mgeo
-  pure mgeo
+  setupNearbyGPS gps
+  pure gps
 
   where
 
-    setupNearbyGPSPositionHandler _ Nothing = H.liftEffect $ do
-      log "No GPS Position feature"
-
-    setupNearbyGPSPositionHandler geo (Just feat) = do    
+    setupNearbyGPSPositionHandler geo feat = do    
       -- Change of Position
       void $ H.subscribe $ HQE.effectEventSource \emitter -> do
         key <- Geolocation.onChangePosition (\_ -> do
@@ -379,10 +374,7 @@ createNearbyGPS (Just map) = do
           pure true) geo
         pure (HQE.Finalizer (Geolocation.unChangePosition key geo))
 
-    setupNearbyGPSAccuracyHandler _ Nothing = H.liftEffect $ do
-      log "No GPS Accuracy feature"
-
-    setupNearbyGPSAccuracyHandler geo (Just feat) = do
+    setupNearbyGPSAccuracyHandler geo feat = do
       -- Change of Accuracy
       void $ H.subscribe $ HQE.effectEventSource \emitter -> do
         key <- Geolocation.onChangeAccuracyGeometry (\_ -> do
@@ -390,10 +382,7 @@ createNearbyGPS (Just map) = do
           pure true) geo
         pure (HQE.Finalizer (Geolocation.unChangeAccuracyGeometry key geo))
 
-    setupNearbyGPS Nothing = H.liftEffect $ do
-      log "No GPS available"
-
-    setupNearbyGPS (Just geo) = do
+    setupNearbyGPS geo = do
 
       -- Create the GPS Error handler
       void $ H.subscribe $ HQE.effectEventSource \emitter -> do
@@ -404,20 +393,20 @@ createNearbyGPS (Just map) = do
 
       -- Create the GPS Position Feature, a dot with a circle
       mfeat <- H.liftEffect $ do
-        pfill <- Fill.create { color: "#3399CC" }
-        pstroke <- Stroke.create { color: "#fff", width: 2}
-        pcircle <- Circle.create {
+        pfill <- Fill.create $ Just { color: "#3399CC" }
+        pstroke <- Stroke.create $ Just { color: "#fff", width: 2}
+        pcircle <- Circle.create $ Just {
           radius: 6
-          , fill: fromMaybe null $ notNull <$> pfill
-          , stroke: fromMaybe null $ notNull <$> pstroke
+          , fill: pfill
+          , stroke: pstroke
           }
-        pstyle <- Style.create {image: fromMaybe null $ notNull <$> pcircle}
-        pfeat <- Feature.create {}
-        pafeat <- Feature.create {}
-        sequence_ $ (Feature.setStyle pstyle) <$> pfeat
-        psvector <- VectorSource.create {features: catMaybes [pfeat, pafeat]}
-        plvector <- VectorLayer.create { source: fromMaybe null $ notNull <$> psvector }
-        sequence_ $ Map.addLayer <$> plvector <*> (Just map)
+        pstyle <- Style.create $ Just {image: pcircle}
+        pfeat <- Feature.create'
+        pafeat <- Feature.create'
+        Feature.setStyle (Just pstyle) pfeat
+        psvector <- VectorSource.create $ Just {features: [pfeat, pafeat]}
+        plvector <- VectorLayer.create $ Just { source: psvector }
+        Map.addLayer plvector map
         pure $ Tuple pfeat pafeat
 
       -- Event handlers for the GPS Position
@@ -457,47 +446,47 @@ addNearbyPOI map = do
   H.liftEffect do
 
     -- Create the styles
-    olPOIFill <- Fill.create {color: "#32CD32"}
-    olIOTFill <- Fill.create {color: "#0080FF"}
-    olSYMStroke <- Stroke.create {color: "#000000", width:2}
-    olPOIStyle <- Circle.create { radius: 6
-      , fill: toNullable olPOIFill
-      , stroke: toNullable olSYMStroke }
-    olIOTStyle <- Circle.create { radius: 6
-      , fill: toNullable olIOTFill
-      , stroke: toNullable olSYMStroke }
+    olPOIFill <- Fill.create $ Just {color: "#32CD32"}
+    olIOTFill <- Fill.create $ Just {color: "#0080FF"}
+    olSYMStroke <- Stroke.create $ Just {color: "#000000", width:2}
+    olPOIStyle <- Circle.create $ Just { radius: 6
+      , fill: olPOIFill
+      , stroke: olSYMStroke }
+    olIOTStyle <- Circle.create $ Just { radius: 6
+      , fill: olIOTFill
+      , stroke: olSYMStroke }
 
     -- Create the POI layer
     flist <- sequence $ fromItem <$> items
-    vs <- VectorSource.create { features: catMaybes flist }
-    vl <- VectorLayer.create { source: toNullable vs}
-    sequence_ $ VectorLayer.setStyle <$> (Just (VectorLayer.StyleFunction (poiStyle olPOIStyle) )) <*> vl
+    vs <- VectorSource.create $ Just { features: flist }
+    vl <- VectorLayer.create $ Just { source: vs }
+    VectorLayer.setStyle (VectorLayer.StyleFunction (poiStyle olPOIStyle)) vl
 
     -- Create the IoT Hub Layer
     ilist <- sequence $ fromEntity <$> entities
-    ivs <- VectorSource.create { features: catMaybes ilist }
-    ivl <- VectorLayer.create { source: toNullable ivs}
-    sequence_ $ VectorLayer.setStyle <$> (Just (VectorLayer.StyleFunction (poiStyle olIOTStyle) )) <*> ivl
+    ivs <- VectorSource.create $ Just { features: ilist }
+    ivl <- VectorLayer.create $ Just { source: ivs }
+    VectorLayer.setStyle (VectorLayer.StyleFunction (poiStyle olIOTStyle)) ivl
 
     -- Add them to the map
-    sequence_ $ Map.addLayer <$> vl <*> (Just map)
-    sequence_ $ Map.addLayer <$> ivl <*> (Just map)
+    Map.addLayer vl map
+    Map.addLayer ivl map
 
   where
 
-    -- The style function for the vector layers, returns th estyle based on the feature
-    poiStyle::Maybe Circle.Circle->Feature.Feature->Number->Effect (Nullable Style.Style)
+    -- The style function for the vector layers, returns the style based on the feature
+    poiStyle::Circle.Circle->Feature.Feature->Number->Effect (Nullable Style.Style)
     poiStyle poi f r = do
       name <- Feature.get "name" f
-      text <- Text.create { text: toNullable name
-                            , offsetY: 15
-                            , font: "12px Calibri, sans-serif"}
-      style <- Style.create { image: toNullable poi,
-                              text: toNullable text }
-      pure $ toNullable style
+      text <- Text.create $ Just {text: toNullable name
+                                  , offsetY: 15
+                                  , font: "12px Calibri, sans-serif"}
+      style <- Style.create $ Just { image: poi
+                                    , text: text }
+      pure $ toNullable $ Just style
 
     -- Converts from an Entity to a Feature that can b eadded to the IoT Hub Layer
-    fromEntity::Entity->Effect (Maybe Feature.Feature)
+    fromEntity::Entity->Effect Feature.Feature
     fromEntity (Entity e) = do
       -- Not really beautiful to use !! for array access :-(
       point <- Point.create 
@@ -505,21 +494,20 @@ addNearbyPOI map = do
                           , fromMaybe 0.0 $ e.location.value.coordinates!!1]
                           (Just Proj.epsg_3857))
         Nothing      
-      Feature.create {name: fromMaybe "?" $ (entityNameTemperature e) <|> (entityNameSnowHeight e)
-                      , id: ""
-                      , geometry: toNullable point }    
+      Feature.create $ Just { name: fromMaybe "?" $ (entityNameTemperature e) <|> (entityNameSnowHeight e)
+                              , geometry: point }    
 
     -- Create the names for the IoTHub entities
     entityNameTemperature en = (flip append "C") <$> (((append "T:") <<< show <<< _.value) <$> en.temperature)
     entityNameSnowHeight  en  = (flip append "mm") <$> (((append "d:") <<< show <<< _.value) <$> en.snowHeight)
 
     -- Converts from an Item to a Feature that can be added to the Item Layer
-    fromItem::Item->Effect (Maybe Feature.Feature)
+    fromItem::Item->Effect Feature.Feature
     fromItem i = do
       point <- Point.create 
         (Proj.fromLonLat [i.longitude, i.latitude] (Just Proj.epsg_3857))
         Nothing
-      Feature.create {name: i.name
-                      , id: fromMaybe "" i.id
-                      , type: 1
-                      , geometry: toNullable point }
+      Feature.create $ Just {name: i.name
+                            , id: fromMaybe "" i.id
+                            , type: 1
+                            , geometry: point }

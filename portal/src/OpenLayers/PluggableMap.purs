@@ -1,5 +1,5 @@
 -- |
--- | The OpenLayers Map module
+-- | The OpenLayers PluggableMap module
 -- |
 -- | Written by Tomas Stenlund, Sundsvall, Sweden (c) 2020
 -- |
@@ -7,7 +7,6 @@ module OpenLayers.PluggableMap (
   PluggableMap
   , RawPluggableMap
 
-  , create  
   , addLayer
   , addInteraction
   , getView
@@ -42,10 +41,6 @@ type PluggableMap a = RawPluggableMap a
 --
 -- Function mapping
 --
-foreign import createImpl :: forall r m . Fn1 {|r} (Effect (Nullable (PluggableMap m)))
-
-create :: forall r m . {|r} -> Effect (Maybe (PluggableMap m))
-create o = toMaybe <$> runFn1 createImpl o
 
 --
 -- add functions

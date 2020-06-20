@@ -3,7 +3,9 @@
 -- |
 -- | Written by Tomas Stenlund, Sundsvall, Sweden (c) 2020
 -- |
-module OpenLayers.Control (defaults) where
+module OpenLayers.Control (
+    defaults
+    , defaults') where
 
 -- Standard import
 import Prelude
@@ -12,7 +14,9 @@ import Prelude
 import Data.Nullable (Nullable, toMaybe)
 import Data.Maybe (Maybe)
 import Data.Function.Uncurried
-  ( Fn1
+  ( Fn0
+  , Fn1
+  , runFn0
   , runFn1)
 
 -- Effect imports
@@ -21,11 +25,13 @@ import Effect (Effect)
 -- Own imports
 import OpenLayers.Control.Control as Control
 import OpenLayers.Collection as Collection
-
+import OpenLayers.FFI as FFI
 --
 -- Function mapping
 --
-foreign import defaultsImpl :: forall r . Fn1 {|r} (Effect (Collection.Collection Control.Control))
+foreign import defaultsImpl :: forall r . Fn1 (FFI.NullableOrUndefined {|r}) (Effect (Collection.Collection Control.Control))
+defaults :: forall r . Maybe {|r} -> Effect (Collection.Collection Control.Control)
+defaults o = runFn1 defaultsImpl (FFI.toNullable o)
 
-defaults :: forall r . {|r} -> Effect (Collection.Collection Control.Control)
-defaults o = runFn1 defaultsImpl o
+defaults' :: Effect (Collection.Collection Control.Control)
+defaults' = runFn1 defaultsImpl FFI.undefined

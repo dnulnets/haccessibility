@@ -1,8 +1,5 @@
 //
-// The Openlayers Projextion API mapping for purescript.
-//
-// This is just a very crude mapping and only helps out with what I need for this application. It is no
-// complete mapping.
+// The Openlayers Projection API mapping for purescript.
 //
 // Written by Tomas Stenlund, Sundsvall, Sweden (c) 2020
 //

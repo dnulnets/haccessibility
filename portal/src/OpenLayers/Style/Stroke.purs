@@ -6,7 +6,7 @@
 module OpenLayers.Style.Stroke (
   Stroke
   , create
-  ) where
+  , create') where
 
 -- Standard import
 import Prelude
@@ -14,12 +14,13 @@ import Prelude
 -- Data imports
 import Data.Nullable (Nullable, toMaybe)
 import Data.Maybe (Maybe)
-import Data.Function.Uncurried
-  ( Fn1
-  , runFn1)
+import Data.Function.Uncurried (Fn1, runFn1)
 
 -- Effect imports
 import Effect (Effect)
+
+-- Own imports
+import OpenLayers.FFI as FFI
 
 --
 -- Foreign data types
@@ -29,6 +30,10 @@ foreign import data Stroke :: Type
 --
 -- Function mapping
 --
-foreign import createImpl :: forall r . Fn1 {|r} (Effect (Nullable Stroke))
-create :: forall r . {|r} -> Effect (Maybe Stroke)
-create o = toMaybe <$> runFn1 createImpl o
+foreign import createImpl :: forall r . Fn1 (FFI.NullableOrUndefined {|r}) (Effect Stroke)
+
+create :: forall r . Maybe {|r} -> Effect Stroke
+create o = runFn1 createImpl (FFI.toNullable o)
+
+create' :: Effect Stroke
+create' = runFn1 createImpl FFI.undefined

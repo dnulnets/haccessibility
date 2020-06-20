@@ -26,7 +26,7 @@ foreign import data Control :: Type
 --
 -- Function mapping
 --
-foreign import createImpl :: forall r . Fn1 {|r} (Effect (Nullable Control))
+foreign import createImpl :: forall r . Fn1 {|r} (Effect Control)
 
-create :: forall r . {|r} -> Effect (Maybe Control)
-create o = toMaybe <$> runFn1 createImpl o
+create :: forall r . {|r} -> Effect Control
+create o = runFn1 createImpl o

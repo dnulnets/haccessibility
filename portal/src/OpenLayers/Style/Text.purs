@@ -6,6 +6,7 @@
 module OpenLayers.Style.Text (
   Text
   , create
+  , create'
   ) where
 
 -- Standard import
@@ -21,6 +22,9 @@ import Data.Function.Uncurried
 -- Effect imports
 import Effect (Effect)
 
+-- own imports
+import OpenLayers.FFI as FFI
+
 --
 -- Foreign data types
 -- 
@@ -29,7 +33,10 @@ foreign import data Text :: Type
 --
 -- Function mapping
 --
-foreign import createImpl :: forall r . Fn1 {|r} (Effect (Nullable Text))
+foreign import createImpl :: forall r . Fn1 (FFI.NullableOrUndefined {|r}) (Effect Text)
 
-create :: forall r . {|r} -> Effect (Maybe Text)
-create o = toMaybe <$> runFn1 createImpl o
+create :: forall r . Maybe {|r} -> Effect Text
+create o = runFn1 createImpl (FFI.toNullable o)
+
+create' :: Effect Text
+create' = runFn1 createImpl FFI.undefined

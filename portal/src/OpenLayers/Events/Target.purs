@@ -1,5 +1,5 @@
 -- |
--- | The OpenLayers Control module
+-- | The OpenLayers Target module
 -- |
 -- | Written by Tomas Stenlund, Sundsvall, Sweden (c) 2020
 -- |

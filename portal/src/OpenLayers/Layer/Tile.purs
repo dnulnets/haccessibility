@@ -7,7 +7,8 @@ module OpenLayers.Layer.Tile (
   Tile
   , RawTile
 
-  , create) where
+  , create
+  , create') where
 
 -- Standard import
 import Prelude
@@ -24,6 +25,7 @@ import Effect (Effect)
 
 -- Import own modules
 import OpenLayers.Layer.BaseTileLayer as BaseTileLayer
+import OpenLayers.FFI as FFI
 
 --
 -- Foreign data types
@@ -34,7 +36,10 @@ type Tile = BaseTileLayer.BaseTileLayer RawTile
 --
 -- Function mapping
 --
-foreign import createImpl :: forall r . Fn1 {|r} (Effect (Nullable Tile))
+foreign import createImpl :: forall r . Fn1 (FFI.NullableOrUndefined {|r}) (Effect Tile)
 
-create :: forall r . {|r} -> Effect (Maybe Tile)
-create o = toMaybe <$> runFn1 createImpl o
+create :: forall r . Maybe {|r} -> Effect Tile
+create o = runFn1 createImpl (FFI.toNullable o)
+
+create' :: Effect Tile
+create' = runFn1 createImpl FFI.undefined

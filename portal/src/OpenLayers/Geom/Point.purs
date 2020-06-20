@@ -7,7 +7,8 @@ module OpenLayers.Geom.Point (
   Point
   , RawPoint 
   
-  , create ) where
+  , create
+  , create' ) where
 
 -- Standard import
 import Prelude
@@ -23,6 +24,7 @@ import Data.Function.Uncurried (
 import Effect (Effect)
 
 -- Our own imports
+import OpenLayers.FFI as FFI
 import OpenLayers.Geom.SimpleGeometry as SimpleGeometry
 import OpenLayers.Geom.GeometryLayout as GeometryLayout
 
@@ -37,6 +39,9 @@ type Point = SimpleGeometry.SimpleGeometry RawPoint
 --
 -- Function mapping
 --
-foreign import createImpl::Fn2 (Array Number) (Nullable GeometryLayout.GeometryLayout) (Effect (Nullable Point))
-create::Array Number->Maybe GeometryLayout.GeometryLayout->Effect (Maybe Point)
-create c e = toMaybe <$> runFn2 createImpl c (toNullable e)
+foreign import createImpl::Fn2 (Array Number) (FFI.NullableOrUndefined GeometryLayout.GeometryLayout) (Effect Point)
+create::Array Number->Maybe GeometryLayout.GeometryLayout->Effect Point
+create c e = runFn2 createImpl c (FFI.toNullable e)
+
+create'::Array Number->Effect Point
+create' c = runFn2 createImpl c FFI.undefined

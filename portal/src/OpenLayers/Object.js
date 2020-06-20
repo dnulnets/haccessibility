@@ -1,5 +1,5 @@
 //
-// The Openlayers Overlay API mapping for purescript.
+// The Openlayers Object API mapping for purescript.
 //
 // Written by Tomas Stenlund, Sundsvall, Sweden (c) 2020
 //
@@ -8,9 +8,8 @@
 // Get hold of the OpenLayer types and functions
 var ol  = require ('ol');
 
-exports.createImpl = function (opt) {
+exports.getImpl = function (name, self) {
     return function() {
-        var r = new ol.Overlay(opt);
-        return r;        
+        return self.get(name); 
     }
 }

@@ -9,6 +9,7 @@ module OpenLayers.Map (
   , RawMap
 
   , create
+  , create'
   
   ) where
 
@@ -19,15 +20,16 @@ import Prelude
 import Data.Nullable (Nullable, toMaybe)
 import Data.Maybe (Maybe)
 import Data.Function.Uncurried
-  ( Fn1
-  , Fn2
-  , runFn1
-  , runFn2)
+  ( Fn0
+  , Fn1
+  , runFn0
+  , runFn1)
 
 -- Effect imports
 import Effect (Effect)
 
 -- Openlayers
+import OpenLayers.FFI as FFI
 import OpenLayers.View as View
 import OpenLayers.Layer.Base as Base
 import OpenLayers.PluggableMap (PluggableMap, addInteraction, addLayer, getView) as PluggableMap
@@ -39,7 +41,9 @@ type Map = PluggableMap.PluggableMap RawMap
 --
 -- Function mapping
 --
-foreign import createImpl :: forall r . Fn1 {|r} (Effect (Nullable Map))
+foreign import createImpl :: forall r . Fn1 (FFI.NullableOrUndefined {|r}) (Effect Map)
+create :: forall r . Maybe {|r} -> Effect Map
+create o = runFn1 createImpl $ FFI.toNullable o
 
-create :: forall r . {|r} -> Effect (Maybe Map)
-create o = toMaybe <$> runFn1 createImpl o
+create':: Effect Map
+create' = runFn1 createImpl FFI.undefined

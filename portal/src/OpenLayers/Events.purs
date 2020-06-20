@@ -1,5 +1,5 @@
 -- |
--- | The OpenLayers Control module
+-- | The OpenLayers Events module
 -- |
 -- | Written by Tomas Stenlund, Sundsvall, Sweden (c) 2020
 -- |
@@ -19,9 +19,6 @@ import Data.Function.Uncurried
 
 -- Effect imports
 import Effect (Effect)
-
--- Import our own stuff
--- import OpenLayers.Events.Event (BaseEvent) as Event
 
 --
 -- Foreign data types

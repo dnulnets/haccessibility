@@ -9,6 +9,7 @@ module OpenLayers.Layer.Vector (
   , RawVector
 
   , create
+  , create'
   
   , setStyle ) where
 
@@ -31,6 +32,7 @@ import Effect (Effect)
 import OpenLayers.Layer.BaseVectorLayer as BaseVectorLayer
 import OpenLayers.Style.Style as Style
 import OpenLayers.Feature as Feature
+import OpenLayers.FFI as FFI
 
 --
 -- Our own data types
@@ -47,10 +49,13 @@ type Vector = BaseVectorLayer.BaseVectorLayer RawVector
 --
 -- Function mapping
 --
-foreign import createImpl :: forall r . Fn1 {|r} (Effect (Nullable Vector))
+foreign import createImpl :: forall r . Fn1 (FFI.NullableOrUndefined {|r}) (Effect Vector)
 
-create :: forall r . {|r} -> Effect (Maybe Vector)
-create o = toMaybe <$> runFn1 createImpl o
+create :: forall r . Maybe {|r} -> Effect Vector
+create o = runFn1 createImpl (FFI.toNullable o)
+
+create' :: Effect Vector
+create' = runFn1 createImpl FFI.undefined
 
 --
 -- Setters

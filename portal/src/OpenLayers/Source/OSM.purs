@@ -3,7 +3,10 @@
 -- |
 -- | Written by Tomas Stenlund, Sundsvall, Sweden (c) 2020
 -- |
-module OpenLayers.Source.OSM (OSM, create) where
+module OpenLayers.Source.OSM (
+  OSM
+  , create
+  , create') where
 
 -- Standard import
 import Prelude
@@ -18,6 +21,9 @@ import Data.Function.Uncurried
 -- Effect imports
 import Effect (Effect)
 
+-- Import own stuff
+import OpenLayers.FFI as FFI
+
 --
 -- Foreign data types
 -- 
@@ -26,7 +32,10 @@ foreign import data OSM :: Type
 --
 -- Function mapping
 --
-foreign import createImpl :: forall r . Fn1 {|r} (Effect (Nullable OSM))
+foreign import createImpl :: forall r . Fn1 (FFI.NullableOrUndefined {|r}) (Effect OSM)
 
-create :: forall r . {|r} -> Effect (Maybe OSM)
-create o = toMaybe <$> runFn1 createImpl o
+create :: forall r . Maybe {|r} -> Effect OSM
+create o = runFn1 createImpl (FFI.toNullable o)
+
+create' :: Effect OSM
+create' = runFn1 createImpl FFI.undefined

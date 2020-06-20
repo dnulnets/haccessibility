@@ -3,7 +3,10 @@
 -- |
 -- | Written by Tomas Stenlund, Sundsvall, Sweden (c) 2020
 -- |
-module OpenLayers.Overlay (Overlay, create) where
+module OpenLayers.Overlay (
+  Overlay
+  , create
+  , create') where
 
 -- Standard import
 import Prelude
@@ -18,6 +21,9 @@ import Data.Function.Uncurried
 -- Effect imports
 import Effect (Effect)
 
+-- Our own imports
+import OpenLayers.FFI as FFI
+
 --
 -- Foreign data types
 -- 
@@ -26,7 +32,10 @@ foreign import data Overlay :: Type
 --
 -- Function mapping
 --
-foreign import createImpl :: forall r . Fn1 {|r} (Effect (Nullable Overlay))
+foreign import createImpl :: forall r . Fn1 (FFI.NullableOrUndefined {|r}) (Effect Overlay)
 
-create :: forall r . {|r} -> Effect (Maybe Overlay)
-create o = toMaybe <$> runFn1 createImpl o
+create :: forall r . Maybe {|r} -> Effect Overlay
+create o = runFn1 createImpl (FFI.toNullable o)
+
+create' :: Effect Overlay
+create' = runFn1 createImpl FFI.undefined

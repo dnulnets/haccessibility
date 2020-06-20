@@ -45,8 +45,8 @@ import Data.Function.Uncurried
 import Effect (Effect)
 
 -- Own imports
-import OpenLayers.Geom.Polygon as Polygon
 import OpenLayers.FFI as FFI
+import OpenLayers.Geom.Polygon as Polygon
 import OpenLayers.Object(BaseObject, ObjectEvent) as Object
 import OpenLayers.Observable (on, un, once) as Observable
 import OpenLayers.Events (EventsKey, ListenerFunction) as Events
@@ -61,10 +61,13 @@ type Geolocation = Object.BaseObject RawGeolocation
 --
 -- Function mapping
 --
-foreign import createImpl :: forall r . Fn1 {|r} (Effect (Nullable Geolocation))
+foreign import createImpl :: forall r . Fn1 (FFI.NullableOrUndefined {|r}) (Effect Geolocation)
 
-create :: forall r . {|r} -> Effect (Maybe Geolocation)
-create o = toMaybe <$> runFn1 createImpl o
+create :: forall r . (Maybe {|r}) -> Effect Geolocation
+create o = runFn1 createImpl (FFI.toNullable o)
+
+create' :: Effect Geolocation
+create' = runFn1 createImpl FFI.undefined
 
 --
 -- Setters
@@ -76,9 +79,9 @@ setTracking onoff g = runFn2 setTrackingImpl onoff g
 --
 -- Getters
 --
-foreign import getAccuracyGeometryImpl :: Fn1 Geolocation (Effect (Nullable Polygon.Polygon))
-getAccuracyGeometry :: Geolocation -> Effect (Maybe Polygon.Polygon)
-getAccuracyGeometry self = toMaybe <$> runFn1 getAccuracyGeometryImpl self
+foreign import getAccuracyGeometryImpl :: Fn1 Geolocation (Effect Polygon.Polygon)
+getAccuracyGeometry :: Geolocation -> Effect Polygon.Polygon
+getAccuracyGeometry self = runFn1 getAccuracyGeometryImpl self
 
 foreign import getPositionImpl :: Fn1 Geolocation (Effect (FFI.NullableOrUndefined (Array Number)))
 getPosition :: Geolocation -> Effect (Maybe (Array Number))
