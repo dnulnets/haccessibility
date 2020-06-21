@@ -8,16 +8,15 @@ module OpenLayers.Interaction.Select
     , module Event
     , module Observable
 
-    , Select
-    , RawSelect
+    -- SelectEvent
     , SelectEvent
     , RawSelectEvent
-
-    -- SelectEvent
     , getSelected
     , getDeselected
 
     -- Select
+    , Select
+    , RawSelect
     , create
     , create'
     , onSelect

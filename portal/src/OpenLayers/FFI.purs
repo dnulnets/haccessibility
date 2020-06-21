@@ -1,5 +1,5 @@
 -- |
--- | The OpenLayers FFI purescrip thelper functions
+-- | The OpenLayers FFI purescript helper functions
 -- |
 -- | Written by Tomas Stenlund, Sundsvall, Sweden (c) 2020
 -- |

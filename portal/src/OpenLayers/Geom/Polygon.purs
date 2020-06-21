@@ -5,6 +5,10 @@
 -- |
 module OpenLayers.Geom.Polygon (
   Polygon
+
+  , create
+  , create'
+
   , RawPolygon ) where
 
 import Prelude
@@ -22,6 +26,7 @@ import Effect (Effect)
 -- Our own imports
 import OpenLayers.Geom.SimpleGeometry as SimpleGeometry
 import OpenLayers.Geom.GeometryLayout as GeometryLayout
+import OpenLayers.FFI as FFI
 
 --
 -- Foreign data types
@@ -34,6 +39,9 @@ type Polygon = SimpleGeometry.SimpleGeometry RawPolygon
 --
 -- Function mapping
 --
-foreign import createImpl::Fn2 (Array (Array Number)) (Nullable GeometryLayout.GeometryLayout) (Effect (Nullable Polygon))
-create::Array (Array Number)->Maybe GeometryLayout.GeometryLayout->Effect (Maybe Polygon)
-create ap l = toMaybe <$> runFn2 createImpl ap (toNullable l)
+foreign import createImpl::Fn2 (Array (Array Number)) (FFI.NullableOrUndefined GeometryLayout.GeometryLayout) (Effect Polygon)
+create::Array (Array Number)->Maybe GeometryLayout.GeometryLayout->Effect Polygon
+create ap l = runFn2 createImpl ap (FFI.toNullable l)
+
+create'::Array (Array Number)->Effect Polygon
+create' ap = runFn2 createImpl ap FFI.undefined

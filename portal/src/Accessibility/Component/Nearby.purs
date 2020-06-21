@@ -10,10 +10,10 @@ import Prelude
 
 -- Data imports
 import Data.Array((!!), catMaybes, length, head, index)
-import Data.Maybe (Maybe(..), maybe, fromMaybe)
+import Data.Maybe (Maybe(..), fromMaybe, isJust, fromJust)
 import Data.Foldable (sequence_)
 import Data.Traversable (sequence)
-import Data.Nullable (Nullable, notNull, null, toNullable)
+import Data.Nullable (Nullable, toNullable, notNull)
 import Data.Tuple (Tuple(..), fst, snd)
 
 -- Control Monad
@@ -37,7 +37,6 @@ import Web.Event.Event as WEE
 import Web.HTML (window)
 import Web.HTML.Window as WHW
 import Web.HTML.HTMLDocument as WHHD
-import Web.HTML.HTMLButtonElement as WHHBE
 
 import Web.DOM.Document as WDD
 import Web.DOM.Element as WDE
@@ -99,7 +98,6 @@ data Action = Initialize
   | Center
   | AddItem
   | FeatureSelect Select.SelectEvent
-  | Add
   | GPSError
   | GPSPosition Geolocation.Geolocation Feature.Feature
   | GPSAccuracy Geolocation.Geolocation Feature.Feature
@@ -214,14 +212,13 @@ handleAction Finalize = do
   H.liftEffect $ log "Finalize Nearby Component"
   state <- H.get
 
-  -- Remove the subscription
+  -- Remove the subscriptions
   sequence_ $ H.unsubscribe <$> state.subscription
 
-  -- Remove the tracking, layers and the target of the map
---  H.liftEffect $ do
---    sequence_ $ (flip setTracking false) <$> state.geo
---    sequence_ $ removeLayerFromMap <$> state.map <*> state.poi
---    sequence_ $ removeTarget <$> state.map
+  -- Stop the tracking, and remove the target of the map
+  H.liftEffect $ do
+    sequence_ $ Geolocation.setTracking false <$> state.geo
+    sequence_ $ Map.clearTarget <$> state.map
 
   -- Update the state
   H.put state { map = Nothing, geo = Nothing, alert = Nothing }
@@ -260,13 +257,6 @@ handleAction (FeatureSelect e) = do
   l <- H.liftEffect $ Select.getSelected e
   s <- H.liftEffect $ sequence $ (Feature.get "id") <$> l
   sequence_ $ gotoPage <$> (ADR.Point <$> (head (catMaybes s)) <*> (Just false))
-
--- | Find the items
-handleAction Add = do
-  H.liftEffect $ log "Adds a POI to the database"
---  state <- H.get
---  pos <- H.liftEffect $ sequence $ getCoordinate <$> state.geo
---  H.liftEffect $ log $ show pos
 
 -- | GPS Error - Error in the geolocation device
 handleAction GPSError = H.liftEffect $ do
@@ -333,8 +323,10 @@ createNearbyMap = do
                     -> Effect WDE.Element   -- ^The map's control
     createMapButton name idt cls = do
 
+      -- Get hold of the DOM
       domDocument <- window >>= WHW.document <#> WHHD.toDocument
 
+      -- Create the textnode and the button
       txt <- WDD.createTextNode name domDocument
       button <- WDD.createElement "button" domDocument
       WDE.setClassName cls button
@@ -383,7 +375,6 @@ createNearbyGPS map = do
         pure (HQE.Finalizer (Geolocation.unChangeAccuracyGeometry key geo))
 
     setupNearbyGPS geo = do
-
       -- Create the GPS Error handler
       void $ H.subscribe $ HQE.effectEventSource \emitter -> do
         key <- Geolocation.onError (\_ -> do
@@ -464,7 +455,7 @@ addNearbyPOI map = do
 
     -- Create the IoT Hub Layer
     ilist <- sequence $ fromEntity <$> entities
-    ivs <- VectorSource.create $ Just { features: ilist }
+    ivs <- VectorSource.create $ Just { features: catMaybes ilist }
     ivl <- VectorLayer.create $ Just { source: ivs }
     VectorLayer.setStyle (VectorLayer.StyleFunction (poiStyle olIOTStyle)) ivl
 
@@ -475,27 +466,29 @@ addNearbyPOI map = do
   where
 
     -- The style function for the vector layers, returns the style based on the feature
-    poiStyle::Circle.Circle->Feature.Feature->Number->Effect (Nullable Style.Style)
+    poiStyle::Circle.Circle->Feature.Feature->Number->Effect (Maybe Style.Style)
     poiStyle poi f r = do
+      style <- Style.create $ Just { image: poi }
       name <- Feature.get "name" f
-      text <- Text.create $ Just {text: toNullable name
-                                  , offsetY: 15
-                                  , font: "12px Calibri, sans-serif"}
-      style <- Style.create $ Just { image: poi
-                                    , text: text }
-      pure $ toNullable $ Just style
+      when (isJust name) do
+          text <- Text.create $ Just {text: fromMaybe "" name
+                                      , offsetY: 15
+                                      , font: "12px Calibri, sans-serif"}
+          Style.setText (Just text) style
+      pure $ Just style
 
     -- Converts from an Entity to a Feature that can b eadded to the IoT Hub Layer
-    fromEntity::Entity->Effect Feature.Feature
+    fromEntity::Entity->Effect (Maybe Feature.Feature)
     fromEntity (Entity e) = do
-      -- Not really beautiful to use !! for array access :-(
-      point <- Point.create 
-        (Proj.fromLonLat [fromMaybe 0.0 $ e.location.value.coordinates!!0
-                          , fromMaybe 0.0 $ e.location.value.coordinates!!1]
-                          (Just Proj.epsg_3857))
-        Nothing      
-      Feature.create $ Just { name: fromMaybe "?" $ (entityNameTemperature e) <|> (entityNameSnowHeight e)
-                              , geometry: point }    
+      case length e.location.value.coordinates of
+        2 -> do
+          point <- Point.create' $ Proj.fromLonLat [fromMaybe 0.0 $ e.location.value.coordinates!!0
+                                                    , fromMaybe 0.0 $ e.location.value.coordinates!!1]
+                                                    (Just Proj.epsg_3857)
+          feature <- Feature.create $ Just { name: fromMaybe "?" $ (entityNameTemperature e) <|> (entityNameSnowHeight e)
+                                             , geometry: point }
+          pure $ Just feature
+        _ -> pure Nothing
 
     -- Create the names for the IoTHub entities
     entityNameTemperature en = (flip append "C") <$> (((append "T:") <<< show <<< _.value) <$> en.temperature)

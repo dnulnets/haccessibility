@@ -16,3 +16,9 @@ exports.createImpl = function (opt) {
         return new olst.Style(opt);        
     }
 }
+
+exports.setTextImpl = function (t, self) {
+    return function() {
+        self.setText (t);
+    }
+}

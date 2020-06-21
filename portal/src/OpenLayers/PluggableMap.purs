@@ -9,7 +9,11 @@ module OpenLayers.PluggableMap (
 
   , addLayer
   , addInteraction
+
   , getView
+
+  , setTarget
+  , clearTarget
 
   ) where
 
@@ -29,6 +33,7 @@ import Data.Function.Uncurried
 import Effect (Effect)
 
 -- Openlayers
+import OpenLayers.FFI as FFI
 import OpenLayers.View as View
 import OpenLayers.Layer.Base as Base
 import OpenLayers.Interaction.Interaction as Interaction
@@ -62,3 +67,15 @@ foreign import getViewImpl :: forall m . Fn1 (PluggableMap m) (Effect (Nullable 
 
 getView :: forall m . PluggableMap m -> Effect (Maybe View.View)
 getView o = toMaybe <$> runFn1 getViewImpl o
+
+--
+-- set function
+--
+
+foreign import setTargetImpl :: forall m . Fn2 (FFI.NullableOrUndefined String) (PluggableMap m) (Effect Unit)
+
+setTarget::forall m . Maybe String -> PluggableMap m -> Effect Unit
+setTarget s self = runFn2 setTargetImpl (FFI.toNullable s) self
+
+clearTarget::forall m . PluggableMap m -> Effect Unit
+clearTarget self = runFn2 setTargetImpl FFI.undefined self

@@ -25,3 +25,9 @@ exports.getViewImpl = function (self) {
         return self.getView();
     }
 }
+
+exports.setTargetImpl = function (s, self) {
+    return function() {
+        return self.setTarget(s);
+    }
+}

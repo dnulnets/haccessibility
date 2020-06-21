@@ -32,7 +32,13 @@ import Effect (Effect)
 import OpenLayers.FFI as FFI
 import OpenLayers.View as View
 import OpenLayers.Layer.Base as Base
-import OpenLayers.PluggableMap (PluggableMap, addInteraction, addLayer, getView) as PluggableMap
+import OpenLayers.PluggableMap (
+  PluggableMap
+  , addInteraction
+  , addLayer
+  , getView
+  , setTarget
+  , clearTarget) as PluggableMap
 --
 -- Foreign data types
 -- 

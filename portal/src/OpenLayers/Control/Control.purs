@@ -3,7 +3,13 @@
 -- |
 -- | Written by Tomas Stenlund, Sundsvall, Sweden (c) 2020
 -- |
-module OpenLayers.Control.Control (Control, create) where
+module OpenLayers.Control.Control (
+    module Object
+
+    -- Control
+    , Control
+    , RawControl
+    , create) where
 
 -- Standard import
 import Prelude
@@ -18,10 +24,14 @@ import Data.Function.Uncurried
 -- Effect imports
 import Effect (Effect)
 
+-- Own import
+import OpenLayers.Object (BaseObject, get) as Object
+
 --
 -- Foreign data types
 -- 
-foreign import data Control :: Type
+foreign import data RawControl :: Type
+type Control = Object.BaseObject RawControl
 
 --
 -- Function mapping
