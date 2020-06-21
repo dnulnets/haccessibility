@@ -21,6 +21,7 @@ You can edit this file as you like.
   , "routing"
   , "routing-duplex"
   , "uuid"
+  , "openlayers"
   ]
 , packages = ./packages.dhall
 , sources = [ "src/**/*.purs", "test/**/*.purs" ]

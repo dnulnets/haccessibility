@@ -132,6 +132,11 @@ let additions =
         { dependencies = [ "newtype", "parsing", "argonaut-codecs", "datetime" ]
         , repo = "https://github.com/jmackie/purescript-datetime-iso.git"
         , version = "v4.0.0"
+        },
+        openlayers =
+        { dependencies =[ "console", "effect", "foreign", "functions", "maybe", "nullable", "psci-support"]
+        , repo = "https://github.com/dnulnets/purescript-openlayers.git"
+        , version = "v0.1.0"
         }
       }
 
