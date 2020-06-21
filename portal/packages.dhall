@@ -117,19 +117,22 @@ let additions =
 -------------------------------
 -}
 
-
+{-
 let upstream =
       https://github.com/purescript/package-sets/releases/download/psc-0.13.6-20200507/packages.dhall sha256:9c1e8951e721b79de1de551f31ecb5a339e82bbd43300eb5ccfb1bf8cf7bbd62
+-}
+
+let upstream =
+      https://github.com/purescript/package-sets/releases/download/psc-0.13.8-20200615/packages.dhall sha256:5d0cfad9408c84db0a3fdcea2d708f9ed8f64297e164dc57a7cf6328706df93a
 
 let overrides = {=}
 
 let additions =
       { datetime-iso =
-          { dependencies =
-              [ "newtype", "parsing", "argonaut-codecs", "datetime" ]
-          , repo = "https://github.com/jmackie/purescript-datetime-iso.git"
-          , version = "v4.0.0"
-          }
+        { dependencies = [ "newtype", "parsing", "argonaut-codecs", "datetime" ]
+        , repo = "https://github.com/jmackie/purescript-datetime-iso.git"
+        , version = "v4.0.0"
+        }
       }
 
 in  upstream // overrides // additions
