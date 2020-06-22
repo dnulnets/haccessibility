@@ -133,11 +133,18 @@ let additions =
         , repo = "https://github.com/jmackie/purescript-datetime-iso.git"
         , version = "v4.0.0"
         },
+
+{-  This is the openlayers real addition, the other one is a local one to make it easier
+    for me to work.
         openlayers =
         { dependencies =[ "console", "effect", "foreign", "functions", "maybe", "nullable", "psci-support"]
         , repo = "https://github.com/dnulnets/purescript-openlayers.git"
         , version = "v0.1.0"
-        }
+        } -}
+
+{-  This is the local openlayers addition to make it easier for me to work. -}
+        
+        openlayers = ../../purescript-openlayers/spago.dhall as Location
       }
 
 in  upstream // overrides // additions
