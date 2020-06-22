@@ -155,7 +155,7 @@ handleAction Initialize = do
   gps <- createNearbyGPS hamap
 
   -- Create the layer
-  addNearbyPOI hamap
+  poiLayer <- addNearbyPOI hamap
 
   -- Add a listener to the add item button on the map
   eadd <- H.liftEffect $ 
@@ -176,7 +176,7 @@ handleAction Initialize = do
   scen <- sequence $ (subscribe Center) <$> ecen
 
   -- Subscribe for feature selects on the map
-  s <- H.liftEffect $ Select.create $ Just {multi: false}
+  s <- H.liftEffect $ Select.create $ Just {multi: false, layers: [poiLayer] }
   sfeat <- H.subscribe $ HQE.effectEventSource \emitter -> do
         key <- Select.onSelect (\e -> do
           HQE.emit emitter (FeatureSelect e)
@@ -423,7 +423,7 @@ addNearbyPOI:: forall r o m . MonadAff m
               => ManageItem m
               => MonadAsk r m
               => Map.Map
-              -> H.HalogenM State Action () o m Unit
+              -> H.HalogenM State Action () o m VectorLayer.Vector
 addNearbyPOI map = do
 
   -- Get the weather data from the IoT Hb and our own backend
@@ -462,6 +462,9 @@ addNearbyPOI map = do
     -- Add them to the map
     Map.addLayer vl map
     Map.addLayer ivl map
+
+    -- Return with the POI layer
+    pure vl
 
   where
 
