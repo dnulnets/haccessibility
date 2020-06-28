@@ -77,6 +77,10 @@
 }
 
 /* The refresh item for the map */
+.ha-map-edit {
+  border-radius: 0 0 0 0;
+}
+/* The refresh item for the map */
 .ha-map-refresh {
   border-radius: 0 0 0 0;
 }

@@ -64,6 +64,7 @@ import OpenLayers.Source.Vector as VectorSource
 import OpenLayers.Control.Control as Control
 import OpenLayers.Control as Ctrl
 import OpenLayers.Collection as Collection
+import OpenLayers.Events.Condition as Condition
 
 import Accessibility.Data.Route (Page(..)) as ADR
 import Accessibility.Component.HTML.Utils (css)
@@ -79,6 +80,8 @@ type State =  { alert           ::Maybe String            -- ^ The alert text
                 , subscription  ::Array H.SubscriptionId  -- ^ The map button subscriptions
                 , geo           ::Maybe Geolocation.Geolocation     -- ^ The GPS device
                 , map           ::Maybe Map.Map                     -- ^ The Map on the page
+                , layer         ::Maybe VectorLayer.Vector  -- ^The vector layer for our own poi:s
+                , select        ::Maybe Select.Select     -- ^ The select interaction
                 , distance      ::Number                  -- ^ The max search distance
               }
 
@@ -89,12 +92,15 @@ initialState _ =  { alert           : Nothing
                     , subscription  : []
                     , geo           : Nothing
                     , map           : Nothing
+                    , select        : Nothing
+                    , layer         : Nothing
                     , distance : 300.0}
 
 -- | Internal form actions
 data Action = Initialize
   | Finalize
   | Update
+  | EditItem
   | Center
   | AddItem
   | FeatureSelect Select.SelectEvent
@@ -163,6 +169,11 @@ handleAction Initialize = do
     (WDPN.querySelector (WDPN.QuerySelector "#ha-id-add-item"))  
   sadd <- sequence $ (subscribe AddItem) <$> eadd
 
+  eedit <- H.liftEffect $ 
+    (WHHD.toParentNode <$> (window >>= WHW.document)) >>=
+    (WDPN.querySelector (WDPN.QuerySelector "#ha-id-edit-item"))  
+  sedit <- sequence $ (subscribe EditItem) <$> eedit
+
   -- Add a listener to the refresh item button on the map
   eupd <- H.liftEffect $ 
     (WHHD.toParentNode <$> (window >>= WHW.document)) >>=
@@ -176,7 +187,9 @@ handleAction Initialize = do
   scen <- sequence $ (subscribe Center) <$> ecen
 
   -- Subscribe for feature selects on the map
-  s <- H.liftEffect $ Select.create $ Just {multi: false, layers: [poiLayer] }
+  s <- H.liftEffect $ Select.create $ Just {multi: false
+                                            , layers: [poiLayer]                                            
+                                            , toggleCondition: Condition.never }
   sfeat <- H.subscribe $ HQE.effectEventSource \emitter -> do
         key <- Select.onSelect (\e -> do
           HQE.emit emitter (FeatureSelect e)
@@ -186,9 +199,11 @@ handleAction Initialize = do
 
   -- Update the state
   state <- H.get
-  H.put state { subscription = (catMaybes [sadd, supd, scen]) <> [sfeat]
+  H.put state { subscription = (catMaybes [sadd, supd, scen, sedit]) <> [sfeat]
                 , map = Just hamap
-                , geo = Just gps}
+                , geo = Just gps
+                , layer = Just poiLayer
+                , select = Just s}
 
   where
 
@@ -221,27 +236,48 @@ handleAction Finalize = do
     sequence_ $ Map.clearTarget <$> state.map
 
   -- Update the state
-  H.put state { map = Nothing, geo = Nothing, alert = Nothing }
+  H.put state { map = Nothing, geo = Nothing, alert = Nothing, select = Nothing }
+
+handleAction EditItem = do
+  state <- H.get
+  cf <- H.liftEffect $ sequence $ Select.getFeatures <$> state.select
+  H.liftEffect $ log "Edit a selected item"  
+  H.liftEffect $ log $ "Number of selected items = " <> (show (Collection.getLength <$> cf))
+  
 
 -- | Find the items and create a layer and display it
 handleAction Update = do
-  H.liftEffect $ log "Make an items update"
---  state <- H.get
+  state <- H.get
+  H.liftEffect $ log "Refresh our own POI:s"
 
-  -- Get the current position
---  pos <- H.liftEffect $ sequence $ getCoordinate <$> state.geo
---  entities <- queryEntities "WeatherObserved"
---  H.liftEffect $ log $ show entities  
---  items <- queryItems {
---    longitude : join $ _.longitude <$> pos, 
---    latitude: join $ _.latitude <$> pos, 
---    distance: Just state.distance,
---    limit: Nothing,
---    text: Nothing }
---  H.liftEffect $ sequence_ $ removeLayerFromMap <$> state.map <*> state.poi
---  layer <- H.liftEffect $ sequence $ createPOILayer <$> (join $ _.longitude <$> pos) <*> (join $ _.latitude <$> pos) <*> (Just (state.distance*2.0)) <*> ((map (map itemToPOI) items) <> (map (map entityToPOI) entities))
---  H.liftEffect $ sequence_ $ addLayerToMap <$> state.map <*> layer
---  H.put state { poi = layer }
+  -- Get the POI from our own backend
+  items <- (fromMaybe []) <$> queryItems {longitude : Nothing
+                                          , latitude: Nothing
+                                          , distance: Nothing
+                                          , limit: Nothing
+                                          , text: Nothing }
+  
+  H.liftEffect $ log $ "Number of items = " <> (show (length items))
+  H.liftEffect do
+
+    -- Create the POI source
+    flist <- sequence $ fromItem <$> items
+    vs <- VectorSource.create $ Just { features: flist }
+    sequence_ $ (VectorLayer.setSource vs) <$> state.layer
+
+  where
+
+    -- Converts from an Item to a Feature that can be added to the Item Layer
+    fromItem::Item->Effect Feature.Feature
+    fromItem i = do
+      point <- Point.create 
+        (Proj.fromLonLat [i.longitude, i.latitude] (Just Proj.epsg_3857))
+        Nothing
+      Feature.create $ Just {name: i.name
+                            , id: fromMaybe "" i.id
+                            , type: 1
+                            , geometry: point }
+
 
 -- | Find the items
 handleAction Center = do
@@ -254,9 +290,10 @@ handleAction Center = do
 
 handleAction (FeatureSelect e) = do
   H.liftEffect $ log "Feature selected!"
-  l <- H.liftEffect $ Select.getSelected e
-  s <- H.liftEffect $ sequence $ (Feature.get "id") <$> l
-  sequence_ $ gotoPage <$> (ADR.Point <$> (head (catMaybes s)) <*> (Just false))
+  -- l <- H.liftEffect $ Select.getSelected e
+  -- s <- H.liftEffect $ sequence $ (Feature.get "id") <$> l
+  -- sequence_ $ gotoPage <$> (ADR.Point <$> (head (catMaybes s)) <*> (Just false))
+  -- H.liftEffect $ log "Nothing to do"
 
 -- | GPS Error - Error in the geolocation device
 handleAction GPSError = H.liftEffect $ do
@@ -297,12 +334,14 @@ createNearbyMap = do
   -- Extend the map with a set of buttons
   ctrl <- Ctrl.defaults'
   elemAdd <- createMapButton "A" "ha-id-add-item" "ha-map-add-item"
+  elemEdit <- createMapButton "E" "ha-id-edit-item" "ha-map-edit-item"
   elemCenter <- createMapButton "C" "ha-id-center" "ha-map-center"
   elemRefresh <- createMapButton "R" "ha-id-refresh" "ha-map-refresh"
   domDocument <- window >>= WHW.document <#> WHHD.toDocument
   elem <- WDD.createElement "div" domDocument
   WDE.setClassName "ha-map-ctrl ol-unselectable ol-control" elem
   void $ WDN.appendChild (WDE.toNode elemAdd) (WDE.toNode elem)
+  void $ WDN.appendChild (WDE.toNode elemEdit) (WDE.toNode elem)
   void $ WDN.appendChild (WDE.toNode elemRefresh) (WDE.toNode elem)
   void $ WDN.appendChild (WDE.toNode elemCenter) (WDE.toNode elem)
   ctrlButtons <- Control.create { element: elem }
