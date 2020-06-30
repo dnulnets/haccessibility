@@ -288,12 +288,9 @@ handleAction Center = do
     pos <- join <$> (sequence $ Geolocation.getPosition <$> state.geo)
     sequence_ $ View.setCenter <$> pos <*> view
 
+-- | Feature is selected
 handleAction (FeatureSelect e) = do
   H.liftEffect $ log "Feature selected!"
-  -- l <- H.liftEffect $ Select.getSelected e
-  -- s <- H.liftEffect $ sequence $ (Feature.get "id") <$> l
-  -- sequence_ $ gotoPage <$> (ADR.Point <$> (head (catMaybes s)) <*> (Just false))
-  -- H.liftEffect $ log "Nothing to do"
 
 -- | GPS Error - Error in the geolocation device
 handleAction GPSError = H.liftEffect $ do

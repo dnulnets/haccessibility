@@ -2,6 +2,7 @@
 .psci_modules
 bower_components
 node_modules
+generated-docs
 src/Version.purs
 
 # Generated files
