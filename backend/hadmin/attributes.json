@@ -1,20 +1,34 @@
 [
     {
-        "name": "Door width",
+        "displayName": "Width",
+        "name": "doorWidth",
+        "group": "Entrance",
         "description": "The width of the door",
         "unit": "cm",
         "typeof": "NumberType"
     },
     {
-        "name": "Door Height",
+        "displayName": "Height",
+        "name": "doorHeight",
+        "group": "Entrance",
         "description": "The height of the door",
         "unit": "cm",
         "typeof": "NumberType"
     },
     {
-        "name": "Ramp",
+        "displayName": "Ramp",
+        "name": "doorRamp",
+        "group": "Entrance",
         "description": "If there is a ramp",
         "unit": "Yes/No",
         "typeof": "BooleanType"
-    }    
+    },
+    {
+        "displayName": "Width",
+        "name": "elevatorWidth",
+        "group": "Elevator",
+        "description": "The width of the elevator",
+        "unit": "cm",
+        "typeof": "NumberType"
+    }
 ]

@@ -67,7 +67,7 @@ data Action = Initialize  -- ^The component is initializing
   | Define Operation      -- ^An external component want to change operational mode of the component
   | Input (State->State)  -- ^The user has changed the value in an input field, make a state change
 
--- |The input type, it contains the item key (Left) or the lola for a new (Right)
+-- |The input type, it contains the item key or the latitude and longitude for a new item
 data Operation  = UpdatePOI String      -- ^Update the POI
                 | ViewPOI String        -- ^Readonly the POI
                 | AddPOI Number Number  -- ^Add a new POI
@@ -94,7 +94,7 @@ type State =  { alert::Maybe String               -- ^The alert for the componen
                 , attrChange::Set Change          -- ^A list of all changes in the form
               }
 
--- | Initial state is no logged in user
+-- | Initial state contains the operation and the attributes
 initialState  :: Operation  -- ^The item key if any
               -> State      -- ^ The state
 initialState i =  { alert: Nothing
@@ -154,7 +154,7 @@ inputName v =
     change::String->State->State
     change c st = st { item = (_ { name = c }) <$> st.item }
 
--- |Creates a HTML element for an input box of a tet type but is a multiline
+-- |Creates a HTML element for an input box of a text type but is a multiline
 inputDescription  :: forall p. Maybe String -- ^The value
                   -> HH.HTML p Action -- ^The HTML element
 inputDescription val =
@@ -267,9 +267,7 @@ updateState = do
   state <- H.get
   a <- queryAttributes
   av <- _queryItemAttributes state.operation
-  H.liftEffect $ log $ show av
   i <- _queryItem state.operation
-  H.liftEffect $ log $ show i
   H.put state { attrs = diffF same (fromMaybe [] a) (fromMaybe [] av)
     , item = i
     , itemAttrs = fromMaybe [] av}
@@ -336,21 +334,16 @@ handleAction (Submit event) = do
   state <- H.get
   case state.operation of
     ViewPOI _ -> do
-      H.liftEffect $ log "ViewPOI cannot update!"
+      H.liftEffect $ log "ViewPOI is readonly!"
     UpdatePOI _ -> do
-      H.liftEffect $ log "UpdatePOI not done yet :-)"
       it <- join <$> (sequence $ updateItem <$> state.item)
-      H.liftEffect $ log $ show it
       u <- sequence $ updateItemAttributes <$> (join (_.id <$> it)) <*> Just (clean <$> (toUnfoldable state.attrChange))
-      H.liftEffect $ log $ show u
+      H.liftEffect $ log "Update an item"
     AddPOI _ _ -> do
-      H.liftEffect $ log "Add a new item"
       it <- join <$> (sequence $ addItem <$> state.item)
-      H.liftEffect $ log $ show it
       u <- sequence $ updateItemAttributes <$> (join (_.id <$> it)) <*> Just (clean <$> (toUnfoldable state.attrChange))
-      H.liftEffect $ log $ show u
+      H.liftEffect $ log "Add a new item"
 
-  H.liftEffect $ log "Point form handled"
   gotoPage ADR.Home
 
     where
@@ -362,14 +355,12 @@ handleAction (Submit event) = do
 handleAction (Input f) = do
   H.liftEffect $ log "Input changed"
   H.modify_ f
-  state <- H.get
-  H.liftEffect $ log $ show state.item
-  H.liftEffect $ log $ show state.attrChange
 
 -- |It has come a new input, we need to update the state in the same manner as we
 -- do for Initialize, but only if the operation has changed.
 handleAction (Define i) = do
   H.liftEffect $ log $ "Input received"
   state <- H.get
-  when (state.operation /= i) $ H.put $ state {operation = i}
-  updateState
+  when (state.operation /= i) $ do
+    H.put $ state {operation = i}
+    updateState

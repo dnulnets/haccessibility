@@ -92,6 +92,8 @@ data Item = Item {
 data Attribute = Attribute {
     attributeAttributeId   :: Maybe Text      -- ^Attribute key
     , attributeName        :: Text            -- ^The name of the attribute
+    , attributeDisplayName :: Text            -- ^The name to display for this attribute
+    , attributeGroup       :: Text            -- ^The group the atribute belongs to
     , attributeDescription :: Text            -- ^The description of the attribute 
     , attributeTypeof      :: AttributeType   -- ^The type of the attribute
     , attributeUnit        :: Text            -- ^The unit of the attribute

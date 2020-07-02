@@ -1,10 +1,10 @@
 [
     {
         "value": "90",
-        "name": "Door width"
+        "name": "doorWidth"
     },
     {
         "value": "280",
-        "name": "Door Height"
+        "name": "doorHeight"
     }
 ]

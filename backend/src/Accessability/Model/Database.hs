@@ -64,6 +64,8 @@ Item
 -- | The available attributes
 Attribute
     name Text           -- ^The name of the attribute, must be unique
+    displayName Text    -- ^The name o display for the attribute
+    group Text          -- ^The group the attribute belongs to
     description Text    -- ^The description of the attribute
     typeof AttributeType         -- ^The type of value ATText|ATYesNo|ATNumber
     unit Text           -- ^The unit of the attribute, e.g. meters

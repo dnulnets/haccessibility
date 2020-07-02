@@ -9,11 +9,10 @@ module Accessibility.Component.Nearby (component, Slot(..)) where
 import Prelude
 
 -- Data imports
-import Data.Array((!!), catMaybes, length, head, index)
-import Data.Maybe (Maybe(..), fromMaybe, isJust, fromJust)
+import Data.Array((!!), catMaybes, length, index)
+import Data.Maybe (Maybe(..), fromMaybe, isJust)
 import Data.Foldable (sequence_)
 import Data.Traversable (sequence)
-import Data.Nullable (Nullable, toNullable, notNull)
 import Data.Tuple (Tuple(..), fst, snd)
 
 -- Control Monad
@@ -222,28 +221,28 @@ handleAction AddItem = do
     join <$> (sequence $ Geolocation.getPosition <$> state.geo)
   sequence_ $ gotoPage <$> (ADR.AddPoint <$> (join (map ((flip index) 1) pos)) <*> (join (map ((flip index) 0) pos)))
 
--- | Finalize action, clean up the map
+-- | Finalize action, clean up the component
 handleAction Finalize = do
   H.liftEffect $ log "Finalize Nearby Component"
   state <- H.get
-
-  -- Remove the subscriptions
   sequence_ $ H.unsubscribe <$> state.subscription
-
-  -- Stop the tracking, and remove the target of the map
   H.liftEffect $ do
     sequence_ $ Geolocation.setTracking false <$> state.geo
     sequence_ $ Map.clearTarget <$> state.map
-
-  -- Update the state
   H.put state { map = Nothing, geo = Nothing, alert = Nothing, select = Nothing }
 
+-- |Edit the selected item
 handleAction EditItem = do
   state <- H.get
-  cf <- H.liftEffect $ sequence $ Select.getFeatures <$> state.select
   H.liftEffect $ log "Edit a selected item"  
-  H.liftEffect $ log $ "Number of selected items = " <> (show (Collection.getLength <$> cf))
-  
+  cf <- H.liftEffect $ sequence $ Select.getFeatures <$> state.select
+  case cf of
+    Just c -> do
+      f <- H.liftEffect $ Feature.get "id" $ Collection.item 0 c
+      H.liftEffect $ log $ show $ (Just "Feature id ") <> f
+      sequence_ $ gotoPage <$> (ADR.Point <$> f <*> (Just false))
+    Nothing -> do
+      H.liftEffect $ log "No feature selected"
 
 -- | Find the items and create a layer and display it
 handleAction Update = do

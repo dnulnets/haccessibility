@@ -262,6 +262,8 @@ handleListItemAttributes database args = case length args of
     cleanup (Entity k1 a, Entity k2 v) = ADI.Attribute
         { ADI.attributeDescription      = attributeDescription a
         , ADI.attributeName             = attributeName a
+        , ADI.attributeDisplayName      = attributeDisplayName a
+        , ADI.attributeGroup            = attributeGroup a
         , ADI.attributeItemId = Just $ keyToText $ attributeValueItem v
         , ADI.attributeTypeof           = attributeTypeof a
         , ADI.attributeUnit             = attributeUnit a
@@ -441,6 +443,8 @@ addAttributes file = do
     storeAttribute body = do
         key <- insert Attribute
             { attributeName        = ADI.attributeName body
+            , attributeDisplayName = ADI.attributeDisplayName body
+            , attributeGroup       = ADI.attributeGroup body
             , attributeDescription = ADI.attributeDescription body
             , attributeTypeof      = ADI.attributeTypeof body
             , attributeUnit        = ADI.attributeUnit body
