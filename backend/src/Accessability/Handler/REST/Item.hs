@@ -195,7 +195,6 @@ getAttributesR = do
 
 -- | The REST GET handler for an item, i.e. return with the data of an item based on the items
 -- key provided in the URL api/item/0000000000000001
---
 getItemAttributesR
     :: Text      -- ^ The item key
     -> Handler Value -- ^ The list of possible attributes and their values, if any
@@ -220,7 +219,6 @@ getItemAttributesR key = do
 -- If the record has an attributeValueID and no value it is a delete
 -- If the record has no attributeValueID and a value it is an insert
 -- If the record has no attributeValueID and no value it is ignored
---
 putItemAttributesR :: Text -> Handler Value
 putItemAttributesR key = do
     requireAuthentication

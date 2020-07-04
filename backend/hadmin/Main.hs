@@ -361,7 +361,7 @@ handleListItem database args = case length args of
     listItems :: (MonadIO m) => String -> ReaderT SqlBackend m () -- ^ A database effect
     listItems key = do
         items <- ffmap clean
-            $ selectList [ItemId ==. (textToKey $ DT.pack key)] []
+            $ selectList [ItemId ==. textToKey (DT.pack key)] []
         liftIO
             $ putStrLn
             $ DT.unpack
@@ -481,7 +481,7 @@ addItemAttributes key file = do
             liftIO $ putStrLn "Error encountered during JSON parsing"
             liftIO $ putStrLn e
         (Right attributes) -> do
-            deleteWhere [AttributeValueItem ==. (textToKey $ DT.pack key)]
+            deleteWhere [AttributeValueItem ==. textToKey (DT.pack key)]
             forM_ (catMaybes attributes) $ storeAttribute key
   where
     storeAttribute
@@ -497,7 +497,7 @@ addItemAttributes key file = do
             , PersistText (iaValue body)
             ]
         liftIO $ putStrLn $ "Added attribute with id " <> show
-            (keyToText (k !! 0))
+            (keyToText (head k))
         pure k
 
 -- |Handles the additems command
