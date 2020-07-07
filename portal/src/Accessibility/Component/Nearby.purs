@@ -186,9 +186,9 @@ handleAction Initialize = do
   scen <- sequence $ (subscribe Center) <$> ecen
 
   -- Subscribe for feature selects on the map
-  s <- H.liftEffect $ Select.create $ Just {multi: false
-                                            , layers: [poiLayer]                                            
-                                            , toggleCondition: Condition.never }
+  s <- H.liftEffect $ Select.create   { multi: false
+                                      , layers: [poiLayer]                                            
+                                      , toggleCondition: Condition.never }
   sfeat <- H.subscribe $ HQE.effectEventSource \emitter -> do
         key <- Select.onSelect (\e -> do
           HQE.emit emitter (FeatureSelect e)
@@ -261,7 +261,7 @@ handleAction Update = do
 
     -- Create the POI source
     flist <- sequence $ fromItem <$> items
-    vs <- VectorSource.create $ Just { features: flist }
+    vs <- VectorSource.create { features: flist }
     sequence_ $ (VectorLayer.setSource vs) <$> state.layer
 
   where
@@ -272,10 +272,10 @@ handleAction Update = do
       point <- Point.create 
         (Proj.fromLonLat [i.longitude, i.latitude] (Just Proj.epsg_3857))
         Nothing
-      Feature.create $ Just {name: i.name
-                            , id: fromMaybe "" i.id
-                            , type: 1
-                            , geometry: point }
+      Feature.create {name: i.name
+                      , id: fromMaybe "" i.id
+                      , type: 1
+                      , geometry: point }
 
 
 -- | Find the items
@@ -320,12 +320,12 @@ createNearbyMap = do
 
   -- Use OpenStreetMap as a source
   osm <- OSM.create'
-  tile <- Tile.create $ Just {source: osm }
+  tile <- Tile.create {source: osm}
 
   -- Create the view around our world center (should get it from the GPS)
-  view <- View.create $ Just { projection: Proj.epsg_3857 
-                              , center: Proj.fromLonLat [0.0, 0.0] (Just Proj.epsg_3857)
-                              , zoom: 18 }
+  view <- View.create { projection: Proj.epsg_3857 
+                      , center: Proj.fromLonLat [0.0, 0.0] (Just Proj.epsg_3857)
+                      , zoom: 18.0 }
 
   -- Extend the map with a set of buttons
   ctrl <- Ctrl.defaults'
@@ -382,7 +382,7 @@ createNearbyGPS:: forall r o m . MonadAff m
 createNearbyGPS map = do
 
   -- Create the GPS device
-  gps <- H.liftEffect $ Geolocation.create $ Just {
+  gps <- H.liftEffect $ Geolocation.create {
       trackingOptions: { enableHighAccuracy: true}
       , projection: Proj.epsg_3857
     }
@@ -419,19 +419,19 @@ createNearbyGPS map = do
 
       -- Create the GPS Position Feature, a dot with a circle
       mfeat <- H.liftEffect $ do
-        pfill <- Fill.create $ Just { color: "#3399CC" }
-        pstroke <- Stroke.create $ Just { color: "#fff", width: 2}
-        pcircle <- Circle.create $ Just {
-          radius: 6
+        pfill <- Fill.create { color: "#3399CC" }
+        pstroke <- Stroke.create { color: "#fff", width: 2}
+        pcircle <- Circle.create {
+          radius: 6.0
           , fill: pfill
           , stroke: pstroke
           }
-        pstyle <- Style.create $ Just {image: pcircle}
+        pstyle <- Style.create {image: pcircle}
         pfeat <- Feature.create'
         pafeat <- Feature.create'
         Feature.setStyle (Just pstyle) pfeat
-        psvector <- VectorSource.create $ Just {features: [pfeat, pafeat]}
-        plvector <- VectorLayer.create $ Just { source: psvector }
+        psvector <- VectorSource.create {features: [pfeat, pafeat]}
+        plvector <- VectorLayer.create { source: psvector }
         Map.addLayer plvector map
         pure $ Tuple pfeat pafeat
 
@@ -472,26 +472,26 @@ addNearbyPOI map = do
   H.liftEffect do
 
     -- Create the styles
-    olPOIFill <- Fill.create $ Just {color: "#32CD32"}
-    olIOTFill <- Fill.create $ Just {color: "#0080FF"}
-    olSYMStroke <- Stroke.create $ Just {color: "#000000", width:2}
-    olPOIStyle <- Circle.create $ Just { radius: 6
+    olPOIFill <- Fill.create {color: "#32CD32"}
+    olIOTFill <- Fill.create {color: "#0080FF"}
+    olSYMStroke <- Stroke.create {color: "#000000", width:2}
+    olPOIStyle <- Circle.create { radius: 6.0
       , fill: olPOIFill
       , stroke: olSYMStroke }
-    olIOTStyle <- Circle.create $ Just { radius: 6
+    olIOTStyle <- Circle.create { radius: 6.0
       , fill: olIOTFill
       , stroke: olSYMStroke }
 
     -- Create the POI layer
     flist <- sequence $ fromItem <$> items
-    vs <- VectorSource.create $ Just { features: flist }
-    vl <- VectorLayer.create $ Just { source: vs }
+    vs <- VectorSource.create { features: flist }
+    vl <- VectorLayer.create { source: vs }
     VectorLayer.setStyle (VectorLayer.StyleFunction (poiStyle olPOIStyle)) vl
 
     -- Create the IoT Hub Layer
     ilist <- sequence $ fromEntity <$> entities
-    ivs <- VectorSource.create $ Just { features: catMaybes ilist }
-    ivl <- VectorLayer.create $ Just { source: ivs }
+    ivs <- VectorSource.create { features: catMaybes ilist }
+    ivl <- VectorLayer.create { source: ivs }
     VectorLayer.setStyle (VectorLayer.StyleFunction (poiStyle olIOTStyle)) ivl
 
     -- Add them to the map
@@ -504,14 +504,14 @@ addNearbyPOI map = do
   where
 
     -- The style function for the vector layers, returns the style based on the feature
-    poiStyle::Circle.Circle->Feature.Feature->Number->Effect (Maybe Style.Style)
+    poiStyle::Circle.CircleStyle->Feature.Feature->Number->Effect (Maybe Style.Style)
     poiStyle poi f r = do
-      style <- Style.create $ Just { image: poi }
+      style <- Style.create { image: poi }
       name <- Feature.get "name" f
       when (isJust name) do
-          text <- Text.create $ Just {text: fromMaybe "" name
-                                      , offsetY: 15
-                                      , font: "12px Calibri, sans-serif"}
+          text <- Text.create {text: fromMaybe "" name
+                              , offsetY: 15
+                              , font: "12px Calibri, sans-serif"}
           Style.setText (Just text) style
       pure $ Just style
 
@@ -523,8 +523,8 @@ addNearbyPOI map = do
           point <- Point.create' $ Proj.fromLonLat [fromMaybe 0.0 $ e.location.value.coordinates!!0
                                                     , fromMaybe 0.0 $ e.location.value.coordinates!!1]
                                                     (Just Proj.epsg_3857)
-          feature <- Feature.create $ Just { name: fromMaybe "?" $ (entityNameTemperature e) <|> (entityNameSnowHeight e)
-                                             , geometry: point }
+          feature <- Feature.create { name: fromMaybe "?" $ (entityNameTemperature e) <|> (entityNameSnowHeight e)
+                                    , geometry: point }
           pure $ Just feature
         _ -> pure Nothing
 
@@ -538,7 +538,7 @@ addNearbyPOI map = do
       point <- Point.create 
         (Proj.fromLonLat [i.longitude, i.latitude] (Just Proj.epsg_3857))
         Nothing
-      Feature.create $ Just {name: i.name
-                            , id: fromMaybe "" i.id
-                            , type: 1
-                            , geometry: point }
+      Feature.create {name: i.name
+                      , id: fromMaybe "" i.id
+                      , type: 1
+                      , geometry: point }

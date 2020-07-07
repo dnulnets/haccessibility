@@ -16,6 +16,8 @@ import Data.DateTime.ISO (ISO(..))
 import Data.UUID (genUUID, toString)
 import Data.Set (Set, empty, insert, toUnfoldable)
 import Data.Traversable (sequence)
+import Data.Map as Map
+import Data.List as List
 
 -- Monad imports
 import Control.Monad.Reader.Trans (class MonadAsk)
@@ -85,12 +87,15 @@ instance ordChange :: Ord Change where
 instance showChange :: Show Change where
   show (Change c) = "Change " <> (show c)
 
+-- |A Map that holds a group of attributes
+type AttributeGroup = Map.Map String (Array AttributeValue)
+
 -- | State for the component
 type State =  { alert::Maybe String               -- ^The alert for the component
                 , operation::Operation            -- ^What operational mode the component is in
                 , item::Maybe Item                -- ^The item
-                , attrs:: Array AttributeValue    -- ^Attributes that are not part of the item
-                , itemAttrs::Array AttributeValue -- ^Attributes that are part of the item
+                , gattrs::AttributeGroup
+                , gitemAttrs::AttributeGroup
                 , attrChange::Set Change          -- ^A list of all changes in the form
               }
 
@@ -100,9 +105,9 @@ initialState  :: Operation  -- ^The item key if any
 initialState i =  { alert: Nothing
                     , item: Nothing
                     , operation: i
-                    , attrs: []
-                    , itemAttrs: []
                     , attrChange: empty
+                    , gattrs: Map.empty
+                    , gitemAttrs: Map.empty
                   }
 
 -- | The component definition
@@ -178,12 +183,30 @@ inputDescription val =
     change::String->State->State
     change v st = st { item = (_ { description = v }) <$> st.item }
 
--- |Creates a HTML element based on the attribute value
-input :: forall p. AttributeValue -- ^The attribute value to geneate an input box for
+-- |Generate HTML form for a complete map of groups
+groupMapInput :: forall p. AttributeGroup -- ^The map of groups of attributes
+              -> Array (HH.HTML p Action)    -- ^The HTML element
+groupMapInput ag = List.foldr (generate ag) [] (Map.keys ag)
+  where
+
+    -- |Generate and accumulate HTML snippets
+    generate::forall q. AttributeGroup->String->Array (HH.HTML q Action)->Array (HH.HTML q Action)
+    generate grp key acc = acc <> [groupInput key $ fromMaybe [] $ Map.lookup key grp]
+
+-- |Generate HTML for a group of attributes
+groupInput :: forall p. String    -- ^The name of the group
+      -> Array AttributeValue     -- ^The attribute value to geneate an input box for
       -> HH.HTML p Action         -- ^The HTML element
-input iav =
+groupInput g lav =
+  HH.div [ css "form-group"]
+    ([HH.h4 [css "mt-3"] [HH.text g]] <> (attributeInput <$> lav))
+
+-- |Creates a HTML element based on the attribute value
+attributeInput  :: forall p. AttributeValue -- ^The attribute value to geneate an input box for
+                -> HH.HTML p Action         -- ^The HTML element
+attributeInput iav =
   HH.div [ css "form-group" ]
-    [ HH.label [ HP.for iav.name ] [ HH.text iav.name ]
+    [ HH.label [ HP.for iav.name ] [ HH.text iav.displayName ]
     , inputField iav]
 
   where
@@ -212,7 +235,7 @@ input iav =
             , prop "data-toggle" "tooltip"
             , prop "data-placement" "top"
             , HPA.label av.name
-            , HP.placeholder av.name
+            , HP.placeholder av.displayName
             , HE.onValueChange \i -> Just $ Input (change i av)] <> catMaybes [HP.value <$> av.value])
           , HH.div [css "input-group-append"] [HH.span [css "input-group-text"] [HH.text av.unit]]]
       TextType ->
@@ -223,7 +246,7 @@ input iav =
           , HP.id_ av.name
           , HP.type_ HP.InputText
           , HPA.label av.name
-          , HP.placeholder av.name
+          , HP.placeholder av.displayName
           , HE.onValueChange \i -> Just $ Input (change i av)] <> catMaybes [HP.value <$> av.value])
 
     change::String->AttributeValue->State->State
@@ -249,9 +272,9 @@ render state =
         , inputName $ _.name <$> state.item
         , inputDescription $ _.description <$> state.item
         , HH.h2 [css "mt-3"] [HH.text "Current attributes"]]
-        <> (input <$> state.itemAttrs) <>
+        <> (groupMapInput state.gitemAttrs) <>
         [ HH.h2 [css "mt-3"] [HH.text "Available attributes"]]
-        <> (input <$> state.attrs) <>
+        <> (groupMapInput state.gattrs) <>
         [HH.button [ css "btn btn-lg btn-block btn-warning", HP.type_ HP.ButtonSubmit ] [ HH.text "Save" ]
         ])
     ]
@@ -268,11 +291,20 @@ updateState = do
   a <- queryAttributes
   av <- _queryItemAttributes state.operation
   i <- _queryItem state.operation
-  H.put state { attrs = diffF same (fromMaybe [] a) (fromMaybe [] av)
+  H.put state {
+    gattrs = group $ diffF same (fromMaybe [] a) (fromMaybe [] av)
     , item = i
-    , itemAttrs = fromMaybe [] av}
+    , gitemAttrs = group $ fromMaybe [] av}
 
   where
+    
+    -- |Make a group map out of a list of values
+    group::Array AttributeValue->AttributeGroup
+    group lav = foldr addToMap Map.empty lav
+
+    -- |Add a value to a group map
+    addToMap::AttributeValue->AttributeGroup->AttributeGroup
+    addToMap av ag = Map.insert av.group ((fromMaybe [] (Map.lookup av.group ag)) <> [av]) ag
 
     -- |Returns true if the two attribute values have equal keys
     same::AttributeValue->AttributeValue->Boolean

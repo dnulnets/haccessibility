@@ -156,6 +156,8 @@ instance decodeJsonAttributeType :: DecodeJson AttributeType where
 -- |The AttributeValue
 type AttributeValue = { attributeId   :: Maybe String      -- ^Attribute key
                         , name        :: String            -- ^The name of the attribute
+                        , group       :: String            -- ^The group the attribute belongs to
+                        , displayName :: String            -- ^The display name of the attribute
                         , description :: String            -- ^The description of the attribute 
                         , typeof      :: AttributeType     -- ^The type of the attribute
                         , unit        :: String            -- ^The unit of the attribute
