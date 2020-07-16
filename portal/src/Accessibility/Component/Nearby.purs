@@ -44,6 +44,7 @@ import Web.DOM.Text as WDT
 import Web.DOM.ParentNode as WDPN
 
 -- Our own imports
+import OpenLayers.FFI as FFI
 import OpenLayers.Interaction.Select as Select
 import OpenLayers.Feature as Feature
 import OpenLayers.Source.OSM as OSM
@@ -154,6 +155,7 @@ handleAction  :: forall r o m . MonadAff m
 -- | Initialize action
 handleAction Initialize = do
   H.liftEffect $ log "Initialize Nearby component"
+  H.liftEffect $ FFI.doit (FFI.Test "Hejsan")
 
   -- Create the OpenLayers Map items
   hamap <- H.liftEffect $ createNearbyMap
