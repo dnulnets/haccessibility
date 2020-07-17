@@ -238,13 +238,9 @@ handleAction EditItem = do
   state <- H.get
   H.liftEffect $ log "Edit a selected item"  
   cf <- H.liftEffect $ sequence $ Select.getFeatures <$> state.select
-  case cf of
-    Just c -> do
-      f <- H.liftEffect $ Feature.get "id" $ Collection.item 0 c
-      H.liftEffect $ log $ show $ (Just "Feature id ") <> f
-      sequence_ $ gotoPage <$> (ADR.Point <$> f <*> (Just false))
-    Nothing -> do
-      H.liftEffect $ log "No feature selected"
+  sequence_ $ gotoPage <$> (ADR.Point <$> (feature cf) <*> (Just false))
+  where
+    feature cf = join $ (Feature.get "id") <$> (join $ (Collection.item 0) <$> cf)
 
 -- | Find the items and create a layer and display it
 handleAction Update = do
@@ -509,13 +505,14 @@ addNearbyPOI map = do
     poiStyle::Circle.CircleStyle->Feature.Feature->Number->Effect (Maybe Style.Style)
     poiStyle poi f r = do
       style <- Style.create { image: poi }
-      name <- Feature.get "name" f
       when (isJust name) do
           text <- Text.create {text: fromMaybe "" name
                               , offsetY: 15
                               , font: "12px Calibri, sans-serif"}
           Style.setText (Just text) style
       pure $ Just style
+      where
+        name = Feature.get "name" f
 
     -- Converts from an Entity to a Feature that can b eadded to the IoT Hub Layer
     fromEntity::Entity->Effect (Maybe Feature.Feature)

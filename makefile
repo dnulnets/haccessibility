@@ -1,3 +1,12 @@
+build-all:
+	cd portal;./generate.sh
+	cd portal;cat ./src/Version.purs
+	cd portal;spago build
+	cd portal;spago bundle-app
+	-rm -fR backend/static
+	cd portal;parcel build -d ../backend/static index.html	
+	cd backend;stack build --force-dirty
+	cd backend;stack install
 
 build-portal:
 	cd portal;./generate.sh
@@ -9,16 +18,6 @@ build-portal:
 	
 build-backend:
 	cd backend;stack build
-	cd backend;stack install
-
-build-all:
-	cd portal;./generate.sh
-	cd portal;cat ./src/Version.purs
-	cd portal;spago build
-	cd portal;spago bundle-app
-	-rm -fR backend/static
-	cd portal;parcel build -d ../backend/static index.html	
-	cd backend;stack build --force-dirty
 	cd backend;stack install
 	
 build-certificate:
