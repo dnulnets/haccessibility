@@ -3,7 +3,7 @@
 -- |
 -- | Written by Tomas Stenlund, Sundsvall,Sweden (c) 2020
 -- |
-module Accessibility.Component.Nearby (component, Slot(..)) where
+module Accessibility.Component.Nearby (component, Slot(..), Output(..)) where
 
 -- Language imports
 import Prelude
@@ -44,7 +44,6 @@ import Web.DOM.Text as WDT
 import Web.DOM.ParentNode as WDPN
 
 -- Our own imports
-import OpenLayers.FFI as FFI
 import OpenLayers.Interaction.Select as Select
 import OpenLayers.Feature as Feature
 import OpenLayers.Source.OSM as OSM
@@ -67,17 +66,18 @@ import OpenLayers.Collection as Collection
 import OpenLayers.Events.Condition as Condition
 
 import Accessibility.Data.Route (Page(..)) as ADR
+import Accessibility.Interface.Endpoint (Data(..), DataState(..))
 import Accessibility.Component.HTML.Utils (css)
 import Accessibility.Interface.Navigate (class ManageNavigation, gotoPage)
 import Accessibility.Interface.Item (class ManageItem, queryItems, Item)
 import Accessibility.Interface.Entity (class ManageEntity, queryEntities, Entity(..))
 
--- | Slot type for the Login component
-type Slot p = forall q . H.Slot q Void p
+-- | Slot type for the component
+type Slot p = forall q . H.Slot q Output p
 
 -- | State for the component
-type State =  { alert           ::Maybe String            -- ^ The alert text
-                , subscription  ::Array H.SubscriptionId  -- ^ The map button subscriptions
+type State =  { subscription  ::Array H.SubscriptionId  -- ^ The map button subscriptions
+                , alert         ::Maybe String          -- ^ Any alert
                 , geo           ::Maybe Geolocation.Geolocation     -- ^ The GPS device
                 , map           ::Maybe Map.Map                     -- ^ The Map on the page
                 , layer         ::Maybe VectorLayer.Vector  -- ^The vector layer for our own poi:s
@@ -88,8 +88,8 @@ type State =  { alert           ::Maybe String            -- ^ The alert text
 -- | Initial state is no logged in user
 initialState :: forall i. i -- ^ Initial input
   -> State                  -- ^ The state
-initialState _ =  { alert           : Nothing
-                    , subscription  : []
+initialState _ =  { subscription  : []
+                    , alert         : Nothing
                     , geo           : Nothing
                     , map           : Nothing
                     , select        : Nothing
@@ -109,13 +109,17 @@ data Action = Initialize
   | GPSAccuracy Geolocation.Geolocation Feature.Feature
   | GPSCenter Geolocation.Geolocation Map.Map
 
+-- | The output from this component
+data Output = AuthenticationError
+  | Alert (Maybe String)
+
 -- | The component definition
-component :: forall r q i o m . MonadAff m
+component :: forall r q i m . MonadAff m
           => ManageNavigation m
           => MonadAsk r m
           => ManageEntity m
           => ManageItem m
-          => H.Component HH.HTML q i o m
+          => H.Component HH.HTML q i Output m
 component = 
   H.mkComponent
     { initialState
@@ -126,36 +130,31 @@ component =
      }
     }
 
--- The alert banner if there are any problems with this page
-nearbyAlert ::forall p i . Maybe String
-            -> HH.HTML p i
-nearbyAlert (Just t) = HH.div [css "alert alert-danger"] [HH.text $ t]
-nearbyAlert Nothing = HH.div [] []
-
 -- |Render the nearby page
 render  :: forall m . MonadAff m
         => State                        -- ^ The state to render
         -> H.ComponentHTML Action () m  -- ^ The components HTML
 render state = HH.div
                [css "d-flex flex-column ha-nearby"]
-               [HH.div [css "row"] [HH.div[css "col-xs-12 col-md-12"][nearbyAlert state.alert]],
-                HH.div [css "row"] [HH.div[css "col-xs-12 col-md-12"][HH.h2 [][HH.text "Point of interests"]]],
+               [HH.div [css "row"] [HH.div[css "col-xs-12 col-md-12"][HH.h2 [][HH.text "Point of interests"]]],
                 HH.div [css "row flex-grow-1 ha-nearby-map"] [HH.div[css "col-xs-12 col-md-12"][HH.div [HP.id_ "ha-map"][]]]
                 ]
 
 -- |Handles all actions for the login component
-handleAction  :: forall r o m . MonadAff m
+handleAction  :: forall r m . MonadAff m
               => ManageNavigation m
               => ManageEntity m
               => ManageItem m
               => MonadAsk r m
               => Action                               -- ^ The action to handle
-              -> H.HalogenM State Action () o m Unit  -- ^ The handled action
+              -> H.HalogenM State Action () Output m Unit  -- ^ The handled action
 
 -- | Initialize action
 handleAction Initialize = do
   H.liftEffect $ log "Initialize Nearby component"
-  H.liftEffect $ FFI.doit (FFI.Test "Hejsan")
+
+  -- Get the state and clear the alert
+  H.modify_ (_ {alert=Nothing})
 
   -- Create the OpenLayers Map items
   hamap <- H.liftEffect $ createNearbyMap
@@ -198,13 +197,15 @@ handleAction Initialize = do
         pure (HQE.Finalizer (Select.unSelect key s))
   H.liftEffect $ Map.addInteraction s hamap
 
-  -- Update the state
-  state <- H.get
-  H.put state { subscription = (catMaybes [sadd, supd, scen, sedit]) <> [sfeat]
+  -- Set the alert
+  (Alert <$> H.gets _.alert) >>= H.raise
+
+  -- Update the stat
+  H.modify_ (_ { subscription = (catMaybes [sadd, supd, scen, sedit]) <> [sfeat]
                 , map = Just hamap
                 , geo = Just gps
                 , layer = Just poiLayer
-                , select = Just s}
+                , select = Just s})
 
   where
 
@@ -231,7 +232,7 @@ handleAction Finalize = do
   H.liftEffect $ do
     sequence_ $ Geolocation.setTracking false <$> state.geo
     sequence_ $ Map.clearTarget <$> state.map
-  H.put state { map = Nothing, geo = Nothing, alert = Nothing, select = Nothing }
+  H.put state { map = Nothing, geo = Nothing, select = Nothing }
 
 -- |Edit the selected item
 handleAction EditItem = do
@@ -245,22 +246,42 @@ handleAction EditItem = do
 -- | Find the items and create a layer and display it
 handleAction Update = do
   state <- H.get
-  H.liftEffect $ log "Refresh our own POI:s"
 
-  -- Get the POI from our own backend
-  items <- (fromMaybe []) <$> queryItems {longitude : Nothing
-                                          , latitude: Nothing
-                                          , distance: Nothing
-                                          , limit: Nothing
-                                          , text: Nothing }
+  -- Clear the alert
+  H.modify_ $ _ {alert = Nothing}
   
-  H.liftEffect $ log $ "Number of items = " <> (show (length items))
-  H.liftEffect do
+  -- Get the POI from our own backend
+  ditems <- queryItems {longitude : Nothing
+                        , latitude: Nothing
+                        , distance: Nothing
+                        , limit: Nothing
+                        , text: Nothing }
 
-    -- Create the POI source
-    flist <- sequence $ fromItem <$> items
-    vs <- VectorSource.create { features: VectorSource.features.asArray flist }
-    sequence_ $ (VectorLayer.setSource vs) <$> state.layer
+  -- Did we get them
+  vs <- case ditems of
+
+    -- Yes we got a response
+    Data Ok items -> do
+      H.liftEffect do
+        flist <- sequence $ fromItem <$> (fromMaybe [] items)
+        VectorSource.create { features: VectorSource.features.asArray flist }        
+
+    -- No, we are not authenticated, go to login
+    Data NotAuthenticated _ -> do
+      H.modify_ $ _ {alert = Just "Authentication failed, please login again!"}
+      H.raise AuthenticationError
+      H.liftEffect VectorSource.create'
+
+    -- No the backend is gone, the user can retry the update later
+    Data BackendProblem _ -> do
+      H.modify_ $ _ {alert = Just "Server is not responding, try again later"}
+      H.liftEffect VectorSource.create'
+
+  -- Set the source to the POI-layer
+  H.liftEffect $ sequence_ $ (VectorLayer.setSource vs) <$> state.layer
+
+  -- Set the alert
+  (Alert <$> H.gets _.alert) >>= H.raise
 
   where
 
@@ -280,14 +301,13 @@ handleAction Update = do
 handleAction Center = do
   state <- H.get
   H.liftEffect do
-    log "Center the map around the GPS location"
     view <- join <$> (sequence $ Map.getView <$> state.map)
     pos <- join <$> (sequence $ Geolocation.getPosition <$> state.geo)
     sequence_ $ View.setCenter <$> pos <*> view
 
 -- | Feature is selected
-handleAction (FeatureSelect e) = do
-  H.liftEffect $ log "Feature selected!"
+handleAction (FeatureSelect e) = H.liftEffect $ do
+  log "Feature selected!"
 
 -- | GPS Error - Error in the geolocation device
 handleAction GPSError = H.liftEffect $ do
@@ -450,23 +470,35 @@ createNearbyGPS map = do
 --
 -- Create the layer and add our POI and data  from the IoTHub
 --
-addNearbyPOI:: forall r o m . MonadAff m
+addNearbyPOI:: forall r m . MonadAff m
               => ManageNavigation m
               => ManageEntity m
               => ManageItem m
               => MonadAsk r m
               => Map.Map
-              -> H.HalogenM State Action () o m VectorLayer.Vector
+              -> H.HalogenM State Action () Output m VectorLayer.Vector
 addNearbyPOI map = do
-
+  
   -- Get the weather data from the IoT Hb and our own backend
   entities <- (fromMaybe []) <$> queryEntities "WeatherObserved"
-  items <- (fromMaybe []) <$> queryItems {longitude : Nothing
-                                          , latitude: Nothing
-                                          , distance: Nothing
-                                          , limit: Nothing
-                                          , text: Nothing }
+  ditems <- queryItems {longitude : Nothing
+                        , latitude: Nothing
+                        , distance: Nothing
+                        , limit: Nothing
+                        , text: Nothing }
   
+  -- Create the POI source
+  vs <- case ditems of
+    Data BackendProblem _ -> do
+      H.modify_ $ _ {alert = Just "Server is not responding, try again later"}
+      H.liftEffect $ VectorSource.create'
+    Data NotAuthenticated _ -> do
+      H.raise AuthenticationError
+      H.liftEffect $ VectorSource.create'
+    Data Ok items -> do
+      flist <- H.liftEffect $ sequence $ fromItem <$> (fromMaybe [] items)
+      H.liftEffect $ VectorSource.create { features: VectorSource.features.asArray flist }
+
   H.liftEffect do
 
     -- Create the styles
@@ -480,20 +512,16 @@ addNearbyPOI map = do
       , fill: olIOTFill
       , stroke: olSYMStroke }
 
-    -- Create the POI layer
-    flist <- sequence $ fromItem <$> items
-    vs <- VectorSource.create { features: VectorSource.features.asArray flist }
+    -- Create the POI Layer
     vl <- VectorLayer.create { source: vs }
     VectorLayer.setStyle (VectorLayer.StyleFunction (poiStyle olPOIStyle)) vl
+    Map.addLayer vl map
 
     -- Create the IoT Hub Layer
     ilist <- sequence $ fromEntity <$> entities
     ivs <- VectorSource.create { features: VectorSource.features.asArray $ catMaybes ilist }
     ivl <- VectorLayer.create { source: ivs }
     VectorLayer.setStyle (VectorLayer.StyleFunction (poiStyle olIOTStyle)) ivl
-
-    -- Add them to the map
-    Map.addLayer vl map
     Map.addLayer ivl map
 
     -- Return with the POI layer

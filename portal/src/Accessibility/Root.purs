@@ -48,8 +48,9 @@ import Accessibility.Interface.Entity (class ManageEntity)
 
 
 -- | The state of the root page
-type State = {  userInfo :: Maybe UserInfo -- ^ User information of the logged in user
-              , page :: Page }             -- ^ What page to show in the root container
+type State = {  userInfo :: Maybe UserInfo  -- ^ User information of the logged in user
+              , alert::Maybe String         -- ^ Alert info
+              , page :: Page }              -- ^ What page to show in the root container
 
 -- |The user info that comes into the root page
 type Input = Maybe UserInfo
@@ -58,8 +59,10 @@ type Input = Maybe UserInfo
 data Query a = GotoPageRequest Page a
 
 -- | The actions supported by the root page
-data Action = SetUserAction  (Maybe UserInfo)   -- ^Sets the user
-            | Logout -- ^Logs out the user
+data Action = SetUser  (Maybe UserInfo)   -- ^Sets the user
+            | Logout                            -- ^Logs out the user
+            | AuthenticationError               -- ^Authentication error
+            | Alert (Maybe String)              -- ^Alert
 
 -- | The set of slots for the root container
 type ChildSlots = ( login ∷ Login.Slot Unit,
@@ -87,7 +90,14 @@ component =
 -- | The root container initial state
 initialState ∷ Input → State
 initialState ui = { userInfo: ui
+                    , alert: Nothing
                     , page: maybe Login (const Home) ui }
+
+-- The alert banner if there are any problems with the application
+alert ::forall p i . Maybe String
+            -> HH.HTML p i
+alert (Just t) = HH.div [css "alert alert-danger"] [HH.text $ t]
+alert Nothing = HH.div [] []
 
 -- |The navigation bar for the page
 navbar∷forall p i . Array (HH.HTML p i) -> HH.HTML p i
@@ -130,7 +140,7 @@ render ∷ ∀ r m . MonadAff m
   => State → H.ComponentHTML Action ChildSlots m
 render state = HH.div [css "ha-root"] [
   HH.header [] [navbar $ (navbarHeader "Case 3 Prototype") <> [navbarLeft state, navbarRight state]],
-  HH.main [css "container ha-main", HPA.role "main"][view state.page]]
+  HH.main [css "container ha-main", HPA.role "main"][alert state.alert, view state.page]]
 
 -- | Render the main view of the page
 view ∷ ∀ r m. MonadAff m
@@ -141,7 +151,7 @@ view ∷ ∀ r m. MonadAff m
        ⇒ MonadAsk r m
        ⇒ Page → H.ComponentHTML Action ChildSlots m
 view Login = HH.slot _login  unit Login.component  unit (Just <<< loginMessageConv)
-view Home =  HH.slot _nearby unit Nearby.component unit absurd
+view Home =  HH.slot _nearby unit Nearby.component unit (Just <<< nearbyMessageConv)
 view (Point k true) =  HH.slot _point unit Point.component (Point.ViewPOI k) absurd
 view (Point k false) = HH.slot _point unit Point.component (Point.UpdatePOI k) absurd
 view (AddPoint la lo) = HH.slot _point unit Point.component (Point.AddPOI la lo) absurd
@@ -162,8 +172,14 @@ view _ = HH.div
              ]
 
 -- |Converts login messages to root actions
-loginMessageConv::Login.Message->Action
-loginMessageConv (Login.SetUserMessage ui) = SetUserAction ui
+loginMessageConv::Login.Output->Action
+loginMessageConv (Login.SetUser ui) = SetUser ui
+loginMessageConv (Login.Alert s) = Alert s
+
+-- |Converts nearby messages to root actions
+nearbyMessageConv::Nearby.Output->Action
+nearbyMessageConv Nearby.AuthenticationError = AuthenticationError
+nearbyMessageConv (Nearby.Alert s) = Alert s
 
 -- | Handle the queries sent to the root page
 handleQuery ∷ ∀ r o m a .
@@ -181,7 +197,12 @@ handleQuery = case _ of
       then do
         gotoPage Login
       else do
-        H.put $ state { page = decided }
+        if decided /= Login
+          then do
+            H.put $ state { page = decided }
+          else do
+            H.put $ state { page = decided, userInfo = Nothing }
+
     pure (Just a)
 
 -- | Handle the root containers actions
@@ -191,14 +212,21 @@ handleAction ∷ ∀ r o m . MonadAff m
   => ManageNavigation m
   => Action → H.HalogenM State Action ChildSlots o m Unit
 
-handleAction (SetUserAction ui) = do
+handleAction (SetUser ui) = do
     H.liftEffect $ log $ "Logged in user " <> show ui
     H.modify_ \st → st { userInfo = ui }
 
 handleAction Logout = do
-  state <- H.get
-  H.liftEffect $ log "Logging out!"
+  H.modify_ $ _ { userInfo = Nothing, alert = Nothing }
   logout
-  H.put state { userInfo = Nothing }
   gotoPage Login
   
+handleAction AuthenticationError = do
+  H.modify_ $ _ { userInfo = Nothing }
+  logout
+  gotoPage Login
+
+handleAction (Alert s) = do
+  state <- H.get
+  H.liftEffect $ log $ "Alert = " <> (show s)
+  H.put state { alert = s}

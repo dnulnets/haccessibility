@@ -31,6 +31,9 @@ import Effect.Ref (Ref)
 import Effect.Ref as REF
 import Effect.Console (log)
 
+-- AffJax
+import Affjax.StatusCode as AX
+
 -- Monad stuff
 import Control.Monad.Reader (asks, ask, runReaderT)
 import Control.Monad.Reader.Class (class MonadAsk)
@@ -45,7 +48,7 @@ import Routing.Duplex (print, parse)
 import Routing.Hash (setHash, getHash)
 
 -- Our own imports
-import Accessibility.Interface.Endpoint (BaseURL(..))
+import Accessibility.Interface.Endpoint (BaseURL(..), Data(..), DataState(..))
 import Accessibility.Interface.Endpoint as EP
 import Accessibility.Interface.Authenticate (UserInfo(..),class ManageAuthentication)
 import Accessibility.Interface.Navigate (class ManageNavigation)
@@ -284,14 +287,20 @@ instance manageItemApplicationM :: ManageItem ApplicationM where
 
     response <- liftAff $ parOneOf [
       mkAuthRequest burl ep (_.token <<< unwrap <$> ui) (Post (Just filter))
-      , Left "Timeout" <$ (delay env.timeoutBackend)]
+      , Left "Timeout " <$ (delay env.timeoutBackend)]
 
     case response of
       Left err -> do
-        H.liftEffect $ log $ "Error: " <> err
-        pure Nothing
-      Right (Tuple _ items) -> do
-        pure items
+        H.liftEffect $ log $ "Communication problems, " <> err
+        pure (Data BackendProblem Nothing)
+
+      Right (Tuple (AX.StatusCode 403) _) -> do
+        H.liftEffect $ log $ "Authentication error, log in again"
+        pure (Data NotAuthenticated Nothing)
+
+      Right (Tuple sts items) -> do
+        H.liftEffect $ log $ "Status: " <> (show sts)        
+        pure (Data Ok (Just items))
 
     where
       ep = EP.Items

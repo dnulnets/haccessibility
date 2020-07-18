@@ -17,6 +17,9 @@ import Data.Argonaut (class DecodeJson, class EncodeJson, decodeJson, encodeJson
 -- Halogen imports
 import Halogen (HalogenM, lift)
 
+-- Our own imports
+import Accessibility.Interface.Endpoint (Data)
+
 -- | The enmueration for the source of the item
 data ItemSource = Human   -- ^Human has entered the item
                 | Machine -- ^Machine has enterd the item
@@ -206,7 +209,7 @@ class Monad m <= ManageItem m where
 
   -- |Fetches a list of items based on the query parameters
   queryItems  :: QueryItems             -- ^The query
-              -> m (Maybe (Array Item)) -- ^List of items
+              -> m (Data (Array Item)) -- ^List of items
 
   -- |Fetches all attributes
   queryAttributes :: m (Maybe (Array AttributeValue)) -- ^List of attributes

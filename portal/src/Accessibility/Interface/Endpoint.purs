@@ -40,6 +40,10 @@ data Endpoint = Authenticate              -- ^The authenticate endpoint
                     , attrs ::Maybe String -- ^What attributes to select in the response
                   }
 
+-- |The interface return type, containing status etc.
+data DataState = Ok | BackendProblem | NotAuthenticated
+data Data a =  Data DataState (Maybe a)
+
 derive instance genericEndpoint :: Generic Endpoint _
 
 instance showEndpoint :: Show Endpoint where

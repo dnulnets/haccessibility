@@ -5,7 +5,7 @@
 -- |
 module Accessibility.Component.Login
   ( component
-  , Message(..)
+  , Output(..)
   , Slot(..)) where
 
 -- Language imports
@@ -41,10 +41,11 @@ import Accessibility.Interface.Authenticate
   , login)
 
 -- | Slot type for the Login component
-type Slot p = forall q . H.Slot q Message p
+type Slot p = forall q . H.Slot q Output p
 
--- | Messages possible to send out from the login component
-data Message = SetUserMessage (Maybe UserInfo)   -- | A login or logout event             
+-- | Output possible to send out from the login component
+data Output = SetUser (Maybe UserInfo)    -- | A login or logout event
+  | Alert (Maybe String)                          -- | An alert
 
 -- | State for the component
 type State =  { alert     ::Maybe String      -- ^ The alert text
@@ -69,20 +70,13 @@ component :: forall r q i m . MonadAff m
           => ManageAuthentication m
           => ManageNavigation m
           => MonadAsk r m
-          => H.Component HH.HTML q i Message m
+          => H.Component HH.HTML q i Output m
 component =
   H.mkComponent
     { initialState
     , render
     , eval: H.mkEval $ H.defaultEval { handleAction = handleAction }
     }
-
--- |Create a login alert in HTML
-loginAlert  :: forall p i . Maybe String
-            -> HH.HTML p i
-loginAlert t = HH.b [css ""
-  , style $ ("color:red;visibility:" <> (maybe "hidden" (\_->"visible") t))] 
-  [HH.text $ fromMaybe "" t]
 
 -- | Render the alert
 render  :: forall m . MonadAff m
@@ -94,7 +88,6 @@ render state = HH.div
                    HH.form
                    [css "ha-form-login", HE.onSubmit (Just <<< Submit)]
                    [HH.h1 [css "mt-3"] [HH.text "Login"],
-                   loginAlert state.alert,
                    HH.div
                     [css "form-group"]
                     [HH.label [HP.for "username"] [HH.text "Username"],
@@ -119,25 +112,28 @@ handleAction  :: forall r m . MonadAff m
               => ManageNavigation m
               => MonadAsk r m
               => Action                                     -- ^ The action to handle
-              -> H.HalogenM State Action () Message m Unit  -- ^ The handled action
+              -> H.HalogenM State Action () Output m Unit  -- ^ The handled action
 
 -- | Submit => Whenever the Login button is pressed, it will generate a submit message
 handleAction (Submit event) = do
   H.liftEffect $ Event.preventDefault event
-  state <- H.get
+  state <- H.modify $ _ {alert = Nothing}
+
   H.liftEffect $ log $ show state
   userInfo <- login $ Authenticate { username: fromMaybe "" state.username
                                    , password: fromMaybe "" state.password}  
   case userInfo of
     Nothing -> do
-      H.put state {alert = Just "Wrong credentials"}
-      H.raise (SetUserMessage Nothing)
+      H.put state {alert = Just "Wrong credentials!"}
+      H.raise (SetUser Nothing)
     Just ui@(UserInfo val) -> do
       H.liftEffect $ log $ "Logged in user " <> val.username
-      H.put state {alert = Nothing}
-      H.raise (SetUserMessage $ Just ui)
+      H.raise (SetUser $ Just ui)
       gotoPage Home
-      
+
+  -- Raise any alerts    
+  (Alert <$> H.gets _.alert) >>= H.raise
+
 -- | Input f => Whenever the textbox entry is done, i.e. by leaving the box or pressing another control it generates a
 -- | Input f message, where f is the function that operates on the state to save the new value. It is here we should
 -- | perhaps check for format of the input etc.

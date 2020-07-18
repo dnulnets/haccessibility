@@ -41,6 +41,11 @@ import           Data.Time.Clock.System
 import           Database.Persist.Postgresql
 
 --
+-- Network
+--
+import Network.HTTP.Types (status403)
+
+--
 -- Our own stuff
 --
 import           Accessability.Settings      (AppSettings (..))
@@ -114,7 +119,7 @@ requireAuthentication :: Handler () -- ^ The Handler
 requireAuthentication = do
   userId <- getAuthenticatedUser
   case userId of
-    Nothing -> permissionDenied "You are not authenticated"
+    Nothing -> sendStatusJSON status403 ()
     Just _  -> pure ()
 
 -- | Checks to see if the caller is authenticated, if so it returns with the user identity
