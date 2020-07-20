@@ -10,6 +10,7 @@ import Prelude (class Show, ($), (<<<), (<>))
 
 -- Data imports
 import Data.Maybe (Maybe)
+import Data.Either (Either)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
 
@@ -40,9 +41,9 @@ data Endpoint = Authenticate              -- ^The authenticate endpoint
                     , attrs ::Maybe String -- ^What attributes to select in the response
                   }
 
--- |The interface return type, containing status etc.
-data DataState = Ok | BackendProblem | NotAuthenticated
-data Data a =  Data DataState (Maybe a)
+-- |The interface problem
+data Problem = Backend | NotAuthenticated
+type Data a = Either Problem a
 
 derive instance genericEndpoint :: Generic Endpoint _
 

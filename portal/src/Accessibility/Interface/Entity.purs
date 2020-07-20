@@ -18,6 +18,9 @@ import Effect.Aff.Class (class MonadAff)
 -- Halogen imports
 import Halogen (HalogenM, lift)
 
+-- Our own imports
+import Accessibility.Interface.Endpoint (Data)
+
 --
 -- Entity
 --
@@ -85,7 +88,7 @@ class MonadAff m <= ManageEntity m where
 
   -- |Fetches a list of items based on the query parameters
   queryEntities :: String                   -- ^Type of entities
-                -> m (Maybe (Array Entity)) -- ^List of Entities
+                -> m (Data (Array Entity)) -- ^List of Entities
 
 -- |Avoid lift in the components
 instance manageEntityHalogenM :: ManageEntity m => ManageEntity (HalogenM st act slots msg m) where

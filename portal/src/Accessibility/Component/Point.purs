@@ -3,12 +3,13 @@
 -- |
 -- | Written by Tomas Stenlund, Sundsvall, Sweden (c) 2020
 -- |
-module Accessibility.Component.Point (component, Operation(..), Slot(..)) where
+module Accessibility.Component.Point (component, Operation(..), Slot(..), Output(..)) where
 
 -- Language imports
 import Prelude
 
 -- Data imports
+import Data.Either (Either(..))
 import Data.Array (catMaybes, deleteBy)
 import Data.Foldable (foldr)
 import Data.Maybe (Maybe(..), fromMaybe)
@@ -39,6 +40,7 @@ import Web.Event.Event (Event)
 import Web.Event.Event as Event
 
 -- Our own imports
+import Accessibility.Application (evaluateResult)
 import Accessibility.Component.HTML.Utils (css, prop, enableTooltips)
 import Accessibility.Interface.Entity (class ManageEntity)
 import Accessibility.Interface.Item (
@@ -59,23 +61,31 @@ import Accessibility.Interface.Item (
 import Accessibility.Interface.Navigate (class ManageNavigation, gotoPage)
 import Accessibility.Data.Route as ADR
 
--- | Slot type for the Login component
-type Slot p = forall q. H.Slot q Void p
+-- | Slot type for the Point component
+type Slot p = forall q. H.Slot q Output p
+
+-- | Output from the Point form
+data Output = Submitted
+  | Alert (Maybe String)
+  | AuthenticationError
 
 -- | Internal form actions
 data Action = Initialize  -- ^The component is initializing
   | Finalize              -- ^The component is shutting down
   | Submit Event          -- ^The user has pressed Submit
+  | Cancel                -- ^Cancel the form
   | Define Operation      -- ^An external component want to change operational mode of the component
   | Input (State->State)  -- ^The user has changed the value in an input field, make a state change
 
--- |The input type, it contains the item key or the latitude and longitude for a new item
+-- |The type of operation to perform on a point, it contains the item key or the
+-- latitude and longitude for a new item
 data Operation  = UpdatePOI String      -- ^Update the POI
                 | ViewPOI String        -- ^Readonly the POI
                 | AddPOI Number Number  -- ^Add a new POI
 derive instance eqOperation :: Eq Operation
 
--- |The attribute change structure, holds a change
+-- |The attribute change structure. It holds the change of an attribute and
+-- implements instances to be able to use it in Sets and Maps.
 data Change = Change AttributeChange
 
 instance eqChange :: Eq Change where
@@ -87,7 +97,7 @@ instance ordChange :: Ord Change where
 instance showChange :: Show Change where
   show (Change c) = "Change " <> (show c)
 
--- |A Map that holds a group of attributes
+-- |A map that holds a group of attributes
 type AttributeGroup = Map.Map String (Array AttributeValue)
 
 -- | State for the component
@@ -111,12 +121,12 @@ initialState i =  { alert: Nothing
                   }
 
 -- | The component definition
-component :: forall r q o m. MonadAff m
+component :: forall r q m. MonadAff m
           => ManageNavigation m
           => MonadAsk r m
           => ManageEntity m
           => ManageItem m
-          => H.Component HH.HTML q Operation o m
+          => H.Component HH.HTML q Operation Output m
 component =
   H.mkComponent
     { initialState
@@ -131,11 +141,104 @@ component =
               }
     }
 
--- |The component alert HTML
-nearbyAlert :: forall p i. Maybe String
-            -> HH.HTML p i
-nearbyAlert (Just t) = HH.div [ css "alert alert-danger" ] [ HH.text $ t ]
-nearbyAlert Nothing = HH.div [] []
+-- |Updates the state based on the operation
+updateState :: forall r m . MonadAff m
+            => ManageNavigation m
+            => ManageEntity m
+            => ManageItem m
+            => MonadAsk r m
+            => H.HalogenM State Action () Output m Unit -- ^Updated state
+updateState = do
+  state <- H.get
+
+  -- Fetch the raw data
+  a <- queryAttributes >>= evaluateResult AuthenticationError
+  av <- (_queryItemAttributes state.operation) >>= (evaluateResult AuthenticationError)
+  i <- (_queryItem state.operation) >>= (evaluateResult AuthenticationError)
+
+  -- Construct the mappings and attribute lists
+  H.modify_ $ _ {
+    gattrs = group $ diffF same (fromMaybe [] a) (fromMaybe [] av)
+    , item = i
+    , gitemAttrs = group $ fromMaybe [] av}
+
+  where
+    
+    -- |Make a group map out of a list of values
+    group::Array AttributeValue->AttributeGroup
+    group lav = foldr addToMap Map.empty lav
+
+    -- |Add a value to a group map
+    addToMap::AttributeValue->AttributeGroup->AttributeGroup
+    addToMap av ag = Map.insert av.group ((fromMaybe [] (Map.lookup av.group ag)) <> [av]) ag
+
+    -- |Returns true if the two attribute values have equal keys
+    same::AttributeValue->AttributeValue->Boolean
+    same a b = a.attributeId == b.attributeId
+
+    -- |Remove all of the elements in the first array that exists in the second array
+    -- based on an equality function
+    diffF :: forall a. (a -> a -> Boolean) -> Array a -> Array a -> Array a
+    diffF f = foldr (deleteBy f)
+
+    -- |Query for the items attributes based on the operation
+    _queryItemAttributes (UpdatePOI k) = queryItemAttributes k
+    _queryItemAttributes (ViewPOI k) = queryItemAttributes k
+    _queryItemAttributes (AddPOI _ _) = pure $ Right []
+
+    -- |Query for the item based on the operation, or create a new one if
+    -- it is an add operation
+    _queryItem (UpdatePOI k) = queryItem k
+    _queryItem (ViewPOI k) = queryItem k
+    _queryItem (AddPOI la lo) = do
+      now <- H.liftEffect $ nowDateTime
+      uuid <- H.liftEffect $ genUUID
+      pure $ Right { id        : Nothing
+                    , name        : ""
+                    , guid        : toString uuid
+                    , created     : ISO now
+                    , description : ""
+                    , source      : Human
+                    , modifier    : Static
+                    , approval    : Waiting
+                    , latitude    : la
+                    , longitude   : lo
+                    , distance    : Nothing
+                  }
+
+-- |Creates a HTML element for an input box of a text type
+displayLocation ::  forall p. Maybe Number  -- ^Latitude
+          -> Maybe Number                   -- ^Longitude
+          -> HH.HTML p Action         -- ^The HTML element
+displayLocation la lo =
+  HH.div [ css "form-group" ] [
+    HH.label [ HP.for "Latitude" ] [ HH.text "Latitude" ]
+    , HH.div [css "input-group"] [
+        HH.input ([ css "form-control"
+          , HP.title "The POI Latitude"
+          , prop "data-toggle" "tooltip"
+          , prop "data-placement" "top"
+          , HP.id_ "Latitude"
+          , HP.type_ HP.InputText
+          , HPA.label "Latitude"
+          , HP.placeholder "Latitude"
+          , HP.disabled true
+          ] <> catMaybes [(HP.value <<< show) <$> la])
+    ],
+    HH.label [ HP.for "Longitude" ] [ HH.text "Longitude" ]
+    , HH.div [css "input-group"] [
+        HH.input ([ css "form-control"
+          , HP.title "The POI Longitude"
+          , prop "data-toggle" "tooltip"
+          , prop "data-placement" "top"
+          , HP.id_ "Longitude"
+          , HP.type_ HP.InputText
+          , HPA.label "Longitude"
+          , HP.placeholder "Longitude"
+          , HP.disabled true
+          ] <> catMaybes [(HP.value <<< show) <$> lo])
+        ]
+  ]
 
 -- |Creates a HTML element for an input box of a text type
 inputName ::  forall p. Maybe String  -- ^The value
@@ -145,7 +248,7 @@ inputName v =
     HH.label [ HP.for "Name" ] [ HH.text "Name" ]
     , HH.div [css "input-group"] [
         HH.input ([ css "form-control"
-          , HP.title "A unique name for the point of interest"
+          , HP.title "A name for the point of interest"
           , prop "data-toggle" "tooltip"
           , prop "data-placement" "top"
           , HP.id_ "Name"
@@ -159,7 +262,7 @@ inputName v =
     change::String->State->State
     change c st = st { item = (_ { name = c }) <$> st.item }
 
--- |Creates a HTML element for an input box of a text type but is a multiline
+-- |Creates a HTML element for an multiline input box of a text type.
 inputDescription  :: forall p. Maybe String -- ^The value
                   -> HH.HTML p Action -- ^The HTML element
 inputDescription val =
@@ -193,7 +296,7 @@ groupMapInput ag = List.foldr (generate ag) [] (Map.keys ag)
     generate::forall q. AttributeGroup->String->Array (HH.HTML q Action)->Array (HH.HTML q Action)
     generate grp key acc = acc <> [groupInput key $ fromMaybe [] $ Map.lookup key grp]
 
--- |Generate HTML for a group of attributes
+-- |Generate a HTML snippet for a group of attributes
 groupInput :: forall p. String    -- ^The name of the group
       -> Array AttributeValue     -- ^The attribute value to geneate an input box for
       -> HH.HTML p Action         -- ^The HTML element
@@ -201,7 +304,7 @@ groupInput g lav =
   HH.div [ css "form-group"]
     ([HH.h4 [css "mt-3"] [HH.text g]] <> (attributeInput <$> lav))
 
--- |Creates a HTML element based on the attribute value
+-- |Creates a HTML snippet for an attribute and its value
 attributeInput  :: forall p. AttributeValue -- ^The attribute value to geneate an input box for
                 -> HH.HTML p Action         -- ^The HTML element
 attributeInput iav =
@@ -211,6 +314,7 @@ attributeInput iav =
 
   where
 
+    -- Creates an input field based on attribute type
     inputField av = case av.typeof of
       BooleanType ->
         HH.select
@@ -249,105 +353,49 @@ attributeInput iav =
           , HP.placeholder av.displayName
           , HE.onValueChange \i -> Just $ Input (change i av)] <> catMaybes [HP.value <$> av.value])
 
+    -- Adds a change order for an attribute whenever it has changed
     change::String->AttributeValue->State->State
     change v cav st = st { attrChange = 
       insert (Change {  attributeValueId: cav.attributeValueId
                       , attributeId: cav.attributeId
                       , value: Just v }) st.attrChange }
 
--- | Render the nearby page
+-- | Render the point page
 render  :: forall m . MonadAff m
   => State                        -- ^The components state
   -> H.ComponentHTML Action () m  -- ^The components HTML
 render state =
   HH.div
     [ css "container-fluid ha-point" ]
-    [ HH.div [ css "row" ]
-        [ HH.div [ css "col-xs-12 col-md-12" ]
-            [ nearbyAlert state.alert
-            ]
-        ]
-    , HH.form [ css "ha-form-point", HE.onSubmit (Just <<< Submit) ]
+    [ HH.form [ css "ha-form-point", HE.onSubmit (Just <<< Submit) ]
         ([ HH.h1 [ css "mt-3" ] [ HH.text "POI Information" ]
         , inputName $ _.name <$> state.item
+        , displayLocation (_.latitude <$> state.item) (_.longitude <$> state.item)
         , inputDescription $ _.description <$> state.item
         , HH.h2 [css "mt-3"] [HH.text "Current attributes"]]
         <> (groupMapInput state.gitemAttrs) <>
         [ HH.h2 [css "mt-3"] [HH.text "Available attributes"]]
-        <> (groupMapInput state.gattrs) <>
-        [HH.button [ css "btn btn-lg btn-block btn-warning", HP.type_ HP.ButtonSubmit ] [ HH.text "Save" ]
+        <> (groupMapInput state.gattrs) <>        
+        [
+          HH.button [ css "btn btn-lg btn-block btn-warning", HP.type_ HP.ButtonSubmit ] [ HH.text 
+            (case state.operation of
+              ViewPOI _ -> "Ok"
+              AddPOI _ _ -> "Create"
+              UpdatePOI _ -> "Update") ]
+          , HH.button [css "btn btn-lg btn-block btn-warning", HP.type_ HP.ButtonButton
+            , HE.onClick \_->Just Cancel  ] [ HH.text "Cancel"]
         ])
     ]
 
--- |Updates the state based on the operation
-updateState :: forall r o m . MonadAff m
-            => ManageNavigation m
-            => ManageEntity m
-            => ManageItem m
-            => MonadAsk r m
-            => H.HalogenM State Action () o m Unit -- ^Updated state
-updateState = do
-  state <- H.get
-  a <- queryAttributes
-  av <- _queryItemAttributes state.operation
-  i <- _queryItem state.operation
-  H.put state {
-    gattrs = group $ diffF same (fromMaybe [] a) (fromMaybe [] av)
-    , item = i
-    , gitemAttrs = group $ fromMaybe [] av}
-
-  where
-    
-    -- |Make a group map out of a list of values
-    group::Array AttributeValue->AttributeGroup
-    group lav = foldr addToMap Map.empty lav
-
-    -- |Add a value to a group map
-    addToMap::AttributeValue->AttributeGroup->AttributeGroup
-    addToMap av ag = Map.insert av.group ((fromMaybe [] (Map.lookup av.group ag)) <> [av]) ag
-
-    -- |Returns true if the two attribute values have equal keys
-    same::AttributeValue->AttributeValue->Boolean
-    same a b = a.attributeId == b.attributeId
-
-    -- |Remove all of the elements in the first array that exists in the second array
-    -- based on an equality function
-    diffF :: forall a. (a -> a -> Boolean) -> Array a -> Array a -> Array a
-    diffF f = foldr (deleteBy f)
-
-    -- |Query for the items attributes based on the operation
-    _queryItemAttributes (UpdatePOI k) = queryItemAttributes k
-    _queryItemAttributes (ViewPOI k) = queryItemAttributes k
-    _queryItemAttributes (AddPOI _ _) = pure Nothing
-
-    -- |Query for the item based on the operation, or create a new one if
-    -- it is an add operation
-    _queryItem (UpdatePOI k) = queryItem k
-    _queryItem (ViewPOI k) = queryItem k
-    _queryItem (AddPOI la lo) = do
-      now <- H.liftEffect $ nowDateTime
-      uuid <- H.liftEffect $ genUUID
-      pure $ Just { id        : Nothing
-                    , name        : ""
-                    , guid        : toString uuid
-                    , created     : ISO now
-                    , description : ""
-                    , source      : Human
-                    , modifier    : Static
-                    , approval    : Waiting
-                    , latitude    : la
-                    , longitude   : lo
-                    , distance    : Nothing
-                  }
 
 -- | Handles all actions for the login component
-handleAction  ::  forall r o m . MonadAff m
+handleAction  ::  forall r m . MonadAff m
               => ManageNavigation m
               => ManageEntity m
               => ManageItem m
               => MonadAsk r m
               => Action
-              -> H.HalogenM State Action () o m Unit  -- ^ The handled action
+              -> H.HalogenM State Action () Output m Unit  -- ^ The handled action
 
 -- |Initialize action
 handleAction Initialize = do
@@ -358,6 +406,9 @@ handleAction Initialize = do
 -- |Finalize action
 handleAction Finalize = do
   H.liftEffect $ log "Finalize Point Component"
+
+handleAction Cancel = do
+  H.raise Submitted
 
 -- |Form is submitted
 handleAction (Submit event) = do
@@ -376,7 +427,7 @@ handleAction (Submit event) = do
       u <- sequence $ updateItemAttributes <$> (join (_.id <$> it)) <*> Just (clean <$> (toUnfoldable state.attrChange))
       H.liftEffect $ log "Add a new item"
 
-  gotoPage ADR.Home
+  H.raise Submitted
 
     where
 

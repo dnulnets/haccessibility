@@ -14,7 +14,7 @@ import Data.Maybe (Maybe(..), fromMaybe, isJust)
 import Data.Foldable (sequence_)
 import Data.Traversable (sequence)
 import Data.Tuple (Tuple(..), fst, snd)
-
+import Data.Either (Either(..))
 -- Control Monad
 import Control.Monad.Reader.Trans (class MonadAsk)
 import Control.Alt ((<|>))
@@ -66,7 +66,7 @@ import OpenLayers.Collection as Collection
 import OpenLayers.Events.Condition as Condition
 
 import Accessibility.Data.Route (Page(..)) as ADR
-import Accessibility.Interface.Endpoint (Data(..), DataState(..))
+import Accessibility.Interface.Endpoint (Problem(..))
 import Accessibility.Component.HTML.Utils (css)
 import Accessibility.Interface.Navigate (class ManageNavigation, gotoPage)
 import Accessibility.Interface.Item (class ManageItem, queryItems, Item)
@@ -152,9 +152,6 @@ handleAction  :: forall r m . MonadAff m
 -- | Initialize action
 handleAction Initialize = do
   H.liftEffect $ log "Initialize Nearby component"
-
-  -- Get the state and clear the alert
-  H.modify_ (_ {alert=Nothing})
 
   -- Create the OpenLayers Map items
   hamap <- H.liftEffect $ createNearbyMap
@@ -261,19 +258,19 @@ handleAction Update = do
   vs <- case ditems of
 
     -- Yes we got a response
-    Data Ok items -> do
+    Right items -> do
       H.liftEffect do
-        flist <- sequence $ fromItem <$> (fromMaybe [] items)
+        flist <- sequence $ fromItem <$> items
         VectorSource.create { features: VectorSource.features.asArray flist }        
 
     -- No, we are not authenticated, go to login
-    Data NotAuthenticated _ -> do
+    Left NotAuthenticated -> do
       H.modify_ $ _ {alert = Just "Authentication failed, please login again!"}
       H.raise AuthenticationError
       H.liftEffect VectorSource.create'
 
     -- No the backend is gone, the user can retry the update later
-    Data BackendProblem _ -> do
+    Left Backend -> do
       H.modify_ $ _ {alert = Just "Server is not responding, try again later"}
       H.liftEffect VectorSource.create'
 
@@ -480,7 +477,19 @@ addNearbyPOI:: forall r m . MonadAff m
 addNearbyPOI map = do
   
   -- Get the weather data from the IoT Hb and our own backend
-  entities <- (fromMaybe []) <$> queryEntities "WeatherObserved"
+  dentities <- queryEntities "WeatherObserved"
+
+  ivs <- case dentities of
+    Left Backend -> do
+      H.modify_ $ _ {alert = Just "Server is not responding, try again later"}
+      H.liftEffect $ VectorSource.create'
+    Left NotAuthenticated -> do
+      H.raise AuthenticationError
+      H.liftEffect $ VectorSource.create'
+    Right items -> do
+      ilist <- H.liftEffect $ sequence $ fromEntity <$> items
+      H.liftEffect $ VectorSource.create { features: VectorSource.features.asArray $ catMaybes ilist }
+
   ditems <- queryItems {longitude : Nothing
                         , latitude: Nothing
                         , distance: Nothing
@@ -489,14 +498,14 @@ addNearbyPOI map = do
   
   -- Create the POI source
   vs <- case ditems of
-    Data BackendProblem _ -> do
+    Left Backend -> do
       H.modify_ $ _ {alert = Just "Server is not responding, try again later"}
       H.liftEffect $ VectorSource.create'
-    Data NotAuthenticated _ -> do
+    Left NotAuthenticated -> do
       H.raise AuthenticationError
       H.liftEffect $ VectorSource.create'
-    Data Ok items -> do
-      flist <- H.liftEffect $ sequence $ fromItem <$> (fromMaybe [] items)
+    Right items -> do
+      flist <- H.liftEffect $ sequence $ fromItem <$> items
       H.liftEffect $ VectorSource.create { features: VectorSource.features.asArray flist }
 
   H.liftEffect do
@@ -518,8 +527,6 @@ addNearbyPOI map = do
     Map.addLayer vl map
 
     -- Create the IoT Hub Layer
-    ilist <- sequence $ fromEntity <$> entities
-    ivs <- VectorSource.create { features: VectorSource.features.asArray $ catMaybes ilist }
     ivl <- VectorLayer.create { source: ivs }
     VectorLayer.setStyle (VectorLayer.StyleFunction (poiStyle olIOTStyle)) ivl
     Map.addLayer ivl map

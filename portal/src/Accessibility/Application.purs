@@ -7,6 +7,7 @@ module Accessibility.Application (
   Environment
   , runApplication
   , default
+  , evaluateResult
   , ApplicationM) where
 
 -- Language imports
@@ -48,7 +49,7 @@ import Routing.Duplex (print, parse)
 import Routing.Hash (setHash, getHash)
 
 -- Our own imports
-import Accessibility.Interface.Endpoint (BaseURL(..), Data(..), DataState(..))
+import Accessibility.Interface.Endpoint (BaseURL(..), Data(..), Problem(..))
 import Accessibility.Interface.Endpoint as EP
 import Accessibility.Interface.Authenticate (UserInfo(..),class ManageAuthentication)
 import Accessibility.Interface.Navigate (class ManageNavigation)
@@ -217,9 +218,11 @@ instance manageItemApplicationM :: ManageItem ApplicationM where
     case response of
       Left err -> do
         H.liftEffect $ log $ "Error: " <> err
-        pure Nothing
+        pure $ Left Backend
+      Right (Tuple (AX.StatusCode 403) attrs) -> do
+        pure $ Left NotAuthenticated
       Right (Tuple _ attrs) -> do
-        pure attrs
+        pure $ Right attrs
     where
       ep = EP.Attributes      
 
@@ -253,9 +256,11 @@ instance manageItemApplicationM :: ManageItem ApplicationM where
     case response of
       Left err -> do
         H.liftEffect $ log $ "Error: " <> err
-        pure Nothing
+        pure $ Left Backend
+      Right (Tuple (AX.StatusCode 403) _) -> do
+        pure $ Left NotAuthenticated
       Right (Tuple _ attrs) -> do
-        pure attrs
+        pure $ Right attrs
     where
       ep = EP.Attribute key
 
@@ -272,9 +277,11 @@ instance manageItemApplicationM :: ManageItem ApplicationM where
     case response of
       Left err -> do
         H.liftEffect $ log $ "Error: " <> err
-        pure Nothing
+        pure $ Left Backend
+      Right (Tuple (AX.StatusCode 403) _) -> do
+        pure $ Left NotAuthenticated
       Right (Tuple _ item) -> do
-        pure item
+        pure $ Right item
 
     where
       ep = EP.Item (Just key)
@@ -292,15 +299,15 @@ instance manageItemApplicationM :: ManageItem ApplicationM where
     case response of
       Left err -> do
         H.liftEffect $ log $ "Communication problems, " <> err
-        pure (Data BackendProblem Nothing)
+        pure (Left Backend)
 
       Right (Tuple (AX.StatusCode 403) _) -> do
         H.liftEffect $ log $ "Authentication error, log in again"
-        pure (Data NotAuthenticated Nothing)
+        pure (Left NotAuthenticated)
 
       Right (Tuple sts items) -> do
         H.liftEffect $ log $ "Status: " <> (show sts)        
-        pure (Data Ok (Just items))
+        pure (Right items)
 
     where
       ep = EP.Items
@@ -322,12 +329,34 @@ instance manageEntityApplicationM :: ManageEntity ApplicationM where
         unpack <$> mkAuthRequest b1 ep1 Nothing (Get::RequestMethod Void)
 --        , unpack <$> mkRequest b2 ep2 (Get::RequestMethod Void)
       ]),
-      Nothing <$ (delay env.timeoutIothub)]
+      (Left Backend) <$ (delay env.timeoutIothub)]
 
     pure response
 
     where
       ep1 = EP.Entities {type: et, attrs: Just "temperature"}
       ep2 = EP.Entities {type: et, attrs: Just "snowHeight"}
-      unpack (Left _) = Nothing
-      unpack (Right (Tuple _ e)) = Just e
+      unpack (Left _) = Left Backend
+      unpack (Right (Tuple (AX.StatusCode 403) e)) = Left NotAuthenticated
+      unpack (Right (Tuple _ e)) = Right e
+
+-- | Evaluates the result
+evaluateResult :: forall d r o m s a . MonadAff m
+            => ManageNavigation m
+            => ManageEntity m
+            => ManageItem m
+            => MonadAsk r m
+            => o
+            -> Data d 
+            -> H.HalogenM {alert::Maybe String|s} a () o m (Maybe d)
+evaluateResult e dobj = do
+  case dobj of
+    (Left Backend) -> do
+      H.modify_ $ _ {alert = Just "Server is not responding, try again later"}
+      pure $ Nothing
+    (Left NotAuthenticated) -> do
+      H.modify_ $ _ {alert = Just "Authentication failed, please login again!"}
+      H.raise e
+      pure $ Nothing
+    (Right attrs) -> do
+      pure $ Just attrs

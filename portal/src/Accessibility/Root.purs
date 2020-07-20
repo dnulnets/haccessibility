@@ -62,6 +62,7 @@ data Query a = GotoPageRequest Page a
 data Action = SetUser  (Maybe UserInfo)   -- ^Sets the user
             | Logout                            -- ^Logs out the user
             | AuthenticationError               -- ^Authentication error
+            | PointSubmitted                    -- ^A POI has been added or changed
             | Alert (Maybe String)              -- ^Alert
 
 -- | The set of slots for the root container
@@ -152,9 +153,9 @@ view ∷ ∀ r m. MonadAff m
        ⇒ Page → H.ComponentHTML Action ChildSlots m
 view Login = HH.slot _login  unit Login.component  unit (Just <<< loginMessageConv)
 view Home =  HH.slot _nearby unit Nearby.component unit (Just <<< nearbyMessageConv)
-view (Point k true) =  HH.slot _point unit Point.component (Point.ViewPOI k) absurd
-view (Point k false) = HH.slot _point unit Point.component (Point.UpdatePOI k) absurd
-view (AddPoint la lo) = HH.slot _point unit Point.component (Point.AddPOI la lo) absurd
+view (Point k true) =  HH.slot _point unit Point.component (Point.ViewPOI k) (Just <<< pointMessageConv)
+view (Point k false) = HH.slot _point unit Point.component (Point.UpdatePOI k) (Just <<< pointMessageConv)
+view (AddPoint la lo) = HH.slot _point unit Point.component (Point.AddPOI la lo) (Just <<< pointMessageConv)
 view _ = HH.div
              [css "container", style "margin-top:20px"]
              [HH.div
@@ -180,6 +181,12 @@ loginMessageConv (Login.Alert s) = Alert s
 nearbyMessageConv::Nearby.Output->Action
 nearbyMessageConv Nearby.AuthenticationError = AuthenticationError
 nearbyMessageConv (Nearby.Alert s) = Alert s
+
+-- |Converts nearby messages to root actions
+pointMessageConv::Point.Output->Action
+pointMessageConv Point.Submitted = PointSubmitted
+pointMessageConv Point.AuthenticationError = AuthenticationError
+pointMessageConv (Point.Alert s) = Alert s
 
 -- | Handle the queries sent to the root page
 handleQuery ∷ ∀ r o m a .
@@ -212,21 +219,28 @@ handleAction ∷ ∀ r o m . MonadAff m
   => ManageNavigation m
   => Action → H.HalogenM State Action ChildSlots o m Unit
 
+-- Sets the logged in user
 handleAction (SetUser ui) = do
-    H.liftEffect $ log $ "Logged in user " <> show ui
-    H.modify_ \st → st { userInfo = ui }
+  H.modify_ $ _ {userInfo = ui}
 
+-- Logs out the current user and move to the login page, clear the current
+-- alert
 handleAction Logout = do
   H.modify_ $ _ { userInfo = Nothing, alert = Nothing }
   logout
   gotoPage Login
   
+-- Logs out the current user and move to the login page, do not alter any
+-- alert.
 handleAction AuthenticationError = do
   H.modify_ $ _ { userInfo = Nothing }
   logout
   gotoPage Login
 
+-- A point has been submitted or canceled from the Point page
+handleAction PointSubmitted = do
+  gotoPage Home
+
+-- An alert has been issued from a sub component
 handleAction (Alert s) = do
-  state <- H.get
-  H.liftEffect $ log $ "Alert = " <> (show s)
-  H.put state { alert = s}
+  H.modify_ $ _ { alert = s}

@@ -205,14 +205,14 @@ class Monad m <= ManageItem m where
 
   -- |Fetches a list of items based on the query parameters
   queryItem :: String         -- ^The key
-            -> m (Maybe Item) -- ^List of items
+            -> m (Data Item) -- ^List of items
 
   -- |Fetches a list of items based on the query parameters
   queryItems  :: QueryItems             -- ^The query
               -> m (Data (Array Item)) -- ^List of items
 
   -- |Fetches all attributes
-  queryAttributes :: m (Maybe (Array AttributeValue)) -- ^List of attributes
+  queryAttributes :: m (Data (Array AttributeValue)) -- ^List of attributes
 
   -- |Update the attributes for an item
   updateItemAttributes  :: String                 -- ^The key to the item
@@ -221,7 +221,7 @@ class Monad m <= ManageItem m where
 
   -- |Fetches all attributes and values for an item
   queryItemAttributes :: String                           -- ^The key to the item
-                      -> m (Maybe (Array AttributeValue)) -- ^List of attributes and values for a specific item
+                      -> m (Data (Array AttributeValue)) -- ^List of attributes and values for a specific item
 
 -- |Avoid lift in the components
 instance manageItemHalogenM :: ManageItem m => ManageItem (HalogenM st act slots msg m) where
