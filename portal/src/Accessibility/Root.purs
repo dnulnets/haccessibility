@@ -46,7 +46,6 @@ import Accessibility.Interface.Authenticate (class ManageAuthentication
 import Accessibility.Interface.Item (class ManageItem)
 import Accessibility.Interface.Entity (class ManageEntity)
 
-
 -- | The state of the root page
 type State = {  userInfo :: Maybe UserInfo  -- ^ User information of the logged in user
               , alert::Maybe String         -- ^ Alert info

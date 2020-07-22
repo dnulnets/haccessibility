@@ -48,6 +48,11 @@ import Halogen as H
 import Routing.Duplex (print, parse)
 import Routing.Hash (setHash, getHash)
 
+-- OpenLayers
+import OpenLayers.Geolocation as Geolocation
+import OpenLayers.Coordinate as Coordinate
+import OpenLayers.Proj as Proj
+
 -- Our own imports
 import Accessibility.Interface.Endpoint (BaseURL(..), Data(..), Problem(..))
 import Accessibility.Interface.Endpoint as EP
@@ -57,6 +62,7 @@ import Accessibility.Interface.Item (class ManageItem)
 import Accessibility.Interface.Entity(class ManageEntity)
 
 import Accessibility.Data.Route (routeCodec, Page(..))
+
 import Accessibility.Utils.Token (removeToken, writeToken, Token(..))
 import Accessibility.Utils.Request (
 --  mkRequest, 
