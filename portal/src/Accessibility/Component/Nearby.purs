@@ -14,6 +14,7 @@ import Data.Maybe (Maybe(..), fromMaybe, isJust, maybe')
 import Data.Foldable (sequence_, for_)
 import Data.Traversable (sequence, traverse)
 import Data.Tuple (Tuple(..), fst, snd)
+import Math (pi)
 
 -- Control Monad
 import Control.Monad.Reader.Trans (class MonadAsk)
@@ -43,7 +44,7 @@ import Web.DOM.Node as WDN
 import Web.DOM.Text as WDT
 import Web.DOM.ParentNode as WDPN
 
--- Our own imports
+-- Openlayers imports
 import OpenLayers.Interaction.Select as Select
 import OpenLayers.MapBrowserEvent as MapBrowserEvent
 import OpenLayers.Feature as Feature
@@ -66,7 +67,9 @@ import OpenLayers.Control as Ctrl
 import OpenLayers.Collection as Collection
 import OpenLayers.Events.Condition as Condition
 import OpenLayers.Coordinate as Coordinate
+import OpenLayers.Style.RegularShape as RegularShape
 
+-- Our own imports
 import Accessibility.Data.Route (Page(..)) as ADR
 import Accessibility.Component.HTML.Utils (css)
 import Accessibility.Util.Result (evaluateResult)
@@ -85,6 +88,7 @@ type State =  { subscription  ::Array H.SubscriptionId  -- ^ The map button subs
                 , layer         ::Maybe VectorLayer.Vector  -- ^The vector layer for our own poi:s
                 , select        ::Maybe Select.Select     -- ^ The select interaction
                 , distance      ::Number                  -- ^ The max search distance
+                , crosshair     ::Maybe Coordinate.Coordinate -- ^ The coordinate of the crosshair
               }
 
 -- | Initial state is no logged in user
@@ -96,6 +100,7 @@ initialState _ =  { subscription  : []
                     , map           : Nothing
                     , select        : Nothing
                     , layer         : Nothing
+                    , crosshair     : Nothing
                     , distance : 300.0}
 
 -- | Internal form actions
@@ -105,12 +110,13 @@ data Action = Initialize
   | EditItem
   | Center
   | AddItem
+  | AddItemCursor
   | FeatureSelect Select.SelectEvent
   | GPSError
   | GPSPosition Geolocation.Geolocation Feature.Feature
   | GPSAccuracy Geolocation.Geolocation Feature.Feature
   | GPSCenter Geolocation.Geolocation Map.Map
-  | MAPPosition MapBrowserEvent.MapBrowserEvent
+  | MAPPosition Feature.Feature MapBrowserEvent.MapBrowserEvent
 
 -- | The output from this component
 data Output = AuthenticationError
@@ -162,6 +168,7 @@ handleAction Initialize = do
   poiLayer <- createPOILayer hamap
   ba <- createButtonHandlers
   s <- createSelectHandler hamap poiLayer
+  createMarkLayer hamap
 
   -- Set the alert if any
   (Alert <$> H.gets _.alert) >>= H.raise
@@ -178,6 +185,13 @@ handleAction AddItem = do
   state <- H.get
   mpos <- H.liftEffect $ join <$> traverse Geolocation.getPosition state.geo
   for_ mpos \pos -> do
+    sequence_ $ gotoPage <$> (ADR.AddPoint  <$> (Coordinate.latitude $ Proj.toLonLat' pos) 
+                                            <*> (Coordinate.longitude $ Proj.toLonLat' pos))
+
+-- | Add an item to the database based on the current position
+handleAction AddItemCursor = do
+  state <- H.get
+  for_ state.crosshair \pos -> do
     sequence_ $ gotoPage <$> (ADR.AddPoint  <$> (Coordinate.latitude $ Proj.toLonLat' pos) 
                                             <*> (Coordinate.longitude $ Proj.toLonLat' pos))
 
@@ -257,10 +271,11 @@ handleAction (GPSCenter geo map) = do
     sequence_ $ View.setCenter <$> pos <*> mv
 
 -- | GPS Center - Center the map based on geolocation
-handleAction (MAPPosition mbe) = do
-  H.liftEffect $ log "Map Browser Event Arrived"
-  H.liftEffect $ log $ "coordinates " <> (show (MapBrowserEvent.coordinate mbe))
-  H.liftEffect $ log $ "coordinates " <> (Coordinate.toStringHDMS' $ Proj.toLonLat' $ MapBrowserEvent.coordinate mbe)
+handleAction (MAPPosition f mbe) = do
+  H.modify_ $ _ {crosshair = Just $ MapBrowserEvent.coordinate mbe}
+  H.liftEffect $ do
+    point <- Point.create' $ MapBrowserEvent.coordinate mbe
+    Feature.setGeometry point f
 
 --
 -- Creates the map and attaches openstreetmap as a source
@@ -287,6 +302,7 @@ createMap = do
     -- Extend the map with a set of buttons
     ctrl <- Ctrl.defaults'
     elemAdd <- createMapButton "A" "ha-id-add-item" "ha-map-add-item"
+    elemSAdd <- createMapButton "a" "ha-id-sadd-item" "ha-map-sadd-item"
     elemEdit <- createMapButton "E" "ha-id-edit-item" "ha-map-edit-item"
     elemCenter <- createMapButton "C" "ha-id-center" "ha-map-center"
     elemRefresh <- createMapButton "R" "ha-id-refresh" "ha-map-refresh"
@@ -294,6 +310,7 @@ createMap = do
     elem <- WDD.createElement "div" domDocument
     WDE.setClassName "ha-map-ctrl ol-unselectable ol-control" elem
     void $ WDN.appendChild (WDE.toNode elemAdd) (WDE.toNode elem)
+    void $ WDN.appendChild (WDE.toNode elemSAdd) (WDE.toNode elem)
     void $ WDN.appendChild (WDE.toNode elemEdit) (WDE.toNode elem)
     void $ WDN.appendChild (WDE.toNode elemRefresh) (WDE.toNode elem)
     void $ WDN.appendChild (WDE.toNode elemCenter) (WDE.toNode elem)
@@ -305,14 +322,6 @@ createMap = do
         , controls: Map.controls.asCollection $ Collection.extend ([ctrlButtons]) ctrl
         , layers: Map.layers.asArray [ tile ]
         , view: view}
-
-  -- Get a map event
-  void $ H.subscribe $ HQE.effectEventSource \emitter -> do
-    key <- Map.on "singleclick" (\e -> do
-      HQE.emit emitter (MAPPosition e)
-      pure true) hamap
-    pure (HQE.Finalizer (Map.un "singleclick" key hamap))
-
 
   -- Return with the map
   pure hamap
@@ -350,10 +359,11 @@ createButtonHandlers = do
 
   -- Add a listener to every button on the map
   sadd <- addMapButtonHandler AddItem "#ha-id-add-item"
+  ssadd <- addMapButtonHandler AddItemCursor "#ha-id-sadd-item"
   sedit <- addMapButtonHandler EditItem "#ha-id-edit-item"
   supd <-  addMapButtonHandler Update "#ha-id-refresh"
   scen <-  addMapButtonHandler Center "#ha-id-center"
-  pure $ catMaybes [sadd, sedit, supd, scen]
+  pure $ catMaybes [sadd, sedit, supd, scen, ssadd]
 
   where
 
@@ -570,3 +580,42 @@ fromItem i = do
                                       , id: fromMaybe "<unknown>" i.id
                                       , type: 1
                                       , geometry: point }
+
+--
+-- Create the layer and add our POI and data  from the IoTHub
+--
+createMarkLayer:: forall r m . MonadAff m
+              => ManageNavigation m
+              => ManageEntity m
+              => ManageItem m
+              => MonadAsk r m
+              => Map.Map
+              -> H.HalogenM State Action () Output m Unit
+createMarkLayer map = do
+  
+  pfeat <- H.liftEffect do
+
+    -- Create the styles
+    olFill <- Fill.create {color: Fill.color.asString "#FF0000"}
+    olStroke <- Stroke.create {color: Stroke.color.asString "#000000", width:2}
+    olStyle <- RegularShape.create { fill: olFill
+      , stroke: olStroke
+      , points: 4
+      , radius: 10
+      , radius2: 0
+      , angle: pi/4.0}
+
+    pstyle <- Style.create {image: olStyle}
+    pfeat <- Feature.create'
+    Feature.setStyle (Just pstyle) pfeat
+    psvector <- VectorSource.create {features: VectorSource.features.asArray [pfeat]}
+    plvector <- VectorLayer.create { source: psvector }
+    Map.addLayer plvector map
+    pure pfeat
+    
+  -- Get a map event
+  void $ H.subscribe $ HQE.effectEventSource \emitter -> do
+    key <- Map.on "singleclick" (\e -> do
+      HQE.emit emitter (MAPPosition pfeat e)
+      pure true) map
+    pure (HQE.Finalizer (Map.un "singleclick" key map))

@@ -76,6 +76,11 @@
   border-radius: 2px 2px 0 0;
 }
 
+/* The add item for the map position crosshair */
+.ha-map-sadd-item {
+  border-radius: 0 0 0 0;
+}
+
 /* The refresh item for the map */
 .ha-map-edit {
   border-radius: 0 0 0 0;
