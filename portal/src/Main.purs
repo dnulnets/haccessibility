@@ -142,8 +142,5 @@ main = do
 
     -- Our router, based on what is typed in the browser navigational feed
     void $ liftEffect $ matchesWith (parse routeCodec) \old new -> do
-      liftEffect do
-        log $ "Router: URL At: " <> show old
-        log $ "Router: URL Change to: " <> show new
       when (old /= Just new) do
         launchAff_ $ io.query $ H.tell $ Root.GotoPageRequest new

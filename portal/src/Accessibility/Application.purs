@@ -109,16 +109,9 @@ instance manageNavigationApplicationM ∷ ManageNavigation ApplicationM where
 
   -- |Navigates the app using hash based routing
   gotoPage newPage = do
-    H.liftEffect $ log $ "GotoPage: To = " <> (show newPage)
-    oldHash <- H.liftEffect $ getHash
-    H.liftEffect $ log $ "Current: Page = " <> (show $ page oldHash)
-    
-    if newPage /= page oldHash
-      then do
-        H.liftEffect $ log $ "Set hash to: " <> newHash
+    oldHash <- H.liftEffect $ getHash    
+    when (newPage /= page oldHash) do
         H.liftEffect $ setHash $ newHash
-      else do
-        H.liftEffect $ log $ "Reload hash with: " <> oldHash
 
     where
       newHash :: String
@@ -145,7 +138,6 @@ instance manageAuthenticationApplicationM :: ManageAuthentication ApplicationM w
 
     case response of
       Left err -> do
-        H.liftEffect $ log $ "Error: " <> err
         H.liftEffect $ REF.write Nothing env.userInfo
         H.liftEffect $ removeToken
         pure Nothing
@@ -179,7 +171,6 @@ instance manageItemApplicationM :: ManageItem ApplicationM where
         , Left "Timeout" <$ (delay env.timeoutBackend)]
     case response of
       Left err -> do
-        H.liftEffect $ log $ "Error: " <> err
         pure Nothing
       Right (Tuple _ new) -> do
         pure new
@@ -199,7 +190,6 @@ instance manageItemApplicationM :: ManageItem ApplicationM where
         , Left "Timeout" <$ (delay env.timeoutBackend)]
     case response of
       Left err -> do
-        H.liftEffect $ log $ "Error: " <> err
         pure Nothing
       Right (Tuple _ new) -> do
         pure new
@@ -217,7 +207,6 @@ instance manageItemApplicationM :: ManageItem ApplicationM where
       , Left "Timeout" <$ (delay env.timeoutBackend)]
     case response of
       Left err -> do
-        H.liftEffect $ log $ "Error: " <> err
         pure $ Left Backend
       Right (Tuple (AX.StatusCode 403) attrs) -> do
         pure $ Left NotAuthenticated
@@ -237,7 +226,6 @@ instance manageItemApplicationM :: ManageItem ApplicationM where
       , Left "Timeout" <$ (delay env.timeoutBackend)]
     case response of
       Left err -> do
-        H.liftEffect $ log $ "Error: " <> err
         pure Nothing
       Right (Tuple _ v) -> do      
         pure $ Just v
@@ -255,7 +243,6 @@ instance manageItemApplicationM :: ManageItem ApplicationM where
       , Left "Timeout" <$ (delay env.timeoutBackend)]
     case response of
       Left err -> do
-        H.liftEffect $ log $ "Error: " <> err
         pure $ Left Backend
       Right (Tuple (AX.StatusCode 403) _) -> do
         pure $ Left NotAuthenticated
@@ -276,7 +263,6 @@ instance manageItemApplicationM :: ManageItem ApplicationM where
 
     case response of
       Left err -> do
-        H.liftEffect $ log $ "Error: " <> err
         pure $ Left Backend
       Right (Tuple (AX.StatusCode 403) _) -> do
         pure $ Left NotAuthenticated

@@ -166,7 +166,6 @@ handleAction Initialize = do
 
   -- Create the OpenLayers Map, layers and handlers
   hamap <- createMap
-  createMarkLayer hamap
   poiLayer <- createLayers hamap
   gps <- createGPS hamap poiLayer
 
@@ -341,10 +340,6 @@ handleAction (MAPPosition f mbe) = do
 -- Creates the map and attaches openstreetmap as a source
 --
 createMap:: forall r o m . MonadAff m
-              => ManageNavigation m
-              => ManageEntity m
-              => ManageItem m
-              => MonadAsk r m
               => H.HalogenM State Action () o m Map.Map
 createMap = do
 
@@ -431,11 +426,7 @@ createMap = do
 --
 -- Creates the select interaction
 --
-createButtonHandlers:: forall r o m . MonadAff m
-              => ManageNavigation m
-              => ManageEntity m
-              => ManageItem m
-              => MonadAsk r m
+createButtonHandlers:: forall o m . MonadAff m
               => H.HalogenM State Action () o m (Array H.SubscriptionId)
 createButtonHandlers = do
 
@@ -469,10 +460,6 @@ createButtonHandlers = do
 -- Creates the select interaction
 --
 createSelectHandler:: forall r o m . MonadAff m
-              => ManageNavigation m
-              => ManageEntity m
-              => ManageItem m
-              => MonadAsk r m
               => Map.Map
               -> VectorLayer.Vector
               -> H.HalogenM State Action () o m Select.Select
@@ -492,11 +479,7 @@ createSelectHandler hamap poiLayer = do
 --
 -- Create the GPS and add all handlers
 --
-createGPS:: forall r o m . MonadAff m
-              => ManageNavigation m
-              => ManageEntity m
-              => ManageItem m
-              => MonadAsk r m
+createGPS:: forall o m . MonadAff m
               => Map.Map
               -> VectorLayer.Vector
               -> H.HalogenM State Action () o m Geolocation.Geolocation
@@ -569,15 +552,40 @@ createGPS map vl = do
 --
 -- Create the layer and add our POI and data  from the IoTHub
 --
-createLayers:: forall r m . MonadAff m
-              => ManageNavigation m
+createLayers:: forall m . MonadAff m
               => ManageEntity m
-              => ManageItem m
-              => MonadAsk r m
               => Map.Map
               -> H.HalogenM State Action () Output m VectorLayer.Vector
 createLayers map = do
   
+  -- Create Crosshair/Cursor Layer
+  fcursor <- H.liftEffect do
+
+    -- Create the styles
+    olFill <- Fill.create {color: Fill.color.asString "#FF0000"}
+    olStroke <- Stroke.create {color: Stroke.color.asString "#000000", width:2}
+    olStyle <- RegularShape.create { fill: olFill
+      , stroke: olStroke
+      , points: 4
+      , radius: 10
+      , radius2: 0
+      , angle: pi/4.0}
+
+    pstyle <- Style.create {image: olStyle}
+    pfeat <- Feature.create'
+    Feature.setStyle (Just pstyle) pfeat
+    psvector <- VectorSource.create {features: VectorSource.features.asArray [pfeat]}
+    plvector <- VectorLayer.create { source: psvector }
+    Map.addLayer plvector map
+    pure pfeat
+    
+  -- Get a MapBrowser Event for singleclick
+  void $ H.subscribe $ HQE.effectEventSource \emitter -> do
+    key <- Map.on "singleclick" (\e -> do
+      HQE.emit emitter (MAPPosition fcursor e)
+      pure true) map
+    pure (HQE.Finalizer (Map.un "singleclick" key map))
+
   -- Get the weather data from the IoT Hub
   dentities <- queryEntities "WeatherObserved" >>= evaluateResult AuthenticationError
   ivs <- H.liftEffect $ maybe' (\_->VectorSource.create') (\i->do
@@ -587,6 +595,7 @@ createLayers map = do
   -- We need the distance
   state <- H.get
 
+  -- POI and IoTHub layer
   H.liftEffect do
 
     -- Create the styles
@@ -658,42 +667,3 @@ fromItem i = do
                                       , id: fromMaybe "<unknown>" i.id
                                       , type: 1
                                       , geometry: point }
-
---
--- Create the layer and add our POI and data  from the IoTHub
---
-createMarkLayer:: forall r m . MonadAff m
-              => ManageNavigation m
-              => ManageEntity m
-              => ManageItem m
-              => MonadAsk r m
-              => Map.Map
-              -> H.HalogenM State Action () Output m Unit
-createMarkLayer map = do
-  
-  pfeat <- H.liftEffect do
-
-    -- Create the styles
-    olFill <- Fill.create {color: Fill.color.asString "#FF0000"}
-    olStroke <- Stroke.create {color: Stroke.color.asString "#000000", width:2}
-    olStyle <- RegularShape.create { fill: olFill
-      , stroke: olStroke
-      , points: 4
-      , radius: 10
-      , radius2: 0
-      , angle: pi/4.0}
-
-    pstyle <- Style.create {image: olStyle}
-    pfeat <- Feature.create'
-    Feature.setStyle (Just pstyle) pfeat
-    psvector <- VectorSource.create {features: VectorSource.features.asArray [pfeat]}
-    plvector <- VectorLayer.create { source: psvector }
-    Map.addLayer plvector map
-    pure pfeat
-    
-  -- Get a map event
-  void $ H.subscribe $ HQE.effectEventSource \emitter -> do
-    key <- Map.on "singleclick" (\e -> do
-      HQE.emit emitter (MAPPosition pfeat e)
-      pure true) map
-    pure (HQE.Finalizer (Map.un "singleclick" key map))
