@@ -7,7 +7,6 @@ module Accessibility.Application (
   Environment
   , runApplication
   , default
-  , evaluateResult
   , ApplicationM) where
 
 -- Language imports
@@ -48,13 +47,8 @@ import Halogen as H
 import Routing.Duplex (print, parse)
 import Routing.Hash (setHash, getHash)
 
--- OpenLayers
-import OpenLayers.Geolocation as Geolocation
-import OpenLayers.Coordinate as Coordinate
-import OpenLayers.Proj as Proj
-
 -- Our own imports
-import Accessibility.Interface.Endpoint (BaseURL(..), Data(..), Problem(..))
+import Accessibility.Interface.Endpoint (BaseURL(..), Problem(..))
 import Accessibility.Interface.Endpoint as EP
 import Accessibility.Interface.Authenticate (UserInfo(..),class ManageAuthentication)
 import Accessibility.Interface.Navigate (class ManageNavigation)
@@ -345,24 +339,3 @@ instance manageEntityApplicationM :: ManageEntity ApplicationM where
       unpack (Left _) = Left Backend
       unpack (Right (Tuple (AX.StatusCode 403) e)) = Left NotAuthenticated
       unpack (Right (Tuple _ e)) = Right e
-
--- | Evaluates the result
-evaluateResult :: forall d r o m s a . MonadAff m
-            => ManageNavigation m
-            => ManageEntity m
-            => ManageItem m
-            => MonadAsk r m
-            => o
-            -> Data d 
-            -> H.HalogenM {alert::Maybe String|s} a () o m (Maybe d)
-evaluateResult e dobj = do
-  case dobj of
-    (Left Backend) -> do
-      H.modify_ $ _ {alert = Just "Server is not responding, try again later"}
-      pure $ Nothing
-    (Left NotAuthenticated) -> do
-      H.modify_ $ _ {alert = Just "Authentication failed, please login again!"}
-      H.raise e
-      pure $ Nothing
-    (Right attrs) -> do
-      pure $ Just attrs

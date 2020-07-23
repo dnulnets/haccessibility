@@ -10,7 +10,7 @@ import Prelude
 
 -- Data imports
 import Data.Either (Either(..))
-import Data.Array (catMaybes, deleteBy)
+import Data.Array (catMaybes, deleteBy, length)
 import Data.Foldable (foldr)
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.DateTime.ISO (ISO(..))
@@ -39,8 +39,11 @@ import Halogen.HTML.Properties.ARIA as HPA
 import Web.Event.Event (Event)
 import Web.Event.Event as Event
 
+-- Openlayers
+import OpenLayers.Coordinate as Coordinate
+
 -- Our own imports
-import Accessibility.Application (evaluateResult)
+import Accessibility.Util.Result (evaluateResult)
 import Accessibility.Component.HTML.Utils (css, prop, enableTooltips)
 import Accessibility.Interface.Entity (class ManageEntity)
 import Accessibility.Interface.Item (
@@ -58,8 +61,7 @@ import Accessibility.Interface.Item (
   , queryItem
   , queryAttributes
   , queryItemAttributes)
-import Accessibility.Interface.Navigate (class ManageNavigation, gotoPage)
-import Accessibility.Data.Route as ADR
+import Accessibility.Interface.Navigate (class ManageNavigation)
 
 -- | Slot type for the Point component
 type Slot p = forall q. H.Slot q Output p
@@ -207,37 +209,23 @@ updateState = do
                   }
 
 -- |Creates a HTML element for an input box of a text type
-displayLocation ::  forall p. Maybe Number  -- ^Latitude
-          -> Maybe Number                   -- ^Longitude
+displayLocation ::  forall p. Maybe Coordinate.Coordinate
           -> HH.HTML p Action         -- ^The HTML element
-displayLocation la lo =
+displayLocation c =
   HH.div [ css "form-group" ] [
-    HH.label [ HP.for "Latitude" ] [ HH.text "Latitude" ]
+    HH.label [ HP.for "Coordinate" ] [ HH.text "Coordinate" ]
     , HH.div [css "input-group"] [
         HH.input ([ css "form-control"
-          , HP.title "The POI Latitude"
+          , HP.title "The POI Coordinate"
           , prop "data-toggle" "tooltip"
           , prop "data-placement" "top"
           , HP.id_ "Latitude"
           , HP.type_ HP.InputText
-          , HPA.label "Latitude"
-          , HP.placeholder "Latitude"
+          , HPA.label "Coordinate"
+          , HP.placeholder "Coordinate"
           , HP.disabled true
-          ] <> catMaybes [(HP.value <<< show) <$> la])
-    ],
-    HH.label [ HP.for "Longitude" ] [ HH.text "Longitude" ]
-    , HH.div [css "input-group"] [
-        HH.input ([ css "form-control"
-          , HP.title "The POI Longitude"
-          , prop "data-toggle" "tooltip"
-          , prop "data-placement" "top"
-          , HP.id_ "Longitude"
-          , HP.type_ HP.InputText
-          , HPA.label "Longitude"
-          , HP.placeholder "Longitude"
-          , HP.disabled true
-          ] <> catMaybes [(HP.value <<< show) <$> lo])
-        ]
+          ] <> catMaybes [(HP.value <<< Coordinate.toStringHDMS') <$> c])
+    ]
   ]
 
 -- |Creates a HTML element for an input box of a text type
@@ -370,7 +358,7 @@ render state =
     [ HH.form [ css "ha-form-point", HE.onSubmit (Just <<< Submit) ]
         ([ HH.h1 [ css "mt-3" ] [ HH.text "POI Information" ]
         , inputName $ _.name <$> state.item
-        , displayLocation (_.latitude <$> state.item) (_.longitude <$> state.item)
+        , displayLocation $ validate $ catMaybes $ [(_.latitude <$> state.item), (_.longitude <$> state.item)]
         , inputDescription $ _.description <$> state.item
         , HH.h2 [css "mt-3"] [HH.text "Current attributes"]]
         <> (groupMapInput state.gitemAttrs) <>
@@ -386,7 +374,11 @@ render state =
             , HE.onClick \_->Just Cancel  ] [ HH.text "Cancel"]
         ])
     ]
+  where
 
+    validate a = case length a of
+      2 -> Just a
+      _ -> Nothing
 
 -- | Handles all actions for the login component
 handleAction  ::  forall r m . MonadAff m
@@ -427,6 +419,7 @@ handleAction (Submit event) = do
       u <- sequence $ updateItemAttributes <$> (join (_.id <$> it)) <*> Just (clean <$> (toUnfoldable state.attrChange))
       H.liftEffect $ log "Add a new item"
 
+  -- Tell the parent that the form has submitted
   H.raise Submitted
 
     where

@@ -45,6 +45,7 @@ import Web.DOM.ParentNode as WDPN
 
 -- Our own imports
 import OpenLayers.Interaction.Select as Select
+import OpenLayers.MapBrowserEvent as MapBrowserEvent
 import OpenLayers.Feature as Feature
 import OpenLayers.Source.OSM as OSM
 import OpenLayers.Layer.Tile as Tile
@@ -68,7 +69,7 @@ import OpenLayers.Coordinate as Coordinate
 
 import Accessibility.Data.Route (Page(..)) as ADR
 import Accessibility.Component.HTML.Utils (css)
-import Accessibility.Application (evaluateResult)
+import Accessibility.Util.Result (evaluateResult)
 import Accessibility.Interface.Navigate (class ManageNavigation, gotoPage)
 import Accessibility.Interface.Item (class ManageItem, queryItems, Item)
 import Accessibility.Interface.Entity (class ManageEntity, Value, queryEntities, Entity(..))
@@ -109,6 +110,7 @@ data Action = Initialize
   | GPSPosition Geolocation.Geolocation Feature.Feature
   | GPSAccuracy Geolocation.Geolocation Feature.Feature
   | GPSCenter Geolocation.Geolocation Map.Map
+  | MAPPosition MapBrowserEvent.MapBrowserEvent
 
 -- | The output from this component
 data Output = AuthenticationError
@@ -154,16 +156,10 @@ handleAction  :: forall r m . MonadAff m
 handleAction Initialize = do
   H.liftEffect $ log "Initialize Nearby component"
 
-  -- Create the OpenLayers Map items
+  -- Create the OpenLayers Map, layers and handlers
   hamap <- createMap
-
-  -- Create the GPS
   gps <- createGPS hamap
-
-  -- Create the POI vector layer
   poiLayer <- createPOILayer hamap
-
-  -- Create all handlers
   ba <- createButtonHandlers
   s <- createSelectHandler hamap poiLayer
 
@@ -260,6 +256,12 @@ handleAction (GPSCenter geo map) = do
     mv <- Map.getView map
     sequence_ $ View.setCenter <$> pos <*> mv
 
+-- | GPS Center - Center the map based on geolocation
+handleAction (MAPPosition mbe) = do
+  H.liftEffect $ log "Map Browser Event Arrived"
+  H.liftEffect $ log $ "coordinates " <> (show (MapBrowserEvent.coordinate mbe))
+  H.liftEffect $ log $ "coordinates " <> (Coordinate.toStringHDMS' $ Proj.toLonLat' $ MapBrowserEvent.coordinate mbe)
+
 --
 -- Creates the map and attaches openstreetmap as a source
 --
@@ -303,6 +305,14 @@ createMap = do
         , controls: Map.controls.asCollection $ Collection.extend ([ctrlButtons]) ctrl
         , layers: Map.layers.asArray [ tile ]
         , view: view}
+
+  -- Get a map event
+  void $ H.subscribe $ HQE.effectEventSource \emitter -> do
+    key <- Map.on "singleclick" (\e -> do
+      HQE.emit emitter (MAPPosition e)
+      pure true) hamap
+    pure (HQE.Finalizer (Map.un "singleclick" key hamap))
+
 
   -- Return with the map
   pure hamap
