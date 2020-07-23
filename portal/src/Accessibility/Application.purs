@@ -298,15 +298,10 @@ instance manageItemApplicationM :: ManageItem ApplicationM where
 
     case response of
       Left err -> do
-        H.liftEffect $ log $ "Communication problems, " <> err
         pure (Left Backend)
-
       Right (Tuple (AX.StatusCode 403) _) -> do
-        H.liftEffect $ log $ "Authentication error, log in again"
         pure (Left NotAuthenticated)
-
       Right (Tuple sts items) -> do
-        H.liftEffect $ log $ "Status: " <> (show sts)        
         pure (Right items)
 
     where

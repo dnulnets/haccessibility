@@ -89,8 +89,21 @@
 .ha-map-refresh {
   border-radius: 0 0 0 0;
 }
+.ha-map-srefresh {
+  border-radius: 0 0 0 0;
+}
 
 /* The center item for the map */
 .ha-map-center {
+  border-radius: 0 0 0 2px;
+}
+
+.ha-map-scenter {
   border-radius: 0 0 2px 2px;
+}
+
+.tomas {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start
 }

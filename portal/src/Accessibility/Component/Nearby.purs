@@ -101,21 +101,23 @@ initialState _ =  { subscription  : []
                     , select        : Nothing
                     , layer         : Nothing
                     , crosshair     : Nothing
-                    , distance : 300.0}
+                    , distance : 1000.0 }
 
 -- | Internal form actions
 data Action = Initialize
   | Finalize
   | Update
+  | UpdateCursor
   | EditItem
   | Center
+  | CenterCursor
   | AddItem
   | AddItemCursor
   | FeatureSelect Select.SelectEvent
   | GPSError
   | GPSPosition Geolocation.Geolocation Feature.Feature
   | GPSAccuracy Geolocation.Geolocation Feature.Feature
-  | GPSCenter Geolocation.Geolocation Map.Map
+  | GPSCenter Geolocation.Geolocation Map.Map VectorLayer.Vector
   | MAPPosition Feature.Feature MapBrowserEvent.MapBrowserEvent
 
 -- | The output from this component
@@ -164,11 +166,13 @@ handleAction Initialize = do
 
   -- Create the OpenLayers Map, layers and handlers
   hamap <- createMap
-  gps <- createGPS hamap
-  poiLayer <- createPOILayer hamap
+  createMarkLayer hamap
+  poiLayer <- createLayers hamap
+  gps <- createGPS hamap poiLayer
+
+  -- Create the handlers
   ba <- createButtonHandlers
   s <- createSelectHandler hamap poiLayer
-  createMarkLayer hamap
 
   -- Set the alert if any
   (Alert <$> H.gets _.alert) >>= H.raise
@@ -213,35 +217,71 @@ handleAction EditItem = do
   where
     feature cf = join $ (Feature.get "id") <$> (join $ (Collection.item 0) <$> cf)
 
--- | Find the items and create a layer and display it
+-- | Update the POI around the GPS location
 handleAction Update = do
+
+  -- Clear the alert
+  state <- H.modify $ _ {alert = Nothing}
+
+  -- Get the GPS position
+  pos <- H.liftEffect $ join <$> (sequence $ Geolocation.getPosition <$> state.geo)
+  
+  -- Get the POI from our own backend
+  when (isJust pos) do
+
+    ditems <- queryItems {longitude : join $ (Coordinate.longitude <<< Proj.toLonLat') <$> pos
+                          , latitude: join $ (Coordinate.latitude <<< Proj.toLonLat') <$> pos
+                          , distance: Just state.distance
+                          , limit: Nothing
+                          , text: Nothing } >>= evaluateResult AuthenticationError  
+    vs <- H.liftEffect $ maybe' (\_->VectorSource.create') (\i->do
+      flist <- sequence $ fromItem <$> i
+      VectorSource.create { features: VectorSource.features.asArray flist }) ditems
+
+    -- Set the source to the POI-layer
+    H.liftEffect $ sequence_ $ (VectorLayer.setSource vs) <$> state.layer
+
+  -- Set the alert
+  (Alert <$> H.gets _.alert) >>= H.raise
+
+-- | Update the POI around the current cursor/crosshair
+handleAction UpdateCursor = do
 
   -- Clear the alert
   state <- H.modify $ _ {alert = Nothing}
   
   -- Get the POI from our own backend
-  ditems <- queryItems {longitude : Nothing
-                        , latitude: Nothing
-                        , distance: Nothing
-                        , limit: Nothing
-                        , text: Nothing } >>= evaluateResult AuthenticationError  
-  vs <- H.liftEffect $ maybe' (\_->VectorSource.create') (\i->do
-    flist <- sequence $ fromItem <$> i
-    VectorSource.create { features: VectorSource.features.asArray flist }) ditems
+  when (isJust state.crosshair) do
 
-  -- Set the source to the POI-layer
-  H.liftEffect $ sequence_ $ (VectorLayer.setSource vs) <$> state.layer
+    ditems <- queryItems {longitude : join $ (Coordinate.longitude <<< Proj.toLonLat') <$> state.crosshair
+                          , latitude: join $ (Coordinate.latitude <<< Proj.toLonLat') <$> state.crosshair
+                          , distance: Just state.distance
+                          , limit: Nothing
+                          , text: Nothing } >>= evaluateResult AuthenticationError  
+    vs <- H.liftEffect $ maybe' (\_->VectorSource.create') (\i->do
+      flist <- sequence $ fromItem <$> i
+      VectorSource.create { features: VectorSource.features.asArray flist }) ditems
+
+    -- Set the source to the POI-layer
+    H.liftEffect $ sequence_ $ (VectorLayer.setSource vs) <$> state.layer
 
   -- Set the alert
   (Alert <$> H.gets _.alert) >>= H.raise
 
--- | Find the items
+-- | Ceter the map around the GPS position
 handleAction Center = do
   state <- H.get
   pos <- H.liftEffect $ join <$> (sequence $ Geolocation.getPosition <$> state.geo)
   H.liftEffect do
     view <- join <$> (sequence $ Map.getView <$> state.map)
     sequence_ $ View.setCenter <$> pos <*> view
+
+-- | Center the map around the Cursor/Crosshair
+handleAction CenterCursor = do
+  state <- H.get
+  H.liftEffect do
+    view <- join <$> (sequence $ Map.getView <$> state.map)
+    sequence_ $ View.setCenter <$> state.crosshair <*> view
 
 -- | Feature is selected
 handleAction (FeatureSelect e) = H.liftEffect $ do
@@ -263,14 +303,34 @@ handleAction (GPSAccuracy geo feature) = H.liftEffect $ do
   polygon <- Geolocation.getAccuracyGeometry geo
   Feature.setGeometry polygon feature
 
--- | GPS Center - Center the map based on geolocation
-handleAction (GPSCenter geo map) = do
+-- | GPS Center - Center the map based on geolocation and add all POI:s
+handleAction (GPSCenter geo map vl) = do
+  state <- H.get
   pos <- H.liftEffect $ Geolocation.getPosition geo
+  H.liftEffect $ log $ "We got a GPSCenter " <> (show pos)
   H.liftEffect $ do
     mv <- Map.getView map
     sequence_ $ View.setCenter <$> pos <*> mv
 
--- | GPS Center - Center the map based on geolocation
+  -- Get the POI from our own backend
+  when (isJust pos) do
+
+    ditems <- queryItems {longitude : join $ (Coordinate.longitude <<< Proj.toLonLat') <$> pos
+                          , latitude: join $ (Coordinate.latitude <<< Proj.toLonLat') <$> pos
+                          , distance: Just state.distance
+                          , limit: Nothing
+                          , text: Nothing } >>= evaluateResult AuthenticationError  
+    vs <- H.liftEffect $ maybe' (\_->VectorSource.create') (\i->do
+      flist <- sequence $ fromItem <$> i
+      VectorSource.create { features: VectorSource.features.asArray flist }) ditems
+
+    -- Set the source to the POI-layer
+    H.liftEffect $ VectorLayer.setSource vs vl
+
+  -- Set the alert
+  (Alert <$> H.gets _.alert) >>= H.raise    
+
+-- | Position the cursor/croasshair on the MAP
 handleAction (MAPPosition f mbe) = do
   H.modify_ $ _ {crosshair = Just $ MapBrowserEvent.coordinate mbe}
   H.liftEffect $ do
@@ -305,15 +365,37 @@ createMap = do
     elemSAdd <- createMapButton "a" "ha-id-sadd-item" "ha-map-sadd-item"
     elemEdit <- createMapButton "E" "ha-id-edit-item" "ha-map-edit-item"
     elemCenter <- createMapButton "C" "ha-id-center" "ha-map-center"
+    elemSCenter <- createMapButton "c" "ha-id-scenter" "ha-map-scenter"
     elemRefresh <- createMapButton "R" "ha-id-refresh" "ha-map-refresh"
+    elemSRefresh <- createMapButton "r" "ha-id-srefresh" "ha-map-srefresh"
+
     domDocument <- window >>= WHW.document <#> WHHD.toDocument
     elem <- WDD.createElement "div" domDocument
     WDE.setClassName "ha-map-ctrl ol-unselectable ol-control" elem
-    void $ WDN.appendChild (WDE.toNode elemAdd) (WDE.toNode elem)
-    void $ WDN.appendChild (WDE.toNode elemSAdd) (WDE.toNode elem)
-    void $ WDN.appendChild (WDE.toNode elemEdit) (WDE.toNode elem)
-    void $ WDN.appendChild (WDE.toNode elemRefresh) (WDE.toNode elem)
-    void $ WDN.appendChild (WDE.toNode elemCenter) (WDE.toNode elem)
+
+    elem1 <- WDD.createElement "div" domDocument
+    WDE.setClassName "tomas" elem1
+    void $ WDN.appendChild (WDE.toNode elemAdd) (WDE.toNode elem1)
+    void $ WDN.appendChild (WDE.toNode elemSAdd) (WDE.toNode elem1)
+    void $ WDN.appendChild (WDE.toNode elem1) (WDE.toNode elem)
+
+    elem2 <- WDD.createElement "div" domDocument
+    WDE.setClassName "tomas" elem2
+    void $ WDN.appendChild (WDE.toNode elemEdit) (WDE.toNode elem2)
+    void $ WDN.appendChild (WDE.toNode elem2) (WDE.toNode elem)
+
+    elem3 <- WDD.createElement "div" domDocument
+    WDE.setClassName "tomas" elem3
+    void $ WDN.appendChild (WDE.toNode elemRefresh) (WDE.toNode elem3)
+    void $ WDN.appendChild (WDE.toNode elemSRefresh) (WDE.toNode elem3)
+    void $ WDN.appendChild (WDE.toNode elem3) (WDE.toNode elem)
+
+    elem4 <- WDD.createElement "div" domDocument
+    WDE.setClassName "tomas" elem4
+    void $ WDN.appendChild (WDE.toNode elemCenter) (WDE.toNode elem4)
+    void $ WDN.appendChild (WDE.toNode elemSCenter) (WDE.toNode elem4)
+    void $ WDN.appendChild (WDE.toNode elem4) (WDE.toNode elem)
+
     ctrlButtons <- Control.create { element: elem }
 
     -- Create the map and set up the controls, layers and view
@@ -362,8 +444,10 @@ createButtonHandlers = do
   ssadd <- addMapButtonHandler AddItemCursor "#ha-id-sadd-item"
   sedit <- addMapButtonHandler EditItem "#ha-id-edit-item"
   supd <-  addMapButtonHandler Update "#ha-id-refresh"
+  ssupd <-  addMapButtonHandler UpdateCursor "#ha-id-srefresh"
   scen <-  addMapButtonHandler Center "#ha-id-center"
-  pure $ catMaybes [sadd, sedit, supd, scen, ssadd]
+  sscen <-  addMapButtonHandler CenterCursor "#ha-id-scenter"
+  pure $ catMaybes [sadd, sedit, supd, scen, ssadd, ssupd, sscen]
 
   where
 
@@ -414,8 +498,9 @@ createGPS:: forall r o m . MonadAff m
               => ManageItem m
               => MonadAsk r m
               => Map.Map
+              -> VectorLayer.Vector
               -> H.HalogenM State Action () o m Geolocation.Geolocation
-createGPS map = do
+createGPS map vl = do
 
   geo <- H.liftEffect $ Geolocation.create { trackingOptions: { enableHighAccuracy: true}
                                             , projection: Proj.epsg_3857 }
@@ -449,7 +534,7 @@ createGPS map = do
   -- Get the current position and position the map, one time
   void $ H.subscribe' $ \_ -> (HQE.effectEventSource \emitter -> do
     key <- Geolocation.onceChangePosition (\_ -> do
-      HQE.emit emitter (GPSCenter geo map)
+      HQE.emit emitter (GPSCenter geo map vl)
       pure true) geo
     pure (HQE.Finalizer (Geolocation.unChangePosition key geo)))
 
@@ -484,14 +569,14 @@ createGPS map = do
 --
 -- Create the layer and add our POI and data  from the IoTHub
 --
-createPOILayer:: forall r m . MonadAff m
+createLayers:: forall r m . MonadAff m
               => ManageNavigation m
               => ManageEntity m
               => ManageItem m
               => MonadAsk r m
               => Map.Map
               -> H.HalogenM State Action () Output m VectorLayer.Vector
-createPOILayer map = do
+createLayers map = do
   
   -- Get the weather data from the IoT Hub
   dentities <- queryEntities "WeatherObserved" >>= evaluateResult AuthenticationError
@@ -499,15 +584,8 @@ createPOILayer map = do
     ilist <- sequence $ fromEntity <$> i
     VectorSource.create { features: VectorSource.features.asArray $ catMaybes ilist }) dentities
 
-  -- Get the POI from our backend
-  ditems <- queryItems {longitude : Nothing
-                        , latitude: Nothing
-                        , distance: Nothing
-                        , limit: Nothing
-                        , text: Nothing } >>= evaluateResult AuthenticationError  
-  vs <- H.liftEffect $ maybe' (\_->VectorSource.create') (\i->do
-    flist <- sequence $ fromItem <$> i
-    VectorSource.create { features: VectorSource.features.asArray flist }) ditems
+  -- We need the distance
+  state <- H.get
 
   H.liftEffect do
 
@@ -523,11 +601,11 @@ createPOILayer map = do
       , stroke: olSYMStroke }
 
     -- Create the POI Layer
-    vl <- VectorLayer.create { source: vs }
+    vl <- VectorLayer.create'
     VectorLayer.setStyle (VectorLayer.StyleFunction (poiStyle olPOIStyle)) vl
     Map.addLayer vl map
 
-    -- Create the IoT Hub Layer
+    -- Create the IoT Hub Layer and add the IoTHub source
     ivl <- VectorLayer.create { source: ivs }
     VectorLayer.setStyle (VectorLayer.StyleFunction (poiStyle olIOTStyle)) ivl
     Map.addLayer ivl map
