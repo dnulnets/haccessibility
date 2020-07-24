@@ -50,7 +50,7 @@ newtype Authorization = Bearer String -- ^The constructor for "Authorization: Be
 data RequestMethod a  = Get             -- ^GET request, make sure you set the type a as Void
                       | Post (Maybe a)  -- ^POST request
                       | Put (Maybe a)   -- ^PUT request
-                      | Delete          -- ^DELETE request
+                      | Delete          -- ^DELETE request, make sure you set the type a as Void
 
 -- |The base configuration for a REST call
 defaultRequest  :: forall a. EncodeJson a
@@ -93,8 +93,7 @@ mkAuthRequest burl ep tok rm = do
     Right val -> (Tuple val.status) <$> (decodeJson val.body)
 
 -- |Makes a request to the backend and return with status and ignore result
-mkAuthRequest_  :: forall a v. DecodeJson v
-                => EncodeJson a
+mkAuthRequest_  :: forall a . EncodeJson a
                 => BaseURL          -- ^The base url of the backend
                 -> Endpoint         -- ^The endpoint at the backend
                 -> Maybe String           -- ^The authorization information

@@ -37,7 +37,7 @@ import Accessibility.Component.HTML.Utils
   , prop
   , href)
 import Accessibility.Component.Login as Login
-import Accessibility.Component.Nearby as Nearby
+import Accessibility.Component.MapAdmin as MapAdmin
 import Accessibility.Component.Point as Point
 import Accessibility.Interface.Navigate (class ManageNavigation, gotoPage)
 import Accessibility.Interface.Authenticate (class ManageAuthentication
@@ -66,11 +66,11 @@ data Action = SetUser  (Maybe UserInfo)   -- ^Sets the user
 
 -- | The set of slots for the root container
 type ChildSlots = ( login ∷ Login.Slot Unit,
-                    nearby :: Nearby.Slot Unit,
+                    mapadmin :: MapAdmin.Slot Unit,
                     point :: Point.Slot Unit )
 
 _login = SProxy::SProxy "login"
-_nearby = SProxy::SProxy "nearby"
+_mapadmin = SProxy::SProxy "mapadmin"
 _point = SProxy::SProxy "point"
 
 component ∷ ∀ r o m. MonadAff m
@@ -151,7 +151,7 @@ view ∷ ∀ r m. MonadAff m
        ⇒ MonadAsk r m
        ⇒ Page → H.ComponentHTML Action ChildSlots m
 view Login = HH.slot _login  unit Login.component  unit (Just <<< loginMessageConv)
-view Home =  HH.slot _nearby unit Nearby.component unit (Just <<< nearbyMessageConv)
+view Home =  HH.slot _mapadmin unit MapAdmin.component unit (Just <<< mapadminMessageConv)
 view (Point k true) =  HH.slot _point unit Point.component (Point.ViewPOI k) (Just <<< pointMessageConv)
 view (Point k false) = HH.slot _point unit Point.component (Point.UpdatePOI k) (Just <<< pointMessageConv)
 view (AddPoint la lo) = HH.slot _point unit Point.component (Point.AddPOI la lo) (Just <<< pointMessageConv)
@@ -176,12 +176,12 @@ loginMessageConv::Login.Output->Action
 loginMessageConv (Login.SetUser ui) = SetUser ui
 loginMessageConv (Login.Alert s) = Alert s
 
--- |Converts nearby messages to root actions
-nearbyMessageConv::Nearby.Output->Action
-nearbyMessageConv Nearby.AuthenticationError = AuthenticationError
-nearbyMessageConv (Nearby.Alert s) = Alert s
+-- |Converts mapamin messages to root actions
+mapadminMessageConv::MapAdmin.Output->Action
+mapadminMessageConv MapAdmin.AuthenticationError = AuthenticationError
+mapadminMessageConv (MapAdmin.Alert s) = Alert s
 
--- |Converts nearby messages to root actions
+-- |Converts point messages to root actions
 pointMessageConv::Point.Output->Action
 pointMessageConv Point.Submitted = PointSubmitted
 pointMessageConv Point.AuthenticationError = AuthenticationError

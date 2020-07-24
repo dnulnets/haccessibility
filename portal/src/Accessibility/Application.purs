@@ -59,8 +59,8 @@ import Accessibility.Data.Route (routeCodec, Page(..))
 
 import Accessibility.Utils.Token (removeToken, writeToken, Token(..))
 import Accessibility.Utils.Request (
---  mkRequest, 
   mkAuthRequest,
+  mkAuthRequest_,
   RequestMethod (..))
 
 -- | The application environment
@@ -195,6 +195,27 @@ instance manageItemApplicationM :: ManageItem ApplicationM where
         pure new
     where
       ep = EP.Item Nothing
+
+  -- |Delete an item
+  deleteItem key = do
+    env <- ask
+    ui <- H.liftEffect $ REF.read env.userInfo
+    burl <- EP.backend ep
+
+    response <- liftAff $ parOneOf [
+        mkAuthRequest_ burl ep (_.token <<< unwrap <$> ui) (Delete::RequestMethod Void)
+        , Left "Timeout" <$ (delay env.timeoutBackend)]
+    case response of
+      Left err -> do
+        H.liftEffect $ log err
+        pure (Left Backend)
+      Right (AX.StatusCode 403) -> do
+        pure (Left NotAuthenticated)
+      Right _ -> do
+        pure (Right unit)
+
+    where
+      ep = EP.Item (Just key)
 
   -- |Gets all available attributes
   queryAttributes = do

@@ -1,9 +1,9 @@
 -- |
--- | The nearby component
+-- | The MapAdmin component
 -- |
 -- | Written by Tomas Stenlund, Sundsvall,Sweden (c) 2020
 -- |
-module Accessibility.Component.Nearby (component, Slot(..), Output(..)) where
+module Accessibility.Component.MapAdmin (component, Slot(..), Output(..)) where
 
 -- Language imports
 import Prelude
@@ -74,7 +74,7 @@ import Accessibility.Data.Route (Page(..)) as ADR
 import Accessibility.Component.HTML.Utils (css)
 import Accessibility.Util.Result (evaluateResult)
 import Accessibility.Interface.Navigate (class ManageNavigation, gotoPage)
-import Accessibility.Interface.Item (class ManageItem, queryItems, Item)
+import Accessibility.Interface.Item (class ManageItem, queryItems, deleteItem, Item)
 import Accessibility.Interface.Entity (class ManageEntity, Value, queryEntities, Entity(..))
 
 -- | Slot type for the component
@@ -109,6 +109,7 @@ data Action = Initialize
   | Update
   | UpdateCursor
   | EditItem
+  | DeleteItem
   | Center
   | CenterCursor
   | AddItem
@@ -147,7 +148,7 @@ render  :: forall m . MonadAff m
         -> H.ComponentHTML Action () m  -- ^ The components HTML
 render state = HH.div
                [css "d-flex flex-column ha-nearby"]
-               [HH.div [css "row"] [HH.div[css "col-xs-12 col-md-12"][HH.h2 [][HH.text "Point of interests"]]],
+               [HH.div [css "row"] [HH.div[css "col-xs-12 col-md-12"][HH.h2 [][HH.text "POI Administration"]]],
                 HH.div [css "row flex-grow-1 ha-nearby-map"] [HH.div[css "col-xs-12 col-md-12"][HH.div [HP.id_ "ha-map"][]]]
                 ]
 
@@ -157,14 +158,14 @@ handleAction  :: forall r m . MonadAff m
               => ManageEntity m
               => ManageItem m
               => MonadAsk r m
-              => Action                               -- ^ The action to handle
-              -> H.HalogenM State Action () Output m Unit  -- ^ The handled action
+              => Action                                     -- ^ The action to handle
+              -> H.HalogenM State Action () Output m Unit   -- ^ The handled action
 
 -- | Initialize action
 handleAction Initialize = do
-  H.liftEffect $ log "Initialize Nearby component"
+  H.liftEffect $ log "Initialize MapAdmin component"
 
-  -- Create the OpenLayers Map, layers and handlers
+  -- Create the map, layers and handlers
   hamap <- createMap
   poiLayer <- createLayers hamap
   gps <- createGPS hamap poiLayer
@@ -191,13 +192,6 @@ handleAction AddItem = do
     sequence_ $ gotoPage <$> (ADR.AddPoint  <$> (Coordinate.latitude $ Proj.toLonLat' pos) 
                                             <*> (Coordinate.longitude $ Proj.toLonLat' pos))
 
--- | Add an item to the database based on the current position
-handleAction AddItemCursor = do
-  state <- H.get
-  for_ state.crosshair \pos -> do
-    sequence_ $ gotoPage <$> (ADR.AddPoint  <$> (Coordinate.latitude $ Proj.toLonLat' pos) 
-                                            <*> (Coordinate.longitude $ Proj.toLonLat' pos))
-
 -- | Finalize action, clean up the component
 handleAction Finalize = do
   state <- H.get
@@ -207,12 +201,34 @@ handleAction Finalize = do
     sequence_ $ Map.clearTarget <$> state.map
   H.put state { map = Nothing, geo = Nothing, select = Nothing }
 
+-- | Add an item to the database based on the current position
+handleAction AddItemCursor = do
+  state <- H.get
+  for_ state.crosshair \pos -> do
+    sequence_ $ gotoPage <$> (ADR.AddPoint  <$> (Coordinate.latitude $ Proj.toLonLat' pos) 
+                                            <*> (Coordinate.longitude $ Proj.toLonLat' pos))
+
 -- |Edit the selected item
 handleAction EditItem = do
   state <- H.get
   H.liftEffect $ log "Edit a selected item"  
   cf <- H.liftEffect $ sequence $ Select.getFeatures <$> state.select
   sequence_ $ gotoPage <$> (ADR.Point <$> (feature cf) <*> (Just false))
+  where
+    feature cf = join $ (Feature.get "id") <$> (join $ (Collection.item 0) <$> cf)
+
+-- |Delete the selected item
+handleAction DeleteItem = do
+  state <- H.modify $ _ {alert = Nothing}
+  cf <- H.liftEffect $ sequence $ Select.getFeatures <$> state.select
+  mr <- sequence $ deleteItem <$> (feature cf)
+  void $ sequence $ (evaluateResult AuthenticationError) <$> mr
+  src <- join <$> (H.liftEffect $ sequence $ VectorLayer.getSource <$> state.layer)
+  H.liftEffect $ sequence_ $ VectorSource.removeFeature <$> (join $ (Collection.item 0) <$> cf) <*> src 
+
+  -- Set the alert
+  (Alert <$> H.gets _.alert) >>= H.raise
+
   where
     feature cf = join $ (Feature.get "id") <$> (join $ (Collection.item 0) <$> cf)
 
@@ -270,8 +286,8 @@ handleAction UpdateCursor = do
 -- | Ceter the map around the GPS position
 handleAction Center = do
   state <- H.get
-  pos <- H.liftEffect $ join <$> (sequence $ Geolocation.getPosition <$> state.geo)
   H.liftEffect do
+    pos <- join <$> (sequence $ Geolocation.getPosition <$> state.geo)
     view <- join <$> (sequence $ Map.getView <$> state.map)
     sequence_ $ View.setCenter <$> pos <*> view
 
@@ -304,14 +320,13 @@ handleAction (GPSAccuracy geo feature) = H.liftEffect $ do
 
 -- | GPS Center - Center the map based on geolocation and add all POI:s
 handleAction (GPSCenter geo map vl) = do
-  state <- H.get
   pos <- H.liftEffect $ Geolocation.getPosition geo
-  H.liftEffect $ log $ "We got a GPSCenter " <> (show pos)
   H.liftEffect $ do
     mv <- Map.getView map
     sequence_ $ View.setCenter <$> pos <*> mv
 
   -- Get the POI from our own backend
+  state <- H.get
   when (isJust pos) do
 
     ditems <- queryItems {longitude : join $ (Coordinate.longitude <<< Proj.toLonLat') <$> pos
@@ -339,8 +354,8 @@ handleAction (MAPPosition f mbe) = do
 --
 -- Creates the map and attaches openstreetmap as a source
 --
-createMap:: forall r o m . MonadAff m
-              => H.HalogenM State Action () o m Map.Map
+createMap :: forall o m . MonadAff m
+          => H.HalogenM State Action () o m Map.Map
 createMap = do
 
   hamap <- H.liftEffect $ do
@@ -359,6 +374,7 @@ createMap = do
     elemAdd <- createMapButton "A" "ha-id-add-item" "ha-map-add-item"
     elemSAdd <- createMapButton "a" "ha-id-sadd-item" "ha-map-sadd-item"
     elemEdit <- createMapButton "E" "ha-id-edit-item" "ha-map-edit-item"
+    elemDelete <- createMapButton "D" "ha-id-delete-item" "ha-map-delete-item"
     elemCenter <- createMapButton "C" "ha-id-center" "ha-map-center"
     elemSCenter <- createMapButton "c" "ha-id-scenter" "ha-map-scenter"
     elemRefresh <- createMapButton "R" "ha-id-refresh" "ha-map-refresh"
@@ -377,6 +393,7 @@ createMap = do
     elem2 <- WDD.createElement "div" domDocument
     WDE.setClassName "tomas" elem2
     void $ WDN.appendChild (WDE.toNode elemEdit) (WDE.toNode elem2)
+    void $ WDN.appendChild (WDE.toNode elemDelete) (WDE.toNode elem2)
     void $ WDN.appendChild (WDE.toNode elem2) (WDE.toNode elem)
 
     elem3 <- WDD.createElement "div" domDocument
@@ -427,18 +444,19 @@ createMap = do
 -- Creates the select interaction
 --
 createButtonHandlers:: forall o m . MonadAff m
-              => H.HalogenM State Action () o m (Array H.SubscriptionId)
+                    => H.HalogenM State Action () o m (Array H.SubscriptionId)
 createButtonHandlers = do
 
   -- Add a listener to every button on the map
   sadd <- addMapButtonHandler AddItem "#ha-id-add-item"
   ssadd <- addMapButtonHandler AddItemCursor "#ha-id-sadd-item"
   sedit <- addMapButtonHandler EditItem "#ha-id-edit-item"
+  sdelete <- addMapButtonHandler DeleteItem "#ha-id-delete-item"
   supd <-  addMapButtonHandler Update "#ha-id-refresh"
   ssupd <-  addMapButtonHandler UpdateCursor "#ha-id-srefresh"
   scen <-  addMapButtonHandler Center "#ha-id-center"
   sscen <-  addMapButtonHandler CenterCursor "#ha-id-scenter"
-  pure $ catMaybes [sadd, sedit, supd, scen, ssadd, ssupd, sscen]
+  pure $ catMaybes [sadd, sedit, supd, scen, ssadd, ssupd, sscen, sdelete]
 
   where
 
@@ -459,10 +477,10 @@ createButtonHandlers = do
 --
 -- Creates the select interaction
 --
-createSelectHandler:: forall r o m . MonadAff m
-              => Map.Map
-              -> VectorLayer.Vector
-              -> H.HalogenM State Action () o m Select.Select
+createSelectHandler :: forall o m . MonadAff m
+                    => Map.Map
+                    -> VectorLayer.Vector
+                    -> H.HalogenM State Action () o m Select.Select
 createSelectHandler hamap poiLayer = do
   -- Subscribe for feature selects on the map
   fs <- H.liftEffect $ Select.create   { multi: false
@@ -479,10 +497,10 @@ createSelectHandler hamap poiLayer = do
 --
 -- Create the GPS and add all handlers
 --
-createGPS:: forall o m . MonadAff m
-              => Map.Map
-              -> VectorLayer.Vector
-              -> H.HalogenM State Action () o m Geolocation.Geolocation
+createGPS :: forall o m . MonadAff m
+          => Map.Map
+          -> VectorLayer.Vector
+          -> H.HalogenM State Action () o m Geolocation.Geolocation
 createGPS map vl = do
 
   geo <- H.liftEffect $ Geolocation.create { trackingOptions: { enableHighAccuracy: true}
@@ -553,9 +571,9 @@ createGPS map vl = do
 -- Create the layer and add our POI and data  from the IoTHub
 --
 createLayers:: forall m . MonadAff m
-              => ManageEntity m
-              => Map.Map
-              -> H.HalogenM State Action () Output m VectorLayer.Vector
+            => ManageEntity m
+            => Map.Map
+            -> H.HalogenM State Action () Output m VectorLayer.Vector
 createLayers map = do
   
   -- Create Crosshair/Cursor Layer

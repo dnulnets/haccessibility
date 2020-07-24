@@ -200,8 +200,13 @@ class Monad m <= ManageItem m where
   addItem :: Item             -- ^The item to be added, id is ignored
           -> m (Maybe Item)   -- ^The item as stored in the backend with new id
 
+  -- |Update an item
   updateItem  :: Item             -- ^The item to be updated
               -> m (Maybe Item)   -- ^The item as stored in the backend
+
+  -- |Dleet an item
+  deleteItem:: String         -- ^The key to the item to be deleted
+            -> m (Data Unit)
 
   -- |Fetches a list of items based on the query parameters
   queryItem :: String         -- ^The key
@@ -227,6 +232,7 @@ class Monad m <= ManageItem m where
 instance manageItemHalogenM :: ManageItem m => ManageItem (HalogenM st act slots msg m) where
   addItem = lift <<< addItem
   updateItem = lift <<< updateItem
+  deleteItem = lift <<< deleteItem
   queryItem = lift <<< queryItem
   queryItems = lift <<< queryItems
   queryAttributes = lift queryAttributes
