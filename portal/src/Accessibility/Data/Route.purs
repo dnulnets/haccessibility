@@ -26,6 +26,8 @@ import Routing.Duplex.Generic.Syntax ((/))
 
 -- |All possible routes
 data Page = Home          -- ^ The home page
+          | MapAdmin      -- ^ The admin page for POI:s
+          | UserAdmin     -- ^ The admin page for users
           | Login         -- ^ The login page
           | Point String Boolean -- ^ The point management page, contains item key and readonly boolean
           | AddPoint Number Number -- ^The addpoint page, contains the latitude and longitude of the point
@@ -40,10 +42,12 @@ instance showPage :: Show Page where
 -- | Routing function that creates data types based on the URL, we only deal with home and
 -- login pages
 router :: Match Page -- ^ The router
-router = home <|> login
+router = home <|> login <|> admin <|> useradmin
   where
     home = Home <$ lit ""
     login = Login <$ lit "login"
+    admin = MapAdmin <$ lit "mapadmin"
+    useradmin = UserAdmin <$ lit "useradmin"
 
 
 -- |Add a parser for number as a segment
@@ -58,6 +62,8 @@ num = as show number
 routeCodec :: RouteDuplex' Page -- ^The router codec
 routeCodec = root $ sum
   { "Home": noArgs
+  , "MapAdmin": "mapadmin" / noArgs
+  , "UserAdmin": "useradmin" / noArgs
   , "Login": "login" / noArgs
   , "Error": "error" / noArgs
   , "Point": "point" / string segment / boolean segment

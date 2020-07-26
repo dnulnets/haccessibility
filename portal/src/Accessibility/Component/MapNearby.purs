@@ -11,8 +11,8 @@ import Prelude
 -- Data imports
 import Data.Array((!!), catMaybes, length)
 import Data.Maybe (Maybe(..), fromMaybe, isJust, maybe')
-import Data.Foldable (sequence_, for_)
-import Data.Traversable (sequence, traverse)
+import Data.Foldable (sequence_)
+import Data.Traversable (sequence)
 import Data.Tuple (Tuple(..), fst, snd)
 import Math (pi)
 
@@ -46,7 +46,6 @@ import Web.DOM.ParentNode as WDPN
 
 -- Openlayers imports
 import OpenLayers.Interaction.Select as Select
-import OpenLayers.MapBrowserEvent as MapBrowserEvent
 import OpenLayers.Feature as Feature
 import OpenLayers.Source.OSM as OSM
 import OpenLayers.Layer.Tile as Tile
@@ -68,12 +67,13 @@ import OpenLayers.Collection as Collection
 import OpenLayers.Events.Condition as Condition
 import OpenLayers.Coordinate as Coordinate
 import OpenLayers.Style.RegularShape as RegularShape
+import OpenLayers.Size as Size
+import OpenLayers.Render.Event as Event
 
 -- Our own imports
-import Accessibility.Data.Route (Page(..)) as ADR
 import Accessibility.Component.HTML.Utils (css)
 import Accessibility.Util.Result (evaluateResult)
-import Accessibility.Interface.Navigate (class ManageNavigation, gotoPage)
+import Accessibility.Interface.Navigate (class ManageNavigation)
 import Accessibility.Interface.Item (class ManageItem, queryItems, Item)
 import Accessibility.Interface.Entity (class ManageEntity, Value, queryEntities, Entity(..))
 
@@ -107,18 +107,13 @@ initialState _ =  { subscription  : []
 data Action = Initialize
   | Finalize
   | Update
-  | UpdateCursor
-  | EditItem
   | Center
-  | CenterCursor
-  | AddItem
-  | AddItemCursor
   | FeatureSelect Select.SelectEvent
   | GPSError
   | GPSPosition Geolocation.Geolocation Feature.Feature
   | GPSAccuracy Geolocation.Geolocation Feature.Feature
   | GPSCenter Geolocation.Geolocation Map.Map VectorLayer.Vector
-  | MAPPosition Feature.Feature MapBrowserEvent.MapBrowserEvent
+  | MAPRenderComplete Event.RenderEvent
 
 -- | The output from this component
 data Output = AuthenticationError
@@ -147,7 +142,7 @@ render  :: forall m . MonadAff m
         -> H.ComponentHTML Action () m  -- ^ The components HTML
 render state = HH.div
                [css "d-flex flex-column ha-nearby"]
-               [HH.div [css "row"] [HH.div[css "col-xs-12 col-md-12"][HH.h2 [][HH.text "POI Administration"]]],
+               [HH.div [css "row"] [HH.div[css "col-xs-12 col-md-12"][HH.h2 [][HH.text "Points Of Interest"]]],
                 HH.div [css "row flex-grow-1 ha-nearby-map"] [HH.div[css "col-xs-12 col-md-12"][HH.div [HP.id_ "ha-map"][]]]
                 ]
 
@@ -183,14 +178,6 @@ handleAction Initialize = do
                 , geo = Just gps
                 , layer = Just poiLayer})
 
--- | Add an item to the database based on the current position
-handleAction AddItem = do
-  state <- H.get
-  mpos <- H.liftEffect $ join <$> traverse Geolocation.getPosition state.geo
-  for_ mpos \pos -> do
-    sequence_ $ gotoPage <$> (ADR.AddPoint  <$> (Coordinate.latitude $ Proj.toLonLat' pos) 
-                                            <*> (Coordinate.longitude $ Proj.toLonLat' pos))
-
 -- | Finalize action, clean up the component
 handleAction Finalize = do
   state <- H.get
@@ -200,61 +187,35 @@ handleAction Finalize = do
     sequence_ $ Map.clearTarget <$> state.map
   H.put state { map = Nothing, geo = Nothing, select = Nothing }
 
--- | Add an item to the database based on the current position
-handleAction AddItemCursor = do
-  state <- H.get
-  for_ state.crosshair \pos -> do
-    sequence_ $ gotoPage <$> (ADR.AddPoint  <$> (Coordinate.latitude $ Proj.toLonLat' pos) 
-                                            <*> (Coordinate.longitude $ Proj.toLonLat' pos))
-
--- |Edit the selected item
-handleAction EditItem = do
-  state <- H.get
-  H.liftEffect $ log "Edit a selected item"  
-  cf <- H.liftEffect $ sequence $ Select.getFeatures <$> state.select
-  sequence_ $ gotoPage <$> (ADR.Point <$> (feature cf) <*> (Just false))
-  where
-    feature cf = join $ (Feature.get "id") <$> (join $ (Collection.item 0) <$> cf)
-
 -- | Update the POI around the GPS location
 handleAction Update = do
 
   -- Clear the alert
   state <- H.modify $ _ {alert = Nothing}
 
-  -- Get the GPS position
-  pos <- H.liftEffect $ join <$> (sequence $ Geolocation.getPosition <$> state.geo)
-  
+  -- Get the MAP center position
+  pos <- H.liftEffect do
+    view <- join <$> (sequence $ Map.getView <$> state.map)
+    join <$> (sequence $ View.getCenter <$> view)
+
+  -- Get the size of the view in meters
+  distance <- H.liftEffect do
+    view <- join <$> (sequence $ Map.getView <$> state.map)  
+    resolution <- join <$> (sequence $ View.getResolution <$> view)
+    size <- join <$> (sequence $ Map.getSize <$> state.map)
+    pure $ div  <$> (max <$> (mul <$> resolution <*> (join (Size.width <$> size)))
+                        <*> (mul <$> resolution <*> (join (Size.height <$> size))))
+                <*> Just 2.0
+
+  H.liftEffect $ log $ "Radius for search is " <> (show distance)
+  H.liftEffect $ log $ "Position for search is " <> (show pos)
+
   -- Get the POI from our own backend
   when (isJust pos) do
 
     ditems <- queryItems {longitude : join $ (Coordinate.longitude <<< Proj.toLonLat') <$> pos
                           , latitude: join $ (Coordinate.latitude <<< Proj.toLonLat') <$> pos
-                          , distance: Just state.distance
-                          , limit: Nothing
-                          , text: Nothing } >>= evaluateResult AuthenticationError  
-    vs <- H.liftEffect $ maybe' (\_->VectorSource.create') (\i->do
-      flist <- sequence $ fromItem <$> i
-      VectorSource.create { features: VectorSource.features.asArray flist }) ditems
-
-    -- Set the source to the POI-layer
-    H.liftEffect $ sequence_ $ (VectorLayer.setSource vs) <$> state.layer
-
-  -- Set the alert
-  (Alert <$> H.gets _.alert) >>= H.raise
-
--- | Update the POI around the current cursor/crosshair
-handleAction UpdateCursor = do
-
-  -- Clear the alert
-  state <- H.modify $ _ {alert = Nothing}
-  
-  -- Get the POI from our own backend
-  when (isJust state.crosshair) do
-
-    ditems <- queryItems {longitude : join $ (Coordinate.longitude <<< Proj.toLonLat') <$> state.crosshair
-                          , latitude: join $ (Coordinate.latitude <<< Proj.toLonLat') <$> state.crosshair
-                          , distance: Just state.distance
+                          , distance: Just $ fromMaybe state.distance distance
                           , limit: Nothing
                           , text: Nothing } >>= evaluateResult AuthenticationError  
     vs <- H.liftEffect $ maybe' (\_->VectorSource.create') (\i->do
@@ -274,13 +235,6 @@ handleAction Center = do
     pos <- join <$> (sequence $ Geolocation.getPosition <$> state.geo)
     view <- join <$> (sequence $ Map.getView <$> state.map)
     sequence_ $ View.setCenter <$> pos <*> view
-
--- | Center the map around the Cursor/Crosshair
-handleAction CenterCursor = do
-  state <- H.get
-  H.liftEffect do
-    view <- join <$> (sequence $ Map.getView <$> state.map)
-    sequence_ $ View.setCenter <$> state.crosshair <*> view
 
 -- | Feature is selected
 handleAction (FeatureSelect e) = H.liftEffect $ do
@@ -305,17 +259,27 @@ handleAction (GPSAccuracy geo feature) = H.liftEffect $ do
 -- | GPS Center - Center the map based on geolocation and add all POI:s
 handleAction (GPSCenter geo map vl) = do
   state <- H.get
+
   pos <- H.liftEffect $ Geolocation.getPosition geo
   H.liftEffect $ do
     mv <- Map.getView map
     sequence_ $ View.setCenter <$> pos <*> mv
+
+  -- Get the size of the view in meters
+  distance <- H.liftEffect do
+    view <- Map.getView map
+    resolution <- join <$> (sequence $ View.getResolution <$> view)
+    size <- join <$> (sequence $ Map.getSize <$> state.map)
+    pure $ div  <$> (max <$> (mul <$> resolution <*> (join (Size.width <$> size)))
+                        <*> (mul <$> resolution <*> (join (Size.height <$> size))))
+                <*> Just 2.0
 
   -- Get the POI from our own backend
   when (isJust pos) do
 
     ditems <- queryItems {longitude : join $ (Coordinate.longitude <<< Proj.toLonLat') <$> pos
                           , latitude: join $ (Coordinate.latitude <<< Proj.toLonLat') <$> pos
-                          , distance: Just state.distance
+                          , distance: Just $ fromMaybe state.distance distance
                           , limit: Nothing
                           , text: Nothing } >>= evaluateResult AuthenticationError  
     vs <- H.liftEffect $ maybe' (\_->VectorSource.create') (\i->do
@@ -329,11 +293,8 @@ handleAction (GPSCenter geo map vl) = do
   (Alert <$> H.gets _.alert) >>= H.raise    
 
 -- | Position the cursor/croasshair on the MAP
-handleAction (MAPPosition f mbe) = do
-  H.modify_ $ _ {crosshair = Just $ MapBrowserEvent.coordinate mbe}
-  H.liftEffect $ do
-    point <- Point.create' $ MapBrowserEvent.coordinate mbe
-    Feature.setGeometry point f
+handleAction (MAPRenderComplete e) = do
+  H.liftEffect $ log $ "Render completed!"
 
 --
 -- Creates the map and attaches openstreetmap as a source
@@ -355,40 +316,20 @@ createMap = do
 
     -- Extend the map with a set of buttons
     ctrl <- Ctrl.defaults'
-    elemAdd <- createMapButton "A" "ha-id-add-item" "ha-map-add-item"
-    elemSAdd <- createMapButton "a" "ha-id-sadd-item" "ha-map-sadd-item"
-    elemEdit <- createMapButton "E" "ha-id-edit-item" "ha-map-edit-item"
     elemCenter <- createMapButton "C" "ha-id-center" "ha-map-center"
-    elemSCenter <- createMapButton "c" "ha-id-scenter" "ha-map-scenter"
     elemRefresh <- createMapButton "R" "ha-id-refresh" "ha-map-refresh"
-    elemSRefresh <- createMapButton "r" "ha-id-srefresh" "ha-map-srefresh"
 
     domDocument <- window >>= WHW.document <#> WHHD.toDocument
     elem <- WDD.createElement "div" domDocument
     WDE.setClassName "ha-map-ctrl ol-unselectable ol-control" elem
 
     elem1 <- WDD.createElement "div" domDocument
-    WDE.setClassName "tomas" elem1
-    void $ WDN.appendChild (WDE.toNode elemAdd) (WDE.toNode elem1)
-    void $ WDN.appendChild (WDE.toNode elemSAdd) (WDE.toNode elem1)
+    void $ WDN.appendChild (WDE.toNode elemRefresh) (WDE.toNode elem1)
     void $ WDN.appendChild (WDE.toNode elem1) (WDE.toNode elem)
 
     elem2 <- WDD.createElement "div" domDocument
-    WDE.setClassName "tomas" elem2
-    void $ WDN.appendChild (WDE.toNode elemEdit) (WDE.toNode elem2)
+    void $ WDN.appendChild (WDE.toNode elemCenter) (WDE.toNode elem2)
     void $ WDN.appendChild (WDE.toNode elem2) (WDE.toNode elem)
-
-    elem3 <- WDD.createElement "div" domDocument
-    WDE.setClassName "tomas" elem3
-    void $ WDN.appendChild (WDE.toNode elemRefresh) (WDE.toNode elem3)
-    void $ WDN.appendChild (WDE.toNode elemSRefresh) (WDE.toNode elem3)
-    void $ WDN.appendChild (WDE.toNode elem3) (WDE.toNode elem)
-
-    elem4 <- WDD.createElement "div" domDocument
-    WDE.setClassName "tomas" elem4
-    void $ WDN.appendChild (WDE.toNode elemCenter) (WDE.toNode elem4)
-    void $ WDN.appendChild (WDE.toNode elemSCenter) (WDE.toNode elem4)
-    void $ WDN.appendChild (WDE.toNode elem4) (WDE.toNode elem)
 
     ctrlButtons <- Control.create { element: elem }
 
@@ -430,14 +371,9 @@ createButtonHandlers:: forall o m . MonadAff m
 createButtonHandlers = do
 
   -- Add a listener to every button on the map
-  sadd <- addMapButtonHandler AddItem "#ha-id-add-item"
-  ssadd <- addMapButtonHandler AddItemCursor "#ha-id-sadd-item"
-  sedit <- addMapButtonHandler EditItem "#ha-id-edit-item"
   supd <-  addMapButtonHandler Update "#ha-id-refresh"
-  ssupd <-  addMapButtonHandler UpdateCursor "#ha-id-srefresh"
   scen <-  addMapButtonHandler Center "#ha-id-center"
-  sscen <-  addMapButtonHandler CenterCursor "#ha-id-scenter"
-  pure $ catMaybes [sadd, sedit, supd, scen, ssadd, ssupd, sscen]
+  pure $ catMaybes [supd, scen]
 
   where
 
@@ -578,12 +514,12 @@ createLayers map = do
     Map.addLayer plvector map
     pure pfeat
     
-  -- Get a MapBrowser Event for singleclick
+  -- Get a RenderComplete Event when the rendering is complete
   void $ H.subscribe $ HQE.effectEventSource \emitter -> do
-    key <- Map.on "singleclick" (\e -> do
-      HQE.emit emitter (MAPPosition fcursor e)
+    key <- Map.onRenderComplete (\e -> do
+      HQE.emit emitter (MAPRenderComplete e)
       pure true) map
-    pure (HQE.Finalizer (Map.un "singleclick" key map))
+    pure (HQE.Finalizer (Map.unRenderComplete key map))
 
   -- Get the weather data from the IoT Hub
   dentities <- queryEntities "WeatherObserved" >>= evaluateResult AuthenticationError

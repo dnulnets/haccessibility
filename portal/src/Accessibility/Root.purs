@@ -38,6 +38,7 @@ import Accessibility.Component.HTML.Utils
   , href)
 import Accessibility.Component.Login as Login
 import Accessibility.Component.MapAdmin as MapAdmin
+import Accessibility.Component.MapNearby as MapNearby
 import Accessibility.Component.Point as Point
 import Accessibility.Interface.Navigate (class ManageNavigation, gotoPage)
 import Accessibility.Interface.Authenticate (class ManageAuthentication
@@ -67,11 +68,13 @@ data Action = SetUser  (Maybe UserInfo)   -- ^Sets the user
 -- | The set of slots for the root container
 type ChildSlots = ( login ∷ Login.Slot Unit,
                     mapadmin :: MapAdmin.Slot Unit,
+                    mapnearby :: MapNearby.Slot Unit,
                     point :: Point.Slot Unit )
 
 _login = SProxy::SProxy "login"
 _mapadmin = SProxy::SProxy "mapadmin"
 _point = SProxy::SProxy "point"
+_mapnearby = SProxy::SProxy "mapnearby"
 
 component ∷ ∀ r o m. MonadAff m
   => ManageAuthentication m
@@ -117,13 +120,26 @@ navbarHeader header = [HH.button [css "navbar-toggler",
                         [HH.text header]                                                               
                       ]
 
+navbarLeftAdmin∷forall p . State -> Array(HH.HTML p Action)
+navbarLeftAdmin p = maybe [] (const [
+  HH.li [css "nav-item dropdown"] [
+    HH.a [css "nav-link dropdown-toggle active", prop "data-toggle" "dropdown"] [HH.text "Admin"],
+    HH.div [css "dropdown-menu dropdown-primary"] [
+      HH.a [css "dropdown-item", href MapAdmin] [HH.text "POI:s"],
+      HH.a [css "dropdown-item", href Home] [HH.text "Users"]
+    ]
+  ]]) p.userInfo
+
+navbarLeftDefault∷forall p . State -> Array (HH.HTML p Action)
+navbarLeftDefault p = maybe [] (const [HH.li [css "nav-item active"] [
+                        HH.a [css "nav-link", href Home] [HH.text "Home"]]]) p.userInfo
+
 -- |The left navigation bar
 navbarLeft∷forall p . State -> HH.HTML p Action
 navbarLeft state = HH.div [css "collapse navbar-collapse", HP.id_ "navbarCollapse"]
                     [HH.ul [css "navbar-nav mr-auto"] ([] <>
-                      maybe [] (\_->[HH.li [css "nav-item active"] [HH.a [css "nav-link", href Home] [HH.text "Map"]]]) state.userInfo
---                      , HH.li [css "nav-item"] [HH.a [css "nav-link", href (Point "0000000000000001" false)] [HH.text "Add POI"]]
-                      <> [])
+                      (navbarLeftDefault state)
+                      <> (navbarLeftAdmin state))
                     ]
 
 -- |The right navigation bar
@@ -151,7 +167,8 @@ view ∷ ∀ r m. MonadAff m
        ⇒ MonadAsk r m
        ⇒ Page → H.ComponentHTML Action ChildSlots m
 view Login = HH.slot _login  unit Login.component  unit (Just <<< loginMessageConv)
-view Home =  HH.slot _mapadmin unit MapAdmin.component unit (Just <<< mapadminMessageConv)
+view MapAdmin =  HH.slot _mapadmin unit MapAdmin.component unit (Just <<< mapadminMessageConv)
+view Home =  HH.slot _mapnearby unit MapNearby.component unit (Just <<< mapnearbyMessageConv)
 view (Point k true) =  HH.slot _point unit Point.component (Point.ViewPOI k) (Just <<< pointMessageConv)
 view (Point k false) = HH.slot _point unit Point.component (Point.UpdatePOI k) (Just <<< pointMessageConv)
 view (AddPoint la lo) = HH.slot _point unit Point.component (Point.AddPOI la lo) (Just <<< pointMessageConv)
@@ -180,6 +197,11 @@ loginMessageConv (Login.Alert s) = Alert s
 mapadminMessageConv::MapAdmin.Output->Action
 mapadminMessageConv MapAdmin.AuthenticationError = AuthenticationError
 mapadminMessageConv (MapAdmin.Alert s) = Alert s
+
+-- |Converts mapamin messages to root actions
+mapnearbyMessageConv::MapNearby.Output->Action
+mapnearbyMessageConv MapNearby.AuthenticationError = AuthenticationError
+mapnearbyMessageConv (MapNearby.Alert s) = Alert s
 
 -- |Converts point messages to root actions
 pointMessageConv::Point.Output->Action
