@@ -77,7 +77,7 @@ $(deriveJSON defaultOptions {
     fieldLabelModifier = firstLower . drop 7 -- Get rid of the 'postItem' in the field names
   } ''PutItemBody)
 
-  -- | The argument for the create item request
+-- | The argument for the create item request
 data PostItemBody = PostItemBody {
     postItemName          :: Text            -- ^ The name of the item
     , postItemGuid        :: Text            -- ^ The external unique identifier

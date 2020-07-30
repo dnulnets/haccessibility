@@ -36,6 +36,7 @@ data Endpoint = Authenticate              -- ^The authenticate endpoint
                 | Items                   -- ^The fetch items based on filter endpoint
                 | Attributes              -- ^Fetch all available attributes
                 | Attribute String        -- ^Fetch all attributes on an item
+                | UserProperties          -- ^User properties endpoint
                 | Entities                -- ^Fetch entities on the IoT Hub absed on filter
                   { type    ::String       -- ^Type of entities
                     , attrs ::Maybe String -- ^What attributes to select in the response
@@ -60,6 +61,7 @@ backend Items = asks _.baseURL
 backend Attributes = asks _.baseURL
 backend (Attribute _) = asks _.baseURL
 backend (Entities _) = asks _.iothubURL
+backend UserProperties = asks _.baseURL
 
 -- |The endpoint codec
 endpointCodec :: RouteDuplex' Endpoint
@@ -67,6 +69,7 @@ endpointCodec = root $ sum
   { "Authenticate": "api" / "authenticate" / noArgs
   , "Items": "api" / "items" / noArgs
   , "Attributes": "api" / "attributes" /noArgs
+  , "UserProperties": "api" / "user" / "properties" /noArgs
   , "Attribute": "api" / "item" / string segment / "attributes"
   , "Item": "api" / "item" / (optional (string segment)) 
   , "Entities": "entities" ? { type : string, attrs : optional <<< string} }

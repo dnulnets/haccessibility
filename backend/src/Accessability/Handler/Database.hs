@@ -23,6 +23,8 @@ module Accessability.Handler.Database
    , dbFetchAttributes
    , dbFetchItemAttributes
    , dbUpdateItemAttributes
+   , dbFetchUserProperties
+   , dbUpdateUserProperties
    , ilike
    , changeField
    , Accessability.Handler.Database.filter
@@ -56,11 +58,7 @@ import           Accessability.Foundation       ( Handler )
 import           Accessability.Model.Database
 
 -- | A postgresql backendfilter for ILIKE
-ilike
-   :: (  EntityField Item Text -- ^ The column
-      -> Text                    -- ^ The value
-      -> Filter Item
-      )            -- ^ The generated filter
+ilike:: (  EntityField Item Text-> Text-> Filter Item) -- ^ The generated filter
 ilike field val =
    Filter field (Left val) (BackendSpecificFilter (pack "ILIKE"))
 
@@ -247,6 +245,26 @@ dbUpdateItemAttributes aav = do
   generate (Nothing, Just av) = void $ insert av
   generate (Nothing, Nothing) = pure ()
 
+dbUpdateUserProperties
+   :: [(Maybe (Key UserProperty), Maybe UserProperty)]
+   -> Handler (Either String ())
+dbUpdateUserProperties aav = do
+   mapM_ (runDB . generate) aav
+   pure $ Right ()
+ where
+  generate
+     :: (MonadIO m)
+     => (Maybe (Key UserProperty), Maybe UserProperty)
+     -> ReaderT SqlBackend m ()
+  generate (Just k, Nothing) = delete k
+  generate (Just k, Just av) =
+     update k [UserPropertyValue =. userPropertyValue av
+        , UserPropertyOperation =. userPropertyOperation av
+        , UserPropertyNegate =. userPropertyNegate av
+        , UserPropertyValue1 =. userPropertyValue1 av]
+  generate (Nothing, Just av) = void $ insert av
+  generate (Nothing, Nothing) = pure ()
+
 -- | Delete the item in the database
 dbDeleteItem
    :: Key Item                       -- ^ The key
@@ -266,3 +284,27 @@ dbUpdateItem key items = do
    case dbitem of
       Just d  -> return $ Right $ Just (key, d, Nothing)
       Nothing -> return $ Right Nothing
+
+-- | Fetch the items attributes from the database within the Handler monad
+dbFetchUserProperties
+   :: Key User
+   -> Handler
+         ( Either
+              String
+              [ ( Key Attribute
+                , Attribute
+                , Key UserProperty
+                , UserProperty
+                )
+              ]
+         )  -- ^ The result of the database search
+dbFetchUserProperties key = do
+   attributes <- runDB $ rawSql
+      "SELECT ??,?? FROM attribute, user_property WHERE attribute.id = user_property.attribute AND user_property.user=? ORDER BY attribute.name"
+      [PersistInt64 (fromSqlKey key)]
+   return $ Right $ cleanup <$> attributes
+ where
+  cleanup
+     :: (Entity Attribute, Entity UserProperty)
+     -> (Key Attribute, Attribute, Key UserProperty, UserProperty)
+  cleanup (Entity k1 a, Entity k2 v) = (k1, a, k2, v)

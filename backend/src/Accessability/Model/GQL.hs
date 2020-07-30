@@ -161,10 +161,10 @@ data MutationUpdateItemArgs = MutationUpdateItemArgs {
 data Query m = Query {
 
         -- | Queries a specific item
-        queryItem:: QueryItemArgs         -- ^ The arguments for the query
-                    -> m (Maybe Item)     -- ^ The found item
+        queryItem:: QueryItemArgs
+            -> m (Maybe Item)     -- ^ The found item
 
-        , queryItems:: QueryItemsArgs   -- ^ The arguments for the query
+        , queryItems:: QueryItemsArgs
                     -> m [Item]       -- ^ The list of found items
 
     } deriving (Generic, GQLType)

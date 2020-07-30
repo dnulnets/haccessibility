@@ -28,7 +28,7 @@ corsified = cors (const $ Just corsPolicy)
 -- | CORS resource policy to be used with 'corsified' middleware.
 corsPolicy :: CorsResourcePolicy
 corsPolicy = CorsResourcePolicy
-  { corsOrigins        = Nothing -- ^ We allow everything
+  { corsOrigins        = Nothing
   , corsMethods        = ["OPTIONS", "GET", "PUT", "POST", "DELETE"]
   , corsRequestHeaders = ["Authorization", "Content-Type"]
   , corsExposedHeaders = Nothing

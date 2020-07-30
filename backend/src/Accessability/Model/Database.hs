@@ -35,6 +35,7 @@ import           Database.Persist.TH
 -- Our own types
 --
 import           Accessability.Data.Geo         ( GeospatialPosition(..) )
+import           Accessability.Data.User        ( Operation(..))
 import           Accessability.Data.Item        ( ItemApproval(..)
                                                 , ItemModifier(..)
                                                 , ItemSource(..)
@@ -84,6 +85,16 @@ User
     password Text       -- ^ The password, bcrypted
     email Text          -- ^ The users email
     UniqueUserUsername username -- ^ The username is unique
+    deriving Show Generic
+
+UserProperty
+    user UserId                 -- ^ The user the property belongs to
+    attribute AttributeId       -- ^ The attribute the property is associated with
+    operation Operation         -- ^ The operation on the attribute
+    negate Bool                 -- ^ Logical negation on the operation
+    value Text                  -- ^ Main value of the operation
+    value1 Text Maybe                 -- ^ Second value if it is a "range" operation
+    UniqueUserProperty user attribute -- ^Must be a unique combination
     deriving Show Generic
 
 |]

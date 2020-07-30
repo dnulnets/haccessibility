@@ -1,9 +1,9 @@
 -- |
--- | The MapNearby component
+-- | The MapUser component
 -- |
 -- | Written by Tomas Stenlund, Sundsvall,Sweden (c) 2020
 -- |
-module Accessibility.Component.MapNearby (component, Slot(..), Output(..)) where
+module Accessibility.Component.MapUser (component, Slot(..), Output(..)) where
 
 -- Language imports
 import Prelude
@@ -157,7 +157,7 @@ handleAction  :: forall r m . MonadAff m
 
 -- | Initialize action
 handleAction Initialize = do
-  H.liftEffect $ log "Initialize MapNearby component"
+  H.liftEffect $ log "Initialize MapUser component"
 
   -- Create the map, layers and handlers
   hamap <- createMap

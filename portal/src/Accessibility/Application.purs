@@ -53,6 +53,7 @@ import Accessibility.Interface.Endpoint as EP
 import Accessibility.Interface.Authenticate (UserInfo(..),class ManageAuthentication)
 import Accessibility.Interface.Navigate (class ManageNavigation)
 import Accessibility.Interface.Item (class ManageItem)
+import Accessibility.Interface.User (class ManageUser)
 import Accessibility.Interface.Entity(class ManageEntity)
 
 import Accessibility.Data.Route (routeCodec, Page(..))
@@ -341,3 +342,43 @@ instance manageEntityApplicationM :: ManageEntity ApplicationM where
       unpack (Left _) = Left Backend
       unpack (Right (Tuple (AX.StatusCode 403) e)) = Left NotAuthenticated
       unpack (Right (Tuple _ e)) = Right e
+
+--
+--  Add the set of functions that handles items
+--
+instance manageUserApplicationM :: ManageUser ApplicationM where
+
+  -- |Gets all available properties
+  queryUserProperties = do
+    env <- ask
+    ui <- H.liftEffect $ REF.read env.userInfo
+    burl <- EP.backend ep
+
+    response <- liftAff $ parOneOf [
+      mkAuthRequest burl ep (_.token <<< unwrap <$> ui) (Get::RequestMethod Void)
+      , Left "Timeout" <$ (delay env.timeoutBackend)]
+    case response of
+      Left err -> do
+        pure $ Left Backend
+      Right (Tuple (AX.StatusCode 403) _) -> do
+        pure $ Left NotAuthenticated
+      Right (Tuple _ attrs) -> do
+        pure $ Right attrs
+    where
+      ep = EP.UserProperties
+
+  updateUserProperties arr = do
+    env <- ask
+    ui <- H.liftEffect $ REF.read env.userInfo
+    burl <- EP.backend ep
+    H.liftEffect $ log $ show arr
+    response <- liftAff $ parOneOf [
+      mkAuthRequest burl ep (_.token <<< unwrap <$> ui) $ Put (Just arr)
+      , Left "Timeout" <$ (delay env.timeoutBackend)]
+    case response of
+      Left err -> do
+        pure Nothing
+      Right (Tuple _ v) -> do      
+        pure $ Just v
+    where
+      ep = EP.UserProperties

@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 54b5ce308ca2855916579ac26462a402fae1351fa6ad24ce69914ccc32b0b104
+-- hash: cf0fb1667695718eae653540815c883cadcde545355e6cea9830e938e74d9af5
 
 name:           accessibility
 version:        0.1.0.0
@@ -36,11 +36,13 @@ library
       Accessability.Handler.GQL
       Accessability.Handler.REST.Authenticate
       Accessability.Handler.REST.Item
+      Accessability.Handler.REST.User
       Accessability.Middleware
       Accessability.Model.Database
       Accessability.Model.GQL
       Accessability.Model.REST.Authenticate
       Accessability.Model.REST.Item
+      Accessability.Model.REST.User
       Accessability.Model.Transform
       Accessability.Settings
       Accessability.Utils.JSON

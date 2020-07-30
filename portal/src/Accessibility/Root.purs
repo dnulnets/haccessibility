@@ -38,12 +38,15 @@ import Accessibility.Component.HTML.Utils
   , href)
 import Accessibility.Component.Login as Login
 import Accessibility.Component.MapAdmin as MapAdmin
-import Accessibility.Component.MapNearby as MapNearby
+import Accessibility.Component.MapUser as MapUser
 import Accessibility.Component.Point as Point
+import Accessibility.Component.UserProperty as UserProperty
+
 import Accessibility.Interface.Navigate (class ManageNavigation, gotoPage)
 import Accessibility.Interface.Authenticate (class ManageAuthentication
   , UserInfo (..)
   , logout)
+import Accessibility.Interface.User (class ManageUser)
 import Accessibility.Interface.Item (class ManageItem)
 import Accessibility.Interface.Entity (class ManageEntity)
 
@@ -63,24 +66,28 @@ data Action = SetUser  (Maybe UserInfo)   -- ^Sets the user
             | Logout                            -- ^Logs out the user
             | AuthenticationError               -- ^Authentication error
             | PointSubmitted                    -- ^A POI has been added or changed
+            | UserPropertySubmitted             -- User property change has been submittde
             | Alert (Maybe String)              -- ^Alert
 
 -- | The set of slots for the root container
 type ChildSlots = ( login ∷ Login.Slot Unit,
                     mapadmin :: MapAdmin.Slot Unit,
-                    mapnearby :: MapNearby.Slot Unit,
-                    point :: Point.Slot Unit )
+                    mapnearby :: MapUser.Slot Unit,
+                    point :: Point.Slot Unit,
+                    userprop :: UserProperty.Slot Unit )
 
 _login = SProxy::SProxy "login"
 _mapadmin = SProxy::SProxy "mapadmin"
 _point = SProxy::SProxy "point"
 _mapnearby = SProxy::SProxy "mapnearby"
+_userprop = SProxy::SProxy "userprop"
 
 component ∷ ∀ r o m. MonadAff m
   => ManageAuthentication m
   => ManageNavigation m
   => ManageItem m
   => ManageEntity m
+  => ManageUser m
   => MonadAsk r m
   => H.Component HH.HTML Query Input o m
 component =
@@ -130,6 +137,16 @@ navbarLeftAdmin p = maybe [] (const [
     ]
   ]]) p.userInfo
 
+navbarLeftUser∷forall p . State -> Array(HH.HTML p Action)
+navbarLeftUser p = maybe [] (const [
+  HH.li [css "nav-item dropdown"] [
+    HH.a [css "nav-link dropdown-toggle active", prop "data-toggle" "dropdown"] [HH.text "User"],
+    HH.div [css "dropdown-menu dropdown-primary"] [
+      HH.a [css "dropdown-item", href Home] [HH.text "Settings"],
+      HH.a [css "dropdown-item", href UserProperty] [HH.text "Properties"]
+    ]
+  ]]) p.userInfo
+
 navbarLeftDefault∷forall p . State -> Array (HH.HTML p Action)
 navbarLeftDefault p = maybe [] (const [HH.li [css "nav-item active"] [
                         HH.a [css "nav-link", href Home] [HH.text "Home"]]]) p.userInfo
@@ -139,6 +156,7 @@ navbarLeft∷forall p . State -> HH.HTML p Action
 navbarLeft state = HH.div [css "collapse navbar-collapse", HP.id_ "navbarCollapse"]
                     [HH.ul [css "navbar-nav mr-auto"] ([] <>
                       (navbarLeftDefault state)
+                      <> (navbarLeftUser state)
                       <> (navbarLeftAdmin state))
                     ]
 
@@ -152,6 +170,7 @@ render ∷ ∀ r m . MonadAff m
   => ManageNavigation m
   => ManageEntity m
   => ManageItem m
+  => ManageUser m
   => MonadAsk r m
   => State → H.ComponentHTML Action ChildSlots m
 render state = HH.div [css "ha-root"] [
@@ -164,11 +183,13 @@ view ∷ ∀ r m. MonadAff m
        ⇒ ManageNavigation m
        => ManageEntity m
        => ManageItem m
+       => ManageUser m
        ⇒ MonadAsk r m
        ⇒ Page → H.ComponentHTML Action ChildSlots m
 view Login = HH.slot _login  unit Login.component  unit (Just <<< loginMessageConv)
 view MapAdmin =  HH.slot _mapadmin unit MapAdmin.component unit (Just <<< mapadminMessageConv)
-view Home =  HH.slot _mapnearby unit MapNearby.component unit (Just <<< mapnearbyMessageConv)
+view UserProperty =  HH.slot _userprop unit UserProperty.component unit (Just <<< userpropMessageConv)
+view Home =  HH.slot _mapnearby unit MapUser.component unit (Just <<< mapnearbyMessageConv)
 view (Point k true) =  HH.slot _point unit Point.component (Point.ViewPOI k) (Just <<< pointMessageConv)
 view (Point k false) = HH.slot _point unit Point.component (Point.UpdatePOI k) (Just <<< pointMessageConv)
 view (AddPoint la lo) = HH.slot _point unit Point.component (Point.AddPOI la lo) (Just <<< pointMessageConv)
@@ -199,9 +220,15 @@ mapadminMessageConv MapAdmin.AuthenticationError = AuthenticationError
 mapadminMessageConv (MapAdmin.Alert s) = Alert s
 
 -- |Converts mapamin messages to root actions
-mapnearbyMessageConv::MapNearby.Output->Action
-mapnearbyMessageConv MapNearby.AuthenticationError = AuthenticationError
-mapnearbyMessageConv (MapNearby.Alert s) = Alert s
+userpropMessageConv::UserProperty.Output->Action
+userpropMessageConv UserProperty.AuthenticationError = AuthenticationError
+userpropMessageConv UserProperty.Submitted = UserPropertySubmitted
+userpropMessageConv (UserProperty.Alert s) = Alert s
+
+-- |Converts mapamin messages to root actions
+mapnearbyMessageConv::MapUser.Output->Action
+mapnearbyMessageConv MapUser.AuthenticationError = AuthenticationError
+mapnearbyMessageConv (MapUser.Alert s) = Alert s
 
 -- |Converts point messages to root actions
 pointMessageConv::Point.Output->Action
@@ -260,6 +287,9 @@ handleAction AuthenticationError = do
 
 -- A point has been submitted or canceled from the Point page
 handleAction PointSubmitted = do
+  gotoPage Home
+
+handleAction UserPropertySubmitted = do
   gotoPage Home
 
 -- An alert has been issued from a sub component

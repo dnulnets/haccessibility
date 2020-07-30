@@ -16,6 +16,7 @@ module Accessability.Model.Transform
     , toGenericItem
     , toGQLItem
     , toGenericUser
+    , toGenericUserProperty
     , toGenericAttribute
     , toGenericItemAttribute
     , textToKey
@@ -142,8 +143,8 @@ toGenericItem (key, item, d) = G.Item
 
 -- | Converts a GQL item to a database item
 toDataItem
-    :: GQL.Item   -- ^ The database item
-    -> DB.Item        -- ^ The GQL item
+    :: GQL.Item -- ^ The database item
+    -> DB.Item  -- ^ The GQL item
 toDataItem item = DB.Item
     { DB.itemName        = GQL.itemName item
     , DB.itemGuid        = GQL.itemGuid item
@@ -164,3 +165,26 @@ toGenericUser (k, u) = G.User { G.userId       = Just $ keyToText k
                               , G.userPassword = DB.userPassword u
                               , G.userEmail    = DB.userEmail u
                               }
+
+-- | Converts a database attribute to a generic attribute
+toGenericUserProperty
+    :: ( Key DB.Attribute
+       , DB.Attribute
+       , Key DB.UserProperty
+       , DB.UserProperty
+       )
+    -> G.UserProperty
+toGenericUserProperty (ka, a, kv, v) = G.UserProperty
+    { G.propertyUserPropertyId   = keyToText kv
+    , G.propertyAttributeId = keyToText ka
+    , G.propertyDescription      = DB.attributeDescription a
+    , G.propertyName             = DB.attributeName a
+    , G.propertyDisplayName      = DB.attributeDisplayName a
+    , G.propertyGroup            = DB.attributeGroup a
+    , G.propertyTypeof           = DB.attributeTypeof a
+    , G.propertyUnit             = DB.attributeUnit a
+    , G.propertyValue            = DB.userPropertyValue v
+    , G.propertyValue1           = DB.userPropertyValue1 v
+    , G.propertyOperation        = DB.userPropertyOperation v
+    , G.propertyNegate           = DB.userPropertyNegate v
+    }

@@ -67,6 +67,9 @@ import           Accessability.Handler.REST.Item         (deleteItemR,
 import           Accessability.Handler.REST.Authenticate (getAuthenticateR,
                                                           postAuthenticateR)
 
+import           Accessability.Handler.REST.User        (getUserPropertiesR,
+                                                         putUserPropertiesR)
+
 import           Accessability.Settings                  (AppSettings (..),
                                                           defaultSettings)
 

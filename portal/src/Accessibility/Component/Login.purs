@@ -10,7 +10,7 @@ module Accessibility.Component.Login
 
 -- Language imports
 import Prelude
-import Data.Maybe (Maybe(..), fromMaybe, maybe)
+import Data.Maybe (Maybe(..), fromMaybe)
 
 -- Control Monad
 import Control.Monad.Reader.Trans (class MonadAsk)
@@ -32,7 +32,7 @@ import Web.Event.Event as Event
 
 -- Our own stuff
 import Accessibility.Data.Route (Page(..))
-import Accessibility.Component.HTML.Utils (css, style)
+import Accessibility.Component.HTML.Utils (css)
 import Accessibility.Interface.Navigate (class ManageNavigation, gotoPage)
 import Accessibility.Interface.Authenticate
   (UserInfo(..)
