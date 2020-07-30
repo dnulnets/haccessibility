@@ -75,6 +75,7 @@ import Accessibility.Component.HTML.Utils (css)
 import Accessibility.Util.Result (evaluateResult)
 import Accessibility.Interface.Navigate (class ManageNavigation)
 import Accessibility.Interface.Item (class ManageItem, queryItems, Item)
+import Accessibility.Interface.User (UserProperty)
 import Accessibility.Interface.Entity (class ManageEntity, Value, queryEntities, Entity(..))
 
 -- | Slot type for the component
@@ -89,6 +90,7 @@ type State =  { subscription  ::Array H.SubscriptionId  -- ^ The map button subs
                 , select        ::Maybe Select.Select     -- ^ The select interaction
                 , distance      ::Number                  -- ^ The max search distance
                 , crosshair     ::Maybe Coordinate.Coordinate -- ^ The coordinate of the crosshair
+                , userProperties :: Array (UserProperty)
               }
 
 -- | Initial state is no logged in user
@@ -101,6 +103,7 @@ initialState _ =  { subscription  : []
                     , select        : Nothing
                     , layer         : Nothing
                     , crosshair     : Nothing
+                    , userProperties : []
                     , distance : 1000.0 }
 
 -- | Internal form actions

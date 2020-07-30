@@ -67,16 +67,16 @@ type UserPropertyChangeMap = Map.Map String UserPropertyChange
 
 -- | State for the component
 type State =  { alert::Maybe String               -- ^The alert for the component
-                , gattrs::UserPropertyGroup
-                , gitemAttrs::UserPropertyGroup
+                , properties::UserPropertyGroup
+                , userProperties::UserPropertyGroup
                 , propertyChange::UserPropertyChangeMap
               }
 
 -- | Initial state contains the operation and the attributes
 initialState  :: forall i . i -> State
 initialState i =  { alert: Nothing                  
-                    , gattrs: Map.empty
-                    , gitemAttrs: Map.empty
+                    , properties: Map.empty
+                    , userProperties: Map.empty
                     , propertyChange: Map.empty
                   }
 
@@ -118,8 +118,8 @@ updateState = do
 
   -- Construct the mappings and attribute lists
   H.modify_ $ _ {
-    gattrs = group $ diffF same (fromMaybe [] ((map toUserProperty) <$> a)) (fromMaybe [] av)
-    , gitemAttrs = group $ fromMaybe [] av}
+    properties = group $ diffF same (fromMaybe [] ((map toUserProperty) <$> a)) (fromMaybe [] av)
+    , userProperties = group $ fromMaybe [] av}
 
   where
     
@@ -376,9 +376,9 @@ render state =
         , displayUsername $ Just "tomas"
         , displayEmail $ Just "tomas.stenlund@telia.com"
         , HH.h2 [css "mt-3"] [HH.text "Current properties"]]
-        <> (groupMapInput state state.gitemAttrs) <>
+        <> (groupMapInput state state.userProperties) <>
         [ HH.h2 [css "mt-3"] [HH.text "Available properties"]]
-        <> (groupMapInput state state.gattrs) <>        
+        <> (groupMapInput state state.properties) <>        
         [
           HH.button [ css "btn btn-lg btn-block btn-warning", HP.type_ HP.ButtonSubmit ] [ HH.text 
             "Update" ]

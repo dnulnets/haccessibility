@@ -34,11 +34,9 @@ where
 --
 -- Import standard libs
 --
-import           Data.Text                      ( Text
-                                                , pack
-                                                )
-import           Control.Monad                  ( void )
-import           Control.Monad.Reader           ( ReaderT )
+import           Control.Monad                (void)
+import           Control.Monad.Reader         (ReaderT)
+import           Data.Text                    (Text, pack)
 --
 --
 --
@@ -54,7 +52,7 @@ import           Yesod
 -- My own imports
 --
 import           Accessability.Data.Geo
-import           Accessability.Foundation       ( Handler )
+import           Accessability.Foundation     (Handler)
 import           Accessability.Model.Database
 
 -- | A postgresql backendfilter for ILIKE

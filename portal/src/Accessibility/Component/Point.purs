@@ -15,7 +15,7 @@ import Data.Foldable (foldr)
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.DateTime.ISO (ISO(..))
 import Data.UUID (genUUID, toString)
-import Data.Set (Set, empty, insert, toUnfoldable)
+import Data.Tuple (Tuple(..))
 import Data.Traversable (sequence)
 import Data.Map as Map
 import Data.List as List
@@ -86,40 +86,30 @@ data Operation  = UpdatePOI String      -- ^Update the POI
                 | AddPOI Number Number  -- ^Add a new POI
 derive instance eqOperation :: Eq Operation
 
--- |The attribute change structure. It holds the change of an attribute and
--- implements instances to be able to use it in Sets and Maps.
-data Change = Change AttributeChange
-
-instance eqChange :: Eq Change where
-  eq (Change c1) (Change c2) = c1.attributeId == c2.attributeId
-
-instance ordChange :: Ord Change where
-  compare (Change c1) (Change c2) = compare c1.attributeId c2.attributeId
-
-instance showChange :: Show Change where
-  show (Change c) = "Change " <> (show c)
-
 -- |A map that holds a group of attributes
 type AttributeGroup = Map.Map String (Array AttributeValue)
+
+-- |A ma that holds the change to an attribute
+type AttributeChangeMap = Map.Map String AttributeChange
 
 -- | State for the component
 type State =  { alert::Maybe String               -- ^The alert for the component
                 , operation::Operation            -- ^What operational mode the component is in
                 , item::Maybe Item                -- ^The item
-                , gattrs::AttributeGroup
-                , gitemAttrs::AttributeGroup
-                , attrChange::Set Change          -- ^A list of all changes in the form
+                , attributes::AttributeGroup          -- Grouped attributes not set on an item
+                , itemAttributes::AttributeGroup      -- Grouped attrbiutes set on an item
+                , attributeChange::AttributeChangeMap  -- Change to an attribute
               }
 
 -- | Initial state contains the operation and the attributes
 initialState  :: Operation  -- ^The item key if any
               -> State      -- ^ The state
-initialState i =  { alert: Nothing
+initialState o =  { alert: Nothing
                     , item: Nothing
-                    , operation: i
-                    , attrChange: empty
-                    , gattrs: Map.empty
-                    , gitemAttrs: Map.empty
+                    , operation: o
+                    , attributeChange: Map.empty
+                    , attributes: Map.empty
+                    , itemAttributes: Map.empty
                   }
 
 -- | The component definition
@@ -160,9 +150,9 @@ updateState = do
 
   -- Construct the mappings and attribute lists
   H.modify_ $ _ {
-    gattrs = group $ diffF same (fromMaybe [] a) (fromMaybe [] av)
+    attributes = group $ diffF same (fromMaybe [] a) (fromMaybe [] av)
     , item = i
-    , gitemAttrs = group $ fromMaybe [] av}
+    , itemAttributes = group $ fromMaybe [] av}
 
   where
     
@@ -343,10 +333,10 @@ attributeInput iav =
 
     -- Adds a change order for an attribute whenever it has changed
     change::String->AttributeValue->State->State
-    change v cav st = st { attrChange = 
-      insert (Change {  attributeValueId: cav.attributeValueId
-                      , attributeId: cav.attributeId
-                      , value: Just v }) st.attrChange }
+    change v cav st = st { attributeChange = 
+      Map.insert (fromMaybe "" cav.attributeId) {attributeValueId: cav.attributeValueId
+                                                , attributeId: cav.attributeId
+                                                , value: Just v } st.attributeChange }
 
 -- | Render the point page
 render  :: forall m . MonadAff m
@@ -361,9 +351,9 @@ render state =
         , displayLocation $ validate $ catMaybes $ [(_.latitude <$> state.item), (_.longitude <$> state.item)]
         , inputDescription $ _.description <$> state.item
         , HH.h2 [css "mt-3"] [HH.text "Current attributes"]]
-        <> (groupMapInput state.gitemAttrs) <>
+        <> (groupMapInput state.itemAttributes) <>
         [ HH.h2 [css "mt-3"] [HH.text "Available attributes"]]
-        <> (groupMapInput state.gattrs) <>        
+        <> (groupMapInput state.attributes) <>        
         [
           HH.button [ css "btn btn-lg btn-block btn-warning", HP.type_ HP.ButtonSubmit ] [ HH.text 
             (case state.operation of
@@ -412,11 +402,11 @@ handleAction (Submit event) = do
       H.liftEffect $ log "ViewPOI is readonly!"
     UpdatePOI _ -> do
       it <- join <$> (sequence $ updateItem <$> state.item)
-      u <- sequence $ updateItemAttributes <$> (join (_.id <$> it)) <*> Just (clean <$> (toUnfoldable state.attrChange))
+      u <- sequence $ updateItemAttributes <$> (join (_.id <$> it)) <*> Just (clean <$> (Map.toUnfoldable state.attributeChange))
       H.liftEffect $ log "Update an item"
     AddPOI _ _ -> do
       it <- join <$> (sequence $ addItem <$> state.item)
-      u <- sequence $ updateItemAttributes <$> (join (_.id <$> it)) <*> Just (clean <$> (toUnfoldable state.attrChange))
+      u <- sequence $ updateItemAttributes <$> (join (_.id <$> it)) <*> Just (clean <$> (Map.toUnfoldable state.attributeChange))
       H.liftEffect $ log "Add a new item"
 
   -- Tell the parent that the form has submitted
@@ -424,8 +414,9 @@ handleAction (Submit event) = do
 
     where
 
-      clean::Change->AttributeChange
-      clean (Change ac) = ac
+      -- Extract the AttributeChange from the tuple
+      clean::Tuple String AttributeChange->AttributeChange
+      clean (Tuple _ ac) = ac
 
 -- |The input field has changed, we need to save it
 handleAction (Input f) = do

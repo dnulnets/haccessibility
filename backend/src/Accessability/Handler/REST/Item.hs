@@ -27,18 +27,15 @@ where
 --
 -- Import standard libs
 --
-import           Data.Text                      ( Text
-                                                , pack
-                                                , splitOn
-                                                )
-import           Data.Aeson                     ( encode )
-import           Data.Maybe                     ( fromMaybe )
-import qualified UnliftIO.Exception            as UIOE
+import           Data.Aeson                     (encode)
+import           Data.Maybe                     (fromMaybe)
+import           Data.Text                      (Text, pack, splitOn)
+import qualified UnliftIO.Exception             as UIOE
 
 --
 -- Yesod and HTTP imports
 --
-import           Network.HTTP.Types             ( status200 )
+import           Network.HTTP.Types             (status200)
 import           Yesod
 
 --
@@ -46,12 +43,9 @@ import           Yesod
 --
 import           Accessability.Data.Functor
 import           Accessability.Data.Geo
-import           Accessability.Foundation       ( Handler
-                                                , requireAuthentication
-                                                )
-import qualified Accessability.Handler.Database
-                                               as DBF
-import qualified Accessability.Model.Database  as DB
+import           Accessability.Foundation       (Handler, requireAuthentication)
+import qualified Accessability.Handler.Database as DBF
+import qualified Accessability.Model.Database   as DB
 import           Accessability.Model.REST.Item
 import           Accessability.Model.Transform
 
