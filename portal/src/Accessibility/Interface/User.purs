@@ -9,7 +9,6 @@ module Accessibility.Interface.User where
 import Prelude
 
 -- Data imports
-import Data.DateTime.ISO (ISO)
 import Data.Maybe (Maybe(..))
 import Data.Either (note)
 import Data.Argonaut (class DecodeJson, class EncodeJson, decodeJson, encodeJson)
@@ -21,40 +20,40 @@ import Halogen (HalogenM, lift)
 import Accessibility.Interface.Endpoint (Data)
 import Accessibility.Interface.Item (AttributeType)
 
--- | The enmueration for an operation
-data Operation = EQ   -- Equal to
-                | LT  -- Less than
-                | LTE -- Less then or equal to
-                | GT  -- Greater than
-                | GTE -- Greater than
-                | IN  -- In between range
+-- | The enumeration for the operation in the user property.
+data Operation = OEQ   -- Equal to
+                | OLT  -- Less than
+                | OLTE -- Less then or equal to
+                | OGT  -- Greater than
+                | OGTE -- Greater than
+                | OIN  -- In between range
 
 operationToString:: Operation
                   -> String
-operationToString EQ = "EQ"
-operationToString LT = "LT"
-operationToString LTE = "LTE"
-operationToString GT = "GT"
-operationToString GTE = "GTE"
-operationToString IN = "IN"
+operationToString OEQ = "EQ"
+operationToString OLT = "LT"
+operationToString OLTE = "LTE"
+operationToString OGT = "GT"
+operationToString OGTE = "GTE"
+operationToString OIN = "IN"
 
 operationToDisplay:: Operation
                   -> String
-operationToDisplay EQ = "="
-operationToDisplay LT = "<"
-operationToDisplay LTE = "<="
-operationToDisplay GT = ">"
-operationToDisplay GTE = ">="
-operationToDisplay IN = "between"
+operationToDisplay OEQ = "="
+operationToDisplay OLT = "<"
+operationToDisplay OLTE = "<="
+operationToDisplay OGT = ">"
+operationToDisplay OGTE = ">="
+operationToDisplay OIN = "between"
 
 displayToOperation:: String
                   -> Maybe Operation
-displayToOperation "=" = Just EQ
-displayToOperation "<" = Just LT
-displayToOperation "<=" = Just LTE
-displayToOperation ">" = Just GT
-displayToOperation ">=" = Just GTE
-displayToOperation "between" = Just IN
+displayToOperation "=" = Just OEQ
+displayToOperation "<" = Just OLT
+displayToOperation "<=" = Just OLTE
+displayToOperation ">" = Just OGT
+displayToOperation ">=" = Just OGTE
+displayToOperation "between" = Just OIN
 displayToOperation _ = Nothing
 
 instance showOperation :: Show Operation where
@@ -71,16 +70,16 @@ instance decodeJsonOperation :: DecodeJson Operation where
     note decodeError (fromString string)
     where
     fromString = case _ of
-      "EQ" -> Just EQ
-      "LT" -> Just LT
-      "LTE" -> Just LTE
-      "GT" -> Just GT
-      "GTE" -> Just GTE
-      "IN" -> Just IN
+      "EQ" -> Just OEQ
+      "LT" -> Just OLT
+      "LTE" -> Just OLTE
+      "GT" -> Just OGT
+      "GTE" -> Just OGTE
+      "IN" -> Just OIN
       _ -> Nothing
 
 -- |The AttributeValue
-type UserProperty = { userPropertyId :: Maybe String -- User Property key
+type UserProperty = { userPropertyId :: Maybe String -- | User Property key
                     , attributeId    :: Maybe String      -- ^The key to the attribute
                     , name           :: String            -- ^The name of the attribute
                     , group          :: String            -- ^The group the attribute belongs to

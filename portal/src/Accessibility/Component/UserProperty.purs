@@ -291,7 +291,7 @@ propertyInput state iav =
             , HH.div [css "input-group-append"] [HH.span [css "input-group-text"] [HH.text up.unit]]
           ]
         ]) <> (maybe [] (\o -> case o of
-          IN ->
+          OIN ->
             [ HH.div [css "input-group"] [
               HH.input ([ css "form-control mt-1"
                 , HP.id_ (up.name <> "1")

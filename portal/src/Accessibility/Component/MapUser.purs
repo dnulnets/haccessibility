@@ -82,20 +82,20 @@ import Accessibility.Interface.Entity (class ManageEntity, Value, queryEntities,
 type Slot p = forall q . H.Slot q Output p
 
 -- | State for the component
-type State =  { subscription  ::Array H.SubscriptionId  -- ^ The map button subscriptions
-                , alert         ::Maybe String          -- ^ Any alert
-                , geo           ::Maybe Geolocation.Geolocation     -- ^ The GPS device
-                , map           ::Maybe Map.Map                     -- ^ The Map on the page
-                , layer         ::Maybe VectorLayer.Vector  -- ^The vector layer for our own poi:s
-                , select        ::Maybe Select.Select     -- ^ The select interaction
-                , distance      ::Number                  -- ^ The max search distance
-                , crosshair     ::Maybe Coordinate.Coordinate -- ^ The coordinate of the crosshair
-                , userProperties :: Array (UserProperty)
+type State =  { subscription  ::Array H.SubscriptionId  --  The map button subscriptions
+                , alert         ::Maybe String          --  Any alert
+                , geo           ::Maybe Geolocation.Geolocation --  The GPS device
+                , map           ::Maybe Map.Map             -- | The Map on the page
+                , layer         ::Maybe VectorLayer.Vector  -- The vector layer for our own poi:s
+                , select        ::Maybe Select.Select     --  The select interaction
+                , distance      ::Number                  --  The max search distance
+                , crosshair     ::Maybe Coordinate.Coordinate --  The coordinate of the crosshair
+                , userProperties :: Array (UserProperty)  -- List of all user properties
               }
 
 -- | Initial state is no logged in user
-initialState :: forall i. i -- ^ Initial input
-  -> State                  -- ^ The state
+initialState :: forall i. i --  Initial input
+  -> State                  --  The state
 initialState _ =  { subscription  : []
                     , alert         : Nothing
                     , geo           : Nothing
@@ -141,8 +141,8 @@ component =
 
 -- |Render the MapNearby page
 render  :: forall m . MonadAff m
-        => State                        -- ^ The state to render
-        -> H.ComponentHTML Action () m  -- ^ The components HTML
+        => State                        --  The state to render
+        -> H.ComponentHTML Action () m  --  The components HTML
 render state = HH.div
                [css "d-flex flex-column ha-nearby"]
                [HH.div [css "row"] [HH.div[css "col-xs-12 col-md-12"][HH.h2 [][HH.text "Points Of Interest"]]],
@@ -155,8 +155,8 @@ handleAction  :: forall r m . MonadAff m
               => ManageEntity m
               => ManageItem m
               => MonadAsk r m
-              => Action                                     -- ^ The action to handle
-              -> H.HalogenM State Action () Output m Unit   -- ^ The handled action
+              => Action                                     --  The action to handle
+              -> H.HalogenM State Action () Output m Unit   --  The handled action
 
 -- | Initialize action
 handleAction Initialize = do
@@ -349,10 +349,10 @@ createMap = do
   where
 
     -- Create a button with the given name in the DOM that can be used in the map
-    createMapButton :: String                           -- ^The name of the button
-                    -> String                           -- ^The id of the map
-                    -> String                           -- ^The class name
-                    -> Effect WDE.Element   -- ^The map's control
+    createMapButton :: String                           -- The name of the button
+                    -> String                           -- The id of the map
+                    -> String                           -- The class name
+                    -> Effect WDE.Element   -- The map's control
     createMapButton name idt cls = do
 
       -- Get hold of the DOM
