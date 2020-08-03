@@ -37,7 +37,7 @@ import Web.Event.Event (Event)
 import Web.Event.Event as Event
 
 -- Our own imports
-import Accessibility.Util.Result (evaluateResult)
+import Accessibility.Utils.Result (evaluateResult)
 import Accessibility.Component.HTML.Utils (css, prop, enableTooltips)
 import Accessibility.Interface.Entity (class ManageEntity)
 import Accessibility.Interface.User (class ManageUser, Operation(..), UserProperty, UserPropertyChange, displayToOperation, operationToDisplay, queryUserProperties, updateUserProperties)

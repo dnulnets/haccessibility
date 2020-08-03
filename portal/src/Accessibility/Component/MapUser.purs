@@ -6,77 +6,64 @@
 module Accessibility.Component.MapUser (component, Slot(..), Output(..)) where
 
 -- Language imports
+
 import Prelude
 
--- Data imports
-import Data.Array((!!), catMaybes, length)
-import Data.Maybe (Maybe(..), fromMaybe, isJust, maybe')
+import Accessibility.Component.HTML.Utils (css)
+import Accessibility.Interface.Entity (class ManageEntity, Value, queryEntities, Entity(..))
+import Accessibility.Interface.Item (class ManageItem, Item, queryItems, queryItemAttributes)
+import Accessibility.Interface.Navigate (class ManageNavigation)
+import Accessibility.Interface.User (class ManageUser, UserProperty, queryUserProperties)
+import Accessibility.Utils.Result (evaluateResult)
+import Accessibility.Utils.Analysis (evaluatePOI)
+import Control.Alt ((<|>))
+import Control.Monad.Reader.Trans (class MonadAsk)
+import Data.Array ((!!), catMaybes, length)
 import Data.Foldable (sequence_)
+import Data.Maybe (Maybe(..), fromMaybe, isJust, maybe')
 import Data.Traversable (sequence)
 import Data.Tuple (Tuple(..), fst, snd)
-import Math (pi)
-
--- Control Monad
-import Control.Monad.Reader.Trans (class MonadAsk)
-import Control.Alt ((<|>))
-
--- Effects
 import Effect (Effect)
 import Effect.Aff.Class (class MonadAff)
 import Effect.Console (log)
-
--- Halogen import
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Properties as HP
 import Halogen.Query.EventSource as HQE
-
--- DOM and HTML imports
-import Web.Event.Event as WEE
-
-import Web.HTML (window)
-import Web.HTML.Window as WHW
-import Web.HTML.HTMLDocument as WHHD
-
+import Math (pi)
+import OpenLayers.Collection as Collection
+import OpenLayers.Control as Ctrl
+import OpenLayers.Control.Control as Control
+import OpenLayers.Coordinate as Coordinate
+import OpenLayers.Events.Condition as Condition
+import OpenLayers.Feature as Feature
+import OpenLayers.Geolocation as Geolocation
+import OpenLayers.Geom.Point as Point
+import OpenLayers.Interaction.Select as Select
+import OpenLayers.Layer.Tile as Tile
+import OpenLayers.Layer.Vector as VectorLayer
+import OpenLayers.Map as Map
+import OpenLayers.Proj as Proj
+import OpenLayers.Render.Event as Event
+import OpenLayers.Size as Size
+import OpenLayers.Source.OSM as OSM
+import OpenLayers.Source.Vector as VectorSource
+import OpenLayers.Style.Circle as Circle
+import OpenLayers.Style.Fill as Fill
+import OpenLayers.Style.RegularShape as RegularShape
+import OpenLayers.Style.Stroke as Stroke
+import OpenLayers.Style.Style as Style
+import OpenLayers.Style.Text as Text
+import OpenLayers.View as View
 import Web.DOM.Document as WDD
 import Web.DOM.Element as WDE
 import Web.DOM.Node as WDN
-import Web.DOM.Text as WDT
 import Web.DOM.ParentNode as WDPN
-
--- Openlayers imports
-import OpenLayers.Interaction.Select as Select
-import OpenLayers.Feature as Feature
-import OpenLayers.Source.OSM as OSM
-import OpenLayers.Layer.Tile as Tile
-import OpenLayers.Proj as Proj
-import OpenLayers.View as View
-import OpenLayers.Map as Map
-import OpenLayers.Geolocation as Geolocation
-import OpenLayers.Style.Style as Style
-import OpenLayers.Style.Fill as Fill
-import OpenLayers.Style.Circle as Circle
-import OpenLayers.Style.Stroke as Stroke
-import OpenLayers.Style.Text as Text
-import OpenLayers.Geom.Point as Point
-import OpenLayers.Layer.Vector as VectorLayer
-import OpenLayers.Source.Vector as VectorSource
-import OpenLayers.Control.Control as Control
-import OpenLayers.Control as Ctrl
-import OpenLayers.Collection as Collection
-import OpenLayers.Events.Condition as Condition
-import OpenLayers.Coordinate as Coordinate
-import OpenLayers.Style.RegularShape as RegularShape
-import OpenLayers.Size as Size
-import OpenLayers.Render.Event as Event
-
--- Our own imports
-import Accessibility.Component.HTML.Utils (css)
-import Accessibility.Util.Result (evaluateResult)
-import Accessibility.Interface.Navigate (class ManageNavigation)
-import Accessibility.Interface.Item (class ManageItem, queryItems, Item)
-import Accessibility.Interface.User (UserProperty)
-import Accessibility.Interface.Entity (class ManageEntity, Value, queryEntities, Entity(..))
+import Web.DOM.Text as WDT
+import Web.Event.Event as WEE
+import Web.HTML (window)
+import Web.HTML.HTMLDocument as WHHD
+import Web.HTML.Window as WHW
 
 -- | Slot type for the component
 type Slot p = forall q . H.Slot q Output p
@@ -122,12 +109,16 @@ data Action = Initialize
 data Output = AuthenticationError
   | Alert (Maybe String)
 
+-- | POIValue
+
+
 -- | The component definition
 component :: forall r q i m . MonadAff m
           => ManageNavigation m
           => MonadAsk r m
           => ManageEntity m
           => ManageItem m
+          => ManageUser m
           => H.Component HH.HTML q i Output m
 component = 
   H.mkComponent
@@ -155,12 +146,16 @@ handleAction  :: forall r m . MonadAff m
               => ManageEntity m
               => ManageItem m
               => MonadAsk r m
+              => ManageUser m
               => Action                                     --  The action to handle
               -> H.HalogenM State Action () Output m Unit   --  The handled action
 
 -- | Initialize action
 handleAction Initialize = do
   H.liftEffect $ log "Initialize MapUser component"
+
+  -- Get the user properties, used to evaluate all POI:s
+  up <- (queryUserProperties >>= (evaluateResult AuthenticationError))
 
   -- Create the map, layers and handlers
   hamap <- createMap
@@ -179,7 +174,8 @@ handleAction Initialize = do
                 , select = Just s
                 , map = Just hamap
                 , geo = Just gps
-                , layer = Just poiLayer})
+                , layer = Just poiLayer
+                , userProperties = fromMaybe [] up})
 
 -- | Finalize action, clean up the component
 handleAction Finalize = do
@@ -240,8 +236,15 @@ handleAction Center = do
     sequence_ $ View.setCenter <$> pos <*> view
 
 -- | Feature is selected
-handleAction (FeatureSelect e) = H.liftEffect $ do
-  log "Feature selected!"
+handleAction (FeatureSelect e) = do
+  H.liftEffect $ log "Feature selected!"
+  features <- H.liftEffect $ Select.getSelected e
+  items <- sequence $ queryItemAttributes <$> (catMaybes ((Feature.get "id") <$> features))
+  joho <- sequence $ (evaluateResult AuthenticationError) <$> items
+  up <- queryUserProperties >>= evaluateResult AuthenticationError
+  H.liftEffect $ log $ show joho
+  H.liftEffect $ log $ show up
+  H.liftEffect $ log $ show $ map (ap (evaluatePOI <$> up)) joho
 
 -- | GPS Error - Error in the geolocation device
 handleAction GPSError = H.liftEffect $ do

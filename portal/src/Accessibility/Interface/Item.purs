@@ -123,6 +123,12 @@ type Item = { id            :: Maybe String -- ^ Item key
               , distance    :: Maybe Number -- ^ The distance to a specified point at the time of the query
             }
 
+-- |The items value from a users perspective
+type ItemValue = { positive   :: Int
+                  , negative  :: Int
+                  , unknown   :: Int
+                }
+
 --
 -- AttributeValue
 --

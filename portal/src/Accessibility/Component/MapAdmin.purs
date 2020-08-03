@@ -72,7 +72,7 @@ import OpenLayers.Style.RegularShape as RegularShape
 -- Our own imports
 import Accessibility.Data.Route (Page(..)) as ADR
 import Accessibility.Component.HTML.Utils (css)
-import Accessibility.Util.Result (evaluateResult)
+import Accessibility.Utils.Result (evaluateResult)
 import Accessibility.Interface.Navigate (class ManageNavigation, gotoPage)
 import Accessibility.Interface.Item (class ManageItem, queryItems, deleteItem, Item)
 import Accessibility.Interface.Entity (class ManageEntity, Value, queryEntities, Entity(..))

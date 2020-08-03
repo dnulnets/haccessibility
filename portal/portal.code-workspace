@@ -6,6 +6,7 @@
 	],
   "settings": {
     "editor.detectIndentation": false,
-    "editor.tabSize": 2
+    "editor.tabSize": 2,
+    "purescript.autocompleteAddImport": false
   }
 }

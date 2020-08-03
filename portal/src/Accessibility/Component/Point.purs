@@ -43,7 +43,7 @@ import Web.Event.Event as Event
 import OpenLayers.Coordinate as Coordinate
 
 -- Our own imports
-import Accessibility.Util.Result (evaluateResult)
+import Accessibility.Utils.Result (evaluateResult)
 import Accessibility.Component.HTML.Utils (css, prop, enableTooltips)
 import Accessibility.Interface.Entity (class ManageEntity)
 import Accessibility.Interface.Item (
