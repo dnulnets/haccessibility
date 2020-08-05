@@ -9,7 +9,7 @@ module Accessibility.Utils.Analysis where
 
 import Prelude
 
-import Accessibility.Interface.Item (AttributeType(..), AttributeValue, ItemValue)
+import Accessibility.Interface.Item (AttributeType(..), AttributeValue, ItemValue(..))
 import Accessibility.Interface.User (Operation(..), UserProperty)
 import Data.Map as Map
 import Data.Maybe (Maybe(..), fromMaybe)
@@ -19,26 +19,19 @@ import Global (readFloat)
 
 -- |Determines the value of a POI based on the users properties
 evaluatePOI::Array UserProperty -> Array AttributeValue -> ItemValue
-evaluatePOI aup aav = foldr sumItemValue { positive: 0
-                                          , negative: 0
-                                          , unknown: 0 } ((evaluateUserProperty $ toAttributeValueMap aav) <$> aup )
+evaluatePOI aup aav = foldr append mempty ((evaluateUserProperty $ toAttributeValueMap aav) <$> aup )
 
   where
     
-    sumItemValue::ItemValue->ItemValue->ItemValue
-    sumItemValue iv1 iv2 = { positive: iv1.positive + iv2.positive
-                        , negative: iv1.negative + iv2.negative
-                        , unknown: iv1.unknown + iv2.unknown}
-
     toAttributeValueMap::Array AttributeValue -> Map.Map String AttributeValue
     toAttributeValueMap a = Map.fromFoldable $ (\av->Tuple (fromMaybe "" av.attributeId) av) <$> a
 
     evaluateUserProperty::Map.Map String AttributeValue -> UserProperty -> ItemValue
     evaluateUserProperty msa up = case join $ Map.lookup <$> up.attributeId <*> Just msa of
-                      Nothing -> {positive: 0, negative: 0, unknown: 1}
+                      Nothing -> ItemValue {positive: 0, negative: 0, unknown: 1}
                       Just a -> if (evaluate up a)
-                                  then {positive: 1, negative: 0, unknown: 0}
-                                  else {positive: 0, negative: 1, unknown: 0}
+                                  then ItemValue {positive: 1, negative: 0, unknown: 0}
+                                  else ItemValue {positive: 0, negative: 1, unknown: 0}
 
     evaluate::UserProperty->AttributeValue->Boolean
     evaluate up av = case up.operation of
@@ -51,6 +44,7 @@ evaluatePOI aup aav = foldr sumItemValue { positive: 0
                           OGTE -> fromMaybe false (notit <$> up.negate <*> (isGTE <$> av.value <*> up.value <*> (Just av.typeof)))
                           OIN -> fromMaybe false (notit <$> up.negate <*> (isIN <$> av.value <*> up.value <*> up.value1 <*> (Just av.typeof)))
 
+    -- Logical xor
     notit::Boolean->Boolean->Boolean
     notit true v = not v
     notit false v = v
@@ -87,6 +81,6 @@ evaluatePOI aup aav = foldr sumItemValue { positive: 0
 
     isIN::String->String->String->AttributeType->Boolean
     isIN v1 v21 v22 t = case t of
-      TextType -> v1 > v21 && v1 < v22
+      TextType -> v1 >= v21 && v1 <= v22
       BooleanType -> false
       NumberType -> (readFloat v1) > (readFloat v21) && (readFloat v1) < (readFloat v22)

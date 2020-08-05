@@ -13,6 +13,7 @@ import Data.DateTime.ISO (ISO)
 import Data.Maybe (Maybe(..))
 import Data.Either (note)
 import Data.Argonaut (class DecodeJson, class EncodeJson, decodeJson, encodeJson)
+import Data.Newtype (class Newtype)
 
 -- Halogen imports
 import Halogen (HalogenM, lift)
@@ -124,10 +125,23 @@ type Item = { id            :: Maybe String -- ^ Item key
             }
 
 -- |The items value from a users perspective
-type ItemValue = { positive   :: Int
-                  , negative  :: Int
-                  , unknown   :: Int
-                }
+newtype ItemValue = ItemValue { positive   :: Int
+                      , negative  :: Int
+                      , unknown   :: Int
+                    }
+
+derive instance newtypeItemValue :: Newtype ItemValue _
+
+instance showItemValue :: Show ItemValue where
+  show (ItemValue r) = "ItemValue " <> show r
+
+instance monoidItemValue :: Monoid ItemValue where
+  mempty = ItemValue {positive:0, negative:0, unknown:0}
+
+instance semigroupItemValue :: Semigroup ItemValue where
+  append (ItemValue i1) (ItemValue i2) = ItemValue {positive: i1.positive+i2.positive
+                                                    , negative: i1.negative+i2.negative
+                                                    , unknown: i1.unknown+i2.unknown}
 
 --
 -- AttributeValue
