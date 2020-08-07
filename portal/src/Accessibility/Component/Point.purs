@@ -196,6 +196,9 @@ updateState = do
                     , latitude    : la
                     , longitude   : lo
                     , distance    : Nothing
+                    , positive    : Nothing
+                    , negative    : Nothing
+                    , unknown     : Nothing
                   }
 
 -- |Creates a HTML element for an input box of a text type

@@ -287,7 +287,7 @@ handleAction AuthenticationError = do
 
 -- A point has been submitted or canceled from the Point page
 handleAction PointSubmitted = do
-  gotoPage Home
+  gotoPage MapAdmin
 
 handleAction UserPropertySubmitted = do
   gotoPage Home

@@ -11,7 +11,7 @@ import Prelude
 
 import Accessibility.Component.HTML.Utils (css)
 import Accessibility.Interface.Entity (class ManageEntity, Value, queryEntities, Entity(..))
-import Accessibility.Interface.Item (class ManageItem, Item, queryItems, queryItemAttributes)
+import Accessibility.Interface.Item (class ManageItem, Item, queryItemsAndValues, queryItemAttributes)
 import Accessibility.Interface.Navigate (class ManageNavigation)
 import Accessibility.Interface.User (class ManageUser, UserProperty, queryUserProperties)
 import Accessibility.Utils.Result (evaluateResult)
@@ -212,7 +212,7 @@ handleAction Update = do
   -- Get the POI from our own backend
   when (isJust pos) do
 
-    ditems <- queryItems {longitude : join $ (Coordinate.longitude <<< Proj.toLonLat') <$> pos
+    ditems <- queryItemsAndValues {longitude : join $ (Coordinate.longitude <<< Proj.toLonLat') <$> pos
                           , latitude: join $ (Coordinate.latitude <<< Proj.toLonLat') <$> pos
                           , distance: Just $ fromMaybe state.distance distance
                           , limit: Nothing
@@ -283,7 +283,7 @@ handleAction (GPSCenter geo map vl) = do
   -- Get the POI from our own backend
   when (isJust pos) do
 
-    ditems <- queryItems {longitude : join $ (Coordinate.longitude <<< Proj.toLonLat') <$> pos
+    ditems <- queryItemsAndValues {longitude : join $ (Coordinate.longitude <<< Proj.toLonLat') <$> pos
                           , latitude: join $ (Coordinate.latitude <<< Proj.toLonLat') <$> pos
                           , distance: Just $ fromMaybe state.distance distance
                           , limit: Nothing

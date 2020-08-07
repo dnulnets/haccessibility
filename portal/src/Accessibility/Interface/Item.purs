@@ -13,7 +13,6 @@ import Data.DateTime.ISO (ISO)
 import Data.Maybe (Maybe(..))
 import Data.Either (note)
 import Data.Argonaut (class DecodeJson, class EncodeJson, decodeJson, encodeJson)
-import Data.Newtype (class Newtype)
 
 -- Halogen imports
 import Halogen (HalogenM, lift)
@@ -122,15 +121,16 @@ type Item = { id            :: Maybe String -- ^ Item key
               , latitude    :: Number       -- ^ The latitude of the item
               , longitude   :: Number       -- ^ The longitude of the item
               , distance    :: Maybe Number -- ^ The distance to a specified point at the time of the query
+              , positive    :: Maybe Int    -- ^ The positive values of the POI
+              , negative    :: Maybe Int    -- ^ The negative values of the POI
+              , unknown     :: Maybe Int    -- ^ The unknown values of the POI
             }
 
 -- |The items value from a users perspective
 newtype ItemValue = ItemValue { positive   :: Int
-                      , negative  :: Int
-                      , unknown   :: Int
-                    }
-
-derive instance newtypeItemValue :: Newtype ItemValue _
+                              , negative  :: Int
+                              , unknown   :: Int
+                              }
 
 instance showItemValue :: Show ItemValue where
   show (ItemValue r) = "ItemValue " <> show r
@@ -236,6 +236,10 @@ class Monad m <= ManageItem m where
   queryItems  :: QueryItems             -- ^The query
               -> m (Data (Array Item)) -- ^List of items
 
+  -- |Fetches a list of items based on the query parameters
+  queryItemsAndValues :: QueryItems             -- ^The query
+                      -> m (Data (Array Item)) -- ^List of items
+
   -- |Fetches all attributes
   queryAttributes :: m (Data (Array AttributeValue)) -- ^List of attributes
 
@@ -255,6 +259,7 @@ instance manageItemHalogenM :: ManageItem m => ManageItem (HalogenM st act slots
   deleteItem = lift <<< deleteItem
   queryItem = lift <<< queryItem
   queryItems = lift <<< queryItems
+  queryItemsAndValues = lift <<< queryItemsAndValues
   queryAttributes = lift queryAttributes
   updateItemAttributes k a = lift $ updateItemAttributes k a
   queryItemAttributes = lift <<< queryItemAttributes

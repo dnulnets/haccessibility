@@ -18,6 +18,7 @@
 --
 module Accessability.Data.Item
   ( Item(..)
+  , ItemValue(..)
   , Attribute(..)
   , ItemSource(..)
   , ItemModifier(..)
@@ -86,6 +87,9 @@ data Item = Item {
     , itemLatitude    :: Float      -- ^ The latitude of the item
     , itemLongitude   :: Float     -- ^ The longitude of the item
     , itemDistance    :: Maybe Float -- ^ The distance to a specified point at the time of the query
+    , itemPositive    :: Maybe Integer      -- ^ Number of positive user properties
+    , itemNegative    :: Maybe Integer      -- ^ Number of negative user properties
+    , itemUnknown     :: Maybe Integer      -- ^ Number of unknown user properties
     } deriving (Generic, Show)
 
 -- | Definition of the attribute and it doubles as the value for an attribute and item
@@ -101,6 +105,21 @@ data Attribute = Attribute {
     , attributeItemId      :: Maybe Text      -- ^The key to the item that the AttributeValue belongs to
     , attributeAttributeValueId :: Maybe Text -- ^The key to the AtributeValue record
     } deriving (Generic, Show)
+
+-- | Definition of the value for an item with respect to the users property
+data ItemValue = ItemValue {
+      positive    :: Integer
+      , negative  :: Integer
+      , unknown   :: Integer
+    } deriving (Show)
+
+instance Monoid ItemValue where
+  mempty = ItemValue { positive = 0, negative = 0, unknown = 0}
+
+instance Semigroup ItemValue where
+  (<>) i1 i2 = ItemValue {positive = positive i1 + positive i2,
+                          negative = negative i1 + negative i2,
+                          unknown = unknown i1 + unknown i2}
 
 --
 -- Persistence

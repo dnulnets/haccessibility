@@ -75,6 +75,7 @@ mkYesodData "Server" [parseRoutes|
 /api/item/#Text ItemR GET DELETE PUT
 /api/item/#Text/attributes ItemAttributesR GET PUT
 /api/items ItemsR POST
+/api/itemsandvalues ItemsAndValuesR POST
 /api/user/properties UserPropertiesR GET PUT
 /api/authenticate AuthenticateR POST GET
 /api/attributes AttributesR GET

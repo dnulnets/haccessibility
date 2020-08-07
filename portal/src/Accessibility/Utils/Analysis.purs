@@ -34,53 +34,30 @@ evaluatePOI aup aav = foldr append mempty ((evaluateUserProperty $ toAttributeVa
                                   else ItemValue {positive: 0, negative: 1, unknown: 0}
 
     evaluate::UserProperty->AttributeValue->Boolean
-    evaluate up av = case up.operation of
-                        Nothing -> false
-                        (Just o) -> case o of 
-                          OEQ -> fromMaybe false (notit <$> up.negate <*> (isEQ <$> av.value <*> up.value <*> (Just av.typeof)))
-                          OLT -> fromMaybe false (notit <$> up.negate <*> (isLT <$> av.value <*> up.value <*> (Just av.typeof)))
-                          OLTE -> fromMaybe false (notit <$> up.negate <*> (isLTE <$> av.value <*> up.value <*> (Just av.typeof)))
-                          OGT -> fromMaybe false (notit <$> up.negate <*> (isGT <$> av.value <*> up.value <*> (Just av.typeof)))
-                          OGTE -> fromMaybe false (notit <$> up.negate <*> (isGTE <$> av.value <*> up.value <*> (Just av.typeof)))
-                          OIN -> fromMaybe false (notit <$> up.negate <*> (isIN <$> av.value <*> up.value <*> up.value1 <*> (Just av.typeof)))
+    evaluate up av = fromMaybe false (notit <$> up.negate <*> (operate <$> up.operation <*> av.value <*> up.value <*> (Just up.value1) <*> (Just av.typeof)))
 
     -- Logical xor
     notit::Boolean->Boolean->Boolean
     notit true v = not v
     notit false v = v
 
-    isEQ::String->String->AttributeType->Boolean
-    isEQ v1 v2 t = case t of
-      TextType -> v1 == v2
-      BooleanType -> v1 == v2
-      NumberType -> (readFloat v1) == (readFloat v2)
-
-    isLT::String->String->AttributeType->Boolean
-    isLT v1 v2 t = case t of
-      TextType -> v1 < v2
-      BooleanType -> false
-      NumberType -> (readFloat v1) < (readFloat v2)
-
-    isLTE::String->String->AttributeType->Boolean
-    isLTE v1 v2 t = case t of
-      TextType -> v1 <= v2
-      BooleanType -> false
-      NumberType -> (readFloat v1) <= (readFloat v2)
-
-    isGT::String->String->AttributeType->Boolean
-    isGT v1 v2 t = case t of
-      TextType -> v1 > v2
-      BooleanType -> false
-      NumberType -> (readFloat v1) > (readFloat v2)
-
-    isGTE::String->String->AttributeType->Boolean
-    isGTE v1 v2 t = case t of
-      TextType -> v1 >= v2
-      BooleanType -> false
-      NumberType -> (readFloat v1) >= (readFloat v2)
-
-    isIN::String->String->String->AttributeType->Boolean
-    isIN v1 v21 v22 t = case t of
-      TextType -> v1 >= v21 && v1 <= v22
-      BooleanType -> false
-      NumberType -> (readFloat v1) > (readFloat v21) && (readFloat v1) < (readFloat v22)
+    operate::Operation->String->String->Maybe String->AttributeType->Boolean
+    operate OEQ v1 v2 _ TextType = v1 == v2
+    operate OEQ v1 v2 _ BooleanType = v1 == v2
+    operate OEQ v1 v2 _ NumberType = (readFloat v1) == (readFloat v2)
+    operate OLT v1 v2 _ TextType = v1 < v2
+    operate OLT v1 v2 _ BooleanType = false
+    operate OLT v1 v2 _ NumberType = (readFloat v1) < (readFloat v2)
+    operate OLTE v1 v2 _ TextType = v1 <= v2
+    operate OLTE v1 v2 _ BooleanType = false
+    operate OLTE v1 v2 _ NumberType = (readFloat v1) <= (readFloat v2)
+    operate OGT v1 v2 _ TextType = v1 > v2
+    operate OGT v1 v2 _ BooleanType = false
+    operate OGT v1 v2 _ NumberType = (readFloat v1) > (readFloat v2)
+    operate OGTE v1 v2 _ TextType = v1 >= v2
+    operate OGTE v1 v2 _ BooleanType = false
+    operate OGTE v1 v2 _ NumberType = (readFloat v1) >= (readFloat v2)
+    operate OIN v1 v21 (Just v22) TextType = v1 >= v21 && v1 <= v22
+    operate OIN v1 v21 (Just v22) BooleanType = false
+    operate OIN v1 v21 (Just v22) NumberType = (readFloat v1) > (readFloat v21) && (readFloat v1) < (readFloat v22)
+    operate OIN _ _ Nothing _ = false

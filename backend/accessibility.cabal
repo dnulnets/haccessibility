@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: cf0fb1667695718eae653540815c883cadcde545355e6cea9830e938e74d9af5
+-- hash: 6a31f75110c40cb0de30894b1a2dea4a5947b55588412b13a54d446dcc30113d
 
 name:           accessibility
 version:        0.1.0.0
@@ -27,6 +27,7 @@ source-repository head
 
 library
   exposed-modules:
+      Accessability.Data.Analysis
       Accessability.Data.Functor
       Accessability.Data.Geo
       Accessability.Data.Item

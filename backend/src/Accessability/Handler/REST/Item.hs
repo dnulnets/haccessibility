@@ -21,6 +21,7 @@ module Accessability.Handler.REST.Item
     , getAttributesR
     , getItemAttributesR
     , putItemAttributesR
+    , postItemsAndValuesR
     )
 where
 
@@ -41,9 +42,14 @@ import           Yesod
 --
 -- My own imports
 --
+import           Accessability.Data.Analysis    (evaluatePOI)
 import           Accessability.Data.Functor
 import           Accessability.Data.Geo
-import           Accessability.Foundation       (Handler, requireAuthentication)
+import           Accessability.Data.Item        (Attribute (..), Item (..),
+                                                 ItemValue (..))
+import qualified Accessability.Data.User        as U
+import           Accessability.Foundation       (Handler, getAuthenticatedUser,
+                                                 requireAuthentication)
 import qualified Accessability.Handler.Database as DBF
 import qualified Accessability.Model.Database   as DB
 import           Accessability.Model.REST.Item
@@ -169,8 +175,69 @@ postItemsR = do
                 $  ["Unable to find any items in the database"]
                 <> splitOn "\n" (pack e)
         Right items -> do
-            liftIO $ print (encode items)
             sendStatusJSON status200 items
+
+-- | The REST get handler for items, i.e. a list of items based on a body where the
+-- search fields are spceified.
+postItemsAndValuesR :: Handler Value    -- ^ The list of items as a JSON response
+postItemsAndValuesR = do
+    requireAuthentication
+
+    -- Get the user properties
+    mkey <- getAuthenticatedUser
+    props <- case mkey of
+        Just key -> do
+            result <- UIOE.catchAny
+                (fffmap toGenericUserProperty $ DBF.dbFetchUserProperties $ textToKey
+                    key
+                )
+                (pure . Left . show)
+            case result of
+                Left e  -> pure []
+                Right a -> pure a
+        Nothing -> pure []
+
+    -- Get the items
+    queryBody <- requireCheckJsonBody :: Handler PostItemsBody
+    items    <- (either (const []) id) <$> UIOE.catchAny
+        (fffmap
+            toGenericItem
+            (DBF.dbFetchItems
+                (postItemsText queryBody)
+                (maybePosition (realToFrac <$> postItemsLongitude queryBody)
+                               (realToFrac <$> postItemsLatitude queryBody)
+                )
+                (realToFrac <$> postItemsDistance queryBody)
+                (postItemsLimit queryBody)
+            )
+        )
+        (pure . Left . show)
+
+    -- Calculate the value of the POI in respect to the user properties
+    attrs <- sequence $ fetchItemAttributes <$> (toItemId items)
+    sendStatusJSON status200 $ zipWith mergeItem items $ (evaluatePOI props) <$> attrs
+
+    where
+
+      toItemId::[Item]->[Maybe Text]
+      toItemId ai = itemId <$> ai
+    
+      mergeItem::Item->ItemValue->Item
+      mergeItem item iv = item {itemPositive = Just $ positive iv
+                                , itemNegative = Just $ negative iv
+                                , itemUnknown = Just $ unknown iv}
+
+      fetchItemAttributes::Maybe Text->Handler [Attribute]
+      fetchItemAttributes Nothing = pure []
+      fetchItemAttributes (Just key) = do
+        result <- UIOE.catchAny
+          (fffmap toGenericItemAttribute $ DBF.dbFetchItemAttributes $ textToKey key)
+          (pure . Left . show)
+        case result of
+            Left e  -> pure []
+            Right a -> pure a
+
+
 
 -- | The REST get handler for attributes, i.e. a list of attributes that an item can
 -- have.

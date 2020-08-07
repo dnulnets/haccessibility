@@ -34,6 +34,7 @@ instance showBaseURL :: Show BaseURL where
 data Endpoint = Authenticate              -- ^The authenticate endpoint
                 | Item (Maybe String)     -- ^The single item endpoint
                 | Items                   -- ^The fetch items based on filter endpoint
+                | ItemsAndValues          -- ^The fetch items based on filter endpoint
                 | Attributes              -- ^Fetch all available attributes
                 | Attribute String        -- ^Fetch all attributes on an item
                 | UserProperties          -- ^User properties endpoint
@@ -58,6 +59,7 @@ backend ::forall r m . MonadAsk { baseURL :: BaseURL, iothubURL::BaseURL | r } m
 backend Authenticate = asks _.baseURL
 backend (Item _) = asks _.baseURL
 backend Items = asks _.baseURL
+backend ItemsAndValues = asks _.baseURL
 backend Attributes = asks _.baseURL
 backend (Attribute _) = asks _.baseURL
 backend (Entities _) = asks _.iothubURL
@@ -68,6 +70,7 @@ endpointCodec :: RouteDuplex' Endpoint
 endpointCodec = root $ sum
   { "Authenticate": "api" / "authenticate" / noArgs
   , "Items": "api" / "items" / noArgs
+  , "ItemsAndValues": "api" / "itemsandvalues" / noArgs
   , "Attributes": "api" / "attributes" /noArgs
   , "UserProperties": "api" / "user" / "properties" /noArgs
   , "Attribute": "api" / "item" / string segment / "attributes"

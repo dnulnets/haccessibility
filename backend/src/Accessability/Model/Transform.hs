@@ -139,6 +139,9 @@ toGenericItem (key, item, d) = G.Item
     , G.itemDistance    = realToFrac <$> d
     , G.itemLongitude   = realToFrac $ longitude $ DB.itemPosition item
     , G.itemLatitude    = realToFrac $ latitude $ DB.itemPosition item
+    , G.itemPositive    = Nothing
+    , G.itemNegative    = Nothing
+    , G.itemUnknown     = Nothing
     }
 
 -- | Converts a GQL item to a database item

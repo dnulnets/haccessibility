@@ -315,6 +315,27 @@ instance manageItemApplicationM :: ManageItem ApplicationM where
     where
       ep = EP.Items
 
+  -- |Get all items based on a filter
+  queryItemsAndValues filter = do
+    env <- ask
+    ui <- H.liftEffect $ REF.read env.userInfo
+    burl <- EP.backend ep
+
+    response <- liftAff $ parOneOf [
+      mkAuthRequest burl ep (_.token <<< unwrap <$> ui) (Post (Just filter))
+      , Left "Timeout " <$ (delay env.timeoutBackend)]
+
+    case response of
+      Left err -> do
+        pure (Left Backend)
+      Right (Tuple (AX.StatusCode 403) _) -> do
+        pure (Left NotAuthenticated)
+      Right (Tuple sts items) -> do
+        pure (Right items)
+
+    where
+      ep = EP.ItemsAndValues
+
 --
 --  Add the set of functions that handles entities from the IoT Hub
 --
