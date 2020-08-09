@@ -30,6 +30,7 @@ import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Properties as HP
 import Halogen.Query.EventSource as HQE
+
 import Math (pi)
 import OpenLayers.Collection as Collection
 import OpenLayers.Control as Ctrl
@@ -55,6 +56,8 @@ import OpenLayers.Style.Stroke as Stroke
 import OpenLayers.Style.Style as Style
 import OpenLayers.Style.Text as Text
 import OpenLayers.View as View
+import OpenLayers.Overlay as Overlay
+import OpenLayers.MapBrowserEvent as MapBrowserEvent
 import Web.DOM.Document as WDD
 import Web.DOM.Element as WDE
 import Web.DOM.Node as WDN
@@ -64,6 +67,7 @@ import Web.Event.Event as WEE
 import Web.HTML (window)
 import Web.HTML.HTMLDocument as WHHD
 import Web.HTML.Window as WHW
+import Web.UIEvent.MouseEvent (MouseEvent, toEvent)
 
 -- | Slot type for the component
 type Slot p = forall q . H.Slot q Output p
@@ -74,6 +78,7 @@ type State =  { subscription  ::Array H.SubscriptionId  --  The map button subsc
                 , geo           ::Maybe Geolocation.Geolocation --  The GPS device
                 , map           ::Maybe Map.Map             -- | The Map on the page
                 , layer         ::Maybe VectorLayer.Vector  -- The vector layer for our own poi:s
+                , overlay       ::Maybe Overlay.Overlay     -- The overlay for our map
                 , select        ::Maybe Select.Select     --  The select interaction
                 , distance      ::Number                  --  The max search distance
                 , crosshair     ::Maybe Coordinate.Coordinate --  The coordinate of the crosshair
@@ -89,6 +94,7 @@ initialState _ =  { subscription  : []
                     , map           : Nothing
                     , select        : Nothing
                     , layer         : Nothing
+                    , overlay       : Nothing
                     , crosshair     : Nothing
                     , userProperties : []
                     , distance : 1000.0 }
@@ -99,6 +105,7 @@ data Action = Initialize
   | Update
   | Center
   | FeatureSelect Select.SelectEvent
+  | ClosePopup MouseEvent
   | GPSError
   | GPSPosition Geolocation.Geolocation Feature.Feature
   | GPSAccuracy Geolocation.Geolocation Feature.Feature
@@ -157,9 +164,10 @@ handleAction Initialize = do
   -- Get the user properties, used to evaluate all POI:s
   up <- (queryUserProperties >>= (evaluateResult AuthenticationError))
 
-  -- Create the map, layers and handlers
+  -- Create the map, overlay, layers and handlers
   hamap <- createMap
   poiLayer <- createLayers hamap
+  poiOverlay <- createOverlay hamap
   gps <- createGPS hamap poiLayer
 
   -- Create the handlers
@@ -175,6 +183,7 @@ handleAction Initialize = do
                 , map = Just hamap
                 , geo = Just gps
                 , layer = Just poiLayer
+                , overlay = Just poiOverlay
                 , userProperties = fromMaybe [] up})
 
 -- | Finalize action, clean up the component
@@ -237,7 +246,12 @@ handleAction Center = do
 
 -- | Feature is selected
 handleAction (FeatureSelect e) = do
+  state <- H.get
   H.liftEffect $ log "Feature selected!"
+  coord <- H.liftEffect $ MapBrowserEvent.coordinate <$> Select.getMapBrowserEvent e
+  xxx <- H.liftEffect $ sequence $ Overlay.setPosition (Just coord) <$> state.overlay
+  H.liftEffect $ log $ "Coordinates " <> (show coord)
+  H.liftEffect $ log $ "Result " <> (show xxx)
   features <- H.liftEffect $ Select.getSelected e
   items <- sequence $ queryItemAttributes <$> (catMaybes ((Feature.get "id") <$> features))
   joho <- sequence $ (evaluateResult AuthenticationError) <$> items
@@ -301,6 +315,13 @@ handleAction (GPSCenter geo map vl) = do
 -- | Position the cursor/croasshair on the MAP
 handleAction (MAPRenderComplete e) = do
   H.liftEffect $ log $ "Render completed!"
+
+-- | Position the cursor/croasshair on the MAP
+handleAction (ClosePopup event) = do
+  H.liftEffect $ WEE.preventDefault $ toEvent event
+  state <- H.get
+  _ <- H.liftEffect $ sequence $ Overlay.setPosition Nothing <$> state.overlay
+  H.liftEffect $ log $ "Closed popup!"
 
 --
 -- Creates the map and attaches openstreetmap as a source
@@ -489,6 +510,43 @@ createGPS map vl = do
           HQE.emit emitter GPSError
           pure true) geo
         pure (HQE.Finalizer (Geolocation.unError key geo))
+
+--
+-- Create the overlay
+--
+createOverlay:: forall m . MonadAff m
+            => ManageEntity m
+            => Map.Map
+            -> H.HalogenM State Action () Output m Overlay.Overlay
+createOverlay map = do
+
+  popup <- H.liftEffect do
+
+    domDocument <- window >>= WHW.document <#> WHHD.toDocument
+    popup <- WDD.createElement "div" domDocument
+    WDE.setClassName "ol-popup" popup
+    WDE.setId "popup" popup
+
+    closer <- WDD.createElement "a" domDocument
+    WDE.setClassName "ol-popup-closer" closer
+    WDE.setId "popup-closer" closer
+    void $ WDN.appendChild (WDE.toNode closer) (WDE.toNode popup)
+
+    content <- WDD.createElement "div" domDocument
+    WDE.setId "popup-content" content
+    txt <- WDD.createTextNode "Information" domDocument
+    void $ WDN.appendChild (WDT.toNode txt) (WDE.toNode content)
+    void $ WDN.appendChild (WDE.toNode content) (WDE.toNode popup)
+
+    pure popup
+
+  olOverlay <- H.liftEffect $ Overlay.create { element: popup
+                                              , autoPan: Overlay.autoPan.asBoolean true
+                                              , autoPanAnimation: {duration:250}}
+
+  H.liftEffect $ Overlay.setPosition Nothing olOverlay  
+  H.liftEffect $ Map.addOverlay olOverlay map
+  pure olOverlay
 
 --
 -- Create the layer and add our POI and data  from the IoTHub
