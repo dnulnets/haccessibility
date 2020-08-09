@@ -67,7 +67,6 @@ import Web.Event.Event as WEE
 import Web.HTML (window)
 import Web.HTML.HTMLDocument as WHHD
 import Web.HTML.Window as WHW
-import Web.UIEvent.MouseEvent (MouseEvent, toEvent)
 
 -- | Slot type for the component
 type Slot p = forall q . H.Slot q Output p
@@ -105,7 +104,7 @@ data Action = Initialize
   | Update
   | Center
   | FeatureSelect Select.SelectEvent
-  | ClosePopup MouseEvent
+  | ClosePopup
   | GPSError
   | GPSPosition Geolocation.Geolocation Feature.Feature
   | GPSAccuracy Geolocation.Geolocation Feature.Feature
@@ -317,8 +316,8 @@ handleAction (MAPRenderComplete e) = do
   H.liftEffect $ log $ "Render completed!"
 
 -- | Position the cursor/croasshair on the MAP
-handleAction (ClosePopup event) = do
-  H.liftEffect $ WEE.preventDefault $ toEvent event
+handleAction ClosePopup = do
+  -- H.liftEffect $ WEE.preventDefault $ toEvent event
   state <- H.get
   _ <- H.liftEffect $ sequence $ Overlay.setPosition Nothing <$> state.overlay
   H.liftEffect $ log $ "Closed popup!"
@@ -411,12 +410,14 @@ createButtonHandlers = do
         (WDPN.querySelector (WDPN.QuerySelector id))  
       sequence $ (subscribeOnClick a) <$> elem
 
-    -- Subscribe to a click event for a button
-    subscribeOnClick a e = H.subscribe do
-      HQE.eventListenerEventSource
-        (WEE.EventType "click")
-        (WDE.toEventTarget e)
-        (const (Just a))
+-- Subscribe to a click event for a button
+subscribeOnClick::forall o m . MonadAff m
+  => Action->WDE.Element->H.HalogenM State Action () o m H.SubscriptionId
+subscribeOnClick a e = H.subscribe do
+  HQE.eventListenerEventSource
+    (WEE.EventType "click")
+    (WDE.toEventTarget e)
+    (const (Just a))
 
 --
 -- Creates the select interaction
@@ -520,7 +521,7 @@ createOverlay:: forall m . MonadAff m
             -> H.HalogenM State Action () Output m Overlay.Overlay
 createOverlay map = do
 
-  popup <- H.liftEffect do
+  Tuple popup closer <- H.liftEffect do
 
     domDocument <- window >>= WHW.document <#> WHHD.toDocument
     popup <- WDD.createElement "div" domDocument
@@ -531,14 +532,16 @@ createOverlay map = do
     WDE.setClassName "ol-popup-closer" closer
     WDE.setId "popup-closer" closer
     void $ WDN.appendChild (WDE.toNode closer) (WDE.toNode popup)
-
+    
     content <- WDD.createElement "div" domDocument
     WDE.setId "popup-content" content
     txt <- WDD.createTextNode "Information" domDocument
     void $ WDN.appendChild (WDT.toNode txt) (WDE.toNode content)
     void $ WDN.appendChild (WDE.toNode content) (WDE.toNode popup)
 
-    pure popup
+    pure $ Tuple popup closer
+
+  _ <- subscribeOnClick ClosePopup closer
 
   olOverlay <- H.liftEffect $ Overlay.create { element: popup
                                               , autoPan: Overlay.autoPan.asBoolean true
