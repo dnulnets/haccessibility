@@ -43,6 +43,10 @@ instance semigroupItemValue :: Semigroup ItemValue where
                                                     , negativeAttributes: i1.negativeAttributes <> i2.negativeAttributes
                                                     , unknownAttributes: i1.unknownAttributes <> i2.unknownAttributes}
 
+-- |Calculate the percentage of hit
+valueToPercentage::Int->Int->Int->Int
+valueToPercentage p n u = if p+n+u > 0 then p*100/(p+n+u) else 0
+
 -- |Determines the value of a POI based on the users properties
 evaluatePOI::Array UserProperty -> Array AttributeValue -> ItemValue
 evaluatePOI aup aav = foldr append mempty ((evaluateUserProperty $ toAttributeValueMap aav) <$> aup )

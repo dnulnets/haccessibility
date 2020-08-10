@@ -18,7 +18,7 @@ import Accessibility.Utils.Result (evaluateResult)
 import Accessibility.Utils.Analysis (evaluatePOI)
 import Control.Alt ((<|>))
 import Control.Monad.Reader.Trans (class MonadAsk)
-import Data.Array ((!!), catMaybes, length)
+import Data.Array ((!!), catMaybes, length, head)
 import Data.Foldable (sequence_)
 import Data.Maybe (Maybe(..), fromMaybe, isJust, maybe')
 import Data.Traversable (sequence)
@@ -78,6 +78,7 @@ type State =  { subscription  ::Array H.SubscriptionId  --  The map button subsc
                 , map           ::Maybe Map.Map             -- | The Map on the page
                 , layer         ::Maybe VectorLayer.Vector  -- The vector layer for our own poi:s
                 , overlay       ::Maybe Overlay.Overlay     -- The overlay for our map
+                , content       ::Maybe WDE.Element     -- Content of the overlay popup
                 , select        ::Maybe Select.Select     --  The select interaction
                 , distance      ::Number                  --  The max search distance
                 , crosshair     ::Maybe Coordinate.Coordinate --  The coordinate of the crosshair
@@ -94,6 +95,7 @@ initialState _ =  { subscription  : []
                     , select        : Nothing
                     , layer         : Nothing
                     , overlay       : Nothing
+                    , content       : Nothing
                     , crosshair     : Nothing
                     , userProperties : []
                     , distance : 1000.0 }
@@ -166,7 +168,7 @@ handleAction Initialize = do
   -- Create the map, overlay, layers and handlers
   hamap <- createMap
   poiLayer <- createLayers hamap
-  poiOverlay <- createOverlay hamap
+  Tuple poiOverlay content <- createOverlay hamap
   gps <- createGPS hamap poiLayer
 
   -- Create the handlers
@@ -183,6 +185,7 @@ handleAction Initialize = do
                 , geo = Just gps
                 , layer = Just poiLayer
                 , overlay = Just poiOverlay
+                , content = Just content
                 , userProperties = fromMaybe [] up})
 
 -- | Finalize action, clean up the component
@@ -247,17 +250,30 @@ handleAction Center = do
 handleAction (FeatureSelect e) = do
   state <- H.get
   H.liftEffect $ log "Feature selected!"
-  coord <- H.liftEffect $ MapBrowserEvent.coordinate <$> Select.getMapBrowserEvent e
-  xxx <- H.liftEffect $ sequence $ Overlay.setPosition (Just coord) <$> state.overlay
-  H.liftEffect $ log $ "Coordinates " <> (show coord)
-  H.liftEffect $ log $ "Result " <> (show xxx)
   features <- H.liftEffect $ Select.getSelected e
-  items <- sequence $ queryItemAttributes <$> (catMaybes ((Feature.get "id") <$> features))
-  joho <- sequence $ (evaluateResult AuthenticationError) <$> items
-  up <- queryUserProperties >>= evaluateResult AuthenticationError
-  H.liftEffect $ log $ show joho
-  H.liftEffect $ log $ show up
-  H.liftEffect $ log $ show $ map (ap (evaluatePOI <$> up)) joho
+  case head features of
+    Nothing -> do
+      H.liftEffect $ log "No selected POI"
+    Just f -> do
+      case value f of
+        Nothing ->
+          H.liftEffect $ sequence_ $ WDN.setTextContent "No information" <$> WDE.toNode <$> state.content
+        Just v ->
+          H.liftEffect $ sequence_ $ WDN.setTextContent (v.positive <> "," <> v.negative <> "," <> v.unknown) <$> WDE.toNode <$> state.content
+      coord <- H.liftEffect $ MapBrowserEvent.coordinate <$> Select.getMapBrowserEvent e
+      H.liftEffect $ sequence_ $ Overlay.setPosition (Just coord) <$> state.overlay
+
+  where
+
+    value::Feature.Feature -> Maybe {positive::String, negative::String, unknown::String}
+    value f = value1 <$> (Feature.get "ha_pos" f) <*> (Feature.get "ha_neg" f) <*> (Feature.get "ha_unk" f)
+
+    value1::Int->Int->Int-> {positive:: String, negative::String, unknown::String}
+    value1 p n u = {
+        positive: "P:" <> (show p)
+        , negative: "N:" <> (show n)
+        , unknown: "U:" <> (show u)
+      }
 
 -- | GPS Error - Error in the geolocation device
 handleAction GPSError = H.liftEffect $ do
@@ -518,10 +534,10 @@ createGPS map vl = do
 createOverlay:: forall m . MonadAff m
             => ManageEntity m
             => Map.Map
-            -> H.HalogenM State Action () Output m Overlay.Overlay
+            -> H.HalogenM State Action () Output m (Tuple Overlay.Overlay WDE.Element)
 createOverlay map = do
 
-  Tuple popup closer <- H.liftEffect do
+  popup <- H.liftEffect do
 
     domDocument <- window >>= WHW.document <#> WHHD.toDocument
     popup <- WDD.createElement "div" domDocument
@@ -535,21 +551,21 @@ createOverlay map = do
     
     content <- WDD.createElement "div" domDocument
     WDE.setId "popup-content" content
-    txt <- WDD.createTextNode "Information" domDocument
-    void $ WDN.appendChild (WDT.toNode txt) (WDE.toNode content)
+    --txt <- WDD.createTextNode "Information" domDocument
+    --void $ WDN.appendChild (WDT.toNode txt) (WDE.toNode content)
     void $ WDN.appendChild (WDE.toNode content) (WDE.toNode popup)
 
-    pure $ Tuple popup closer
+    pure $ { popup: popup, closer: closer, content:content}
 
-  _ <- subscribeOnClick ClosePopup closer
+  _ <- subscribeOnClick ClosePopup popup.closer
 
-  olOverlay <- H.liftEffect $ Overlay.create { element: popup
+  olOverlay <- H.liftEffect $ Overlay.create { element: popup.popup
                                               , autoPan: Overlay.autoPan.asBoolean true
                                               , autoPanAnimation: {duration:250}}
 
   H.liftEffect $ Overlay.setPosition Nothing olOverlay  
   H.liftEffect $ Map.addOverlay olOverlay map
-  pure olOverlay
+  pure $ Tuple olOverlay popup.content
 
 --
 -- Create the layer and add our POI and data  from the IoTHub
@@ -667,5 +683,8 @@ fromItem i = do
     Nothing
   Feature.create $ Feature.Properties {name: i.name
                                       , id: fromMaybe "<unknown>" i.id
+                                      , ha_pos: fromMaybe 0 i.positive
+                                      , ha_neg: fromMaybe 0 i.negative
+                                      , ha_unk: fromMaybe 0 i.unknown
                                       , type: 1
                                       , geometry: point }
