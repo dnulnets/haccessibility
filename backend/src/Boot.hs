@@ -16,10 +16,7 @@
 -- This module contains the initialization and setup of the server that serves both
 -- HTTP graphql and rest calls.
 --
-module Boot
-    ( serverMain
-    )
-where
+module Boot (serverMain) where
 
 --
 -- Standard libraries
@@ -60,16 +57,16 @@ import           Accessability.Handler.REST.Item         (deleteItemR,
                                                           getItemAttributesR,
                                                           getItemR,
                                                           postCreateItemR,
+                                                          postItemsAndValuesR,
                                                           postItemsR,
                                                           putItemAttributesR,
-                                                          putItemR,
-                                                          postItemsAndValuesR)
+                                                          putItemR)
 
 import           Accessability.Handler.REST.Authenticate (getAuthenticateR,
                                                           postAuthenticateR)
 
-import           Accessability.Handler.REST.User        (getUserPropertiesR,
-                                                         putUserPropertiesR)
+import           Accessability.Handler.REST.User         (getUserPropertiesR,
+                                                          putUserPropertiesR)
 
 import           Accessability.Settings                  (AppSettings (..),
                                                           defaultSettings)

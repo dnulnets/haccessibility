@@ -5,7 +5,7 @@
 		}
 	],
     "settings": {
-        "haskell.diagnosticsOnChange": false,
-        "haskell.formattingProvider": "stylish-haskell"
+		"haskell.diagnosticsOnChange": false,
+		"haskell.formattingProvider": "stylish-haskell"
     }
 }
