@@ -8,7 +8,6 @@ RUN	   rm -fR output \
 	&& rm -fR .cache \
 	&& rm -fR .spago \
 	&& rm -fR node_modules \
-	&& npm install --only=dev \
 	&& npm install
 ENV PATH /haccessibility/portal/node_modules/.bin:$PATH
 RUN	   ./generate.sh \

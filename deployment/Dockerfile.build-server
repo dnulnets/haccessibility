@@ -2,8 +2,7 @@ FROM paccbuild:latest as portal
 WORKDIR /
 RUN	git clone https://github.com/dnulnets/haccessibility.git
 WORKDIR /haccessibility/portal
-RUN	   npm install --only=dev \
-	&& npm install \
+RUN	   npm install \
 	&& ./generate.sh \
 	&& cat ./src/Version.purs \
 	&& spago build \
