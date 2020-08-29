@@ -58,9 +58,8 @@ import           Accessability.Model.Transform
 -- | The REST GET handler for an item, i.e. return with the data of an item based on the items
 -- key provided in the URL api/item/0000000000000001
 --
-getItemR
-    :: Text      -- ^ The item key
-    -> Handler Value -- ^ The item as a JSON response
+getItemR:: Text      -- ^ The item key
+  -> Handler Value -- ^ The item as a JSON response
 getItemR key = do
     requireAuthentication
     result <- UIOE.catchAny
@@ -76,9 +75,8 @@ getItemR key = do
 
 -- | The REST delete handler, i.e. return with the data of an item based on the items
 -- key and delete the item.
-deleteItemR
-    :: Text      -- ^ The item key
-    -> Handler () -- ^ The item as a JSON response
+deleteItemR:: Text      -- ^ The item key
+            -> Handler () -- ^ The item as a JSON response
 deleteItemR key = do
     requireAuthentication
     result <- UIOE.catchAny (DBF.dbDeleteItem $ textToKey key)
@@ -221,7 +219,7 @@ postItemsAndValuesR = do
 
       toItemId::[Item]->[Maybe Text]
       toItemId ai = itemId <$> ai
-    
+
       mergeItem::Item->ItemValue->Item
       mergeItem item iv = item {itemPositive = Just $ positive iv
                                 , itemNegative = Just $ negative iv
