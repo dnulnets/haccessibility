@@ -107,7 +107,7 @@ initialState ml =  { subscription  : []
                     , crosshair     : Nothing
                     , initial       : ml
                     , userProperties : []
-                    , distance : 1000.0 }
+                    , distance : 3000.0 }
 
 -- | Internal form actions
 data Action = Initialize

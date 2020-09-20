@@ -138,12 +138,12 @@ let additions =
           , repo = "https://github.com/jmackie/purescript-datetime-iso.git"
           , version = "v4.0.0"
           }
-      {- }, openlayers =
+      , openlayers =
           { dependencies =[ "console", "effect", "foreign", "functions", "maybe", "nullable", "psci-support"]
           , repo = "https://github.com/dnulnets/purescript-openlayers.git"
-          , version = "v0.1.7"
-          } -}
-      , openlayers = ../../purescript-openlayers/spago.dhall as Location
+          , version = "v0.1.8"
+          }
+      {- }, openlayers = ../../purescript-openlayers/spago.dhall as Location -}
       }
 
 in  upstream // overrides // additions
