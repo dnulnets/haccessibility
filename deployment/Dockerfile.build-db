@@ -6,13 +6,13 @@ ENV POSTGRES_PASSWORD $password
 ENV POSTGRES_USER $user
 ENV POSTGRES_DB $database
 ENV POSTGIS_MAJOR 3
-ENV POSTGIS_VERSION 3.0.1+dfsg-2.pgdg100+1
+ENV POSTGIS_VERSION 3.0.2+dfsg-2.pgdg100+1
 
 RUN apt-get update \
       && apt-get install -y --no-install-recommends \
-           postgresql-$PG_MAJOR-postgis-$POSTGIS_MAJOR=$POSTGIS_VERSION \
-           postgresql-$PG_MAJOR-postgis-$POSTGIS_MAJOR-scripts=$POSTGIS_VERSION \           
-           postgis=$POSTGIS_VERSION \
+           postgresql-$PG_MAJOR-postgis-$POSTGIS_MAJOR \
+           postgresql-$PG_MAJOR-postgis-$POSTGIS_MAJOR-scripts \           
+           postgis \
       && rm -rf /var/lib/apt/lists/*
 
 RUN mkdir -p /docker-entrypoint-initdb.d

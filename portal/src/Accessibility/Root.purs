@@ -50,10 +50,15 @@ import Accessibility.Interface.User (class ManageUser)
 import Accessibility.Interface.Item (class ManageItem)
 import Accessibility.Interface.Entity (class ManageEntity)
 
--- | The state of the root page
-type State = {  userInfo :: Maybe UserInfo  -- ^ User information of the logged in user
-              , alert::Maybe String         -- ^ Alert info
-              , page :: Page }              -- ^ What page to show in the root container
+import OpenLayers.Coordinate as Coordinate
+
+-- |The state of the root page
+type State = {  userInfo :: Maybe UserInfo  -- User information of the logged in user
+              , alert::Maybe String         -- Alert info
+              , page :: Page                -- What page to show in the root container
+              , mapCoordinate :: Maybe Coordinate.Coordinate  -- The coordinate of the map center, saved between maps
+              , mapZoom :: Maybe Number                       -- The zoom of the map, saved between maps
+            }
 
 -- |The user info that comes into the root page
 type Input = Maybe UserInfo
@@ -62,12 +67,13 @@ type Input = Maybe UserInfo
 data Query a = GotoPageRequest Page a
 
 -- | The actions supported by the root page
-data Action = SetUser  (Maybe UserInfo)   -- ^Sets the user
-            | Logout                            -- ^Logs out the user
-            | AuthenticationError               -- ^Authentication error
-            | PointSubmitted                    -- ^A POI has been added or changed
+data Action = SetUser  (Maybe UserInfo)         -- Sets the user
+            | Logout                            -- Logs out the user
+            | AuthenticationError               -- Authentication error
+            | PointSubmitted                    -- A POI has been added or changed
             | UserPropertySubmitted             -- User property change has been submittde
-            | Alert (Maybe String)              -- ^Alert
+            | Alert (Maybe String)              -- Alert from the component or child components
+            | MapPosition (Maybe Coordinate.Coordinate) (Maybe Number) -- Save the map posiion and zoom
 
 -- | The set of slots for the root container
 type ChildSlots = ( login ∷ Login.Slot Unit,
@@ -101,6 +107,8 @@ component =
 initialState ∷ Input → State
 initialState ui = { userInfo: ui
                     , alert: Nothing
+                    , mapCoordinate: Nothing
+                    , mapZoom: Nothing
                     , page: maybe Login (const Home) ui }
 
 -- The alert banner if there are any problems with the application
@@ -175,7 +183,7 @@ render ∷ ∀ r m . MonadAff m
   => State → H.ComponentHTML Action ChildSlots m
 render state = HH.div [css "ha-root"] [
   HH.header [] [navbar $ (navbarHeader "Case 3 Prototype") <> [navbarLeft state, navbarRight state]],
-  HH.main [css "container ha-main", HPA.role "main"][alert state.alert, view state.page]]
+  HH.main [css "container ha-main", HPA.role "main"][alert state.alert, view state.page state]]
 
 -- | Render the main view of the page
 view ∷ ∀ r m. MonadAff m
@@ -185,15 +193,15 @@ view ∷ ∀ r m. MonadAff m
        => ManageItem m
        => ManageUser m
        ⇒ MonadAsk r m
-       ⇒ Page → H.ComponentHTML Action ChildSlots m
-view Login = HH.slot _login  unit Login.component  unit (Just <<< loginMessageConv)
-view MapAdmin =  HH.slot _mapadmin unit MapAdmin.component unit (Just <<< mapadminMessageConv)
-view UserProperty =  HH.slot _userprop unit UserProperty.component unit (Just <<< userpropMessageConv)
-view Home =  HH.slot _mapnearby unit MapUser.component unit (Just <<< mapnearbyMessageConv)
-view (Point k true) =  HH.slot _point unit Point.component (Point.ViewPOI k) (Just <<< pointMessageConv)
-view (Point k false) = HH.slot _point unit Point.component (Point.UpdatePOI k) (Just <<< pointMessageConv)
-view (AddPoint la lo) = HH.slot _point unit Point.component (Point.AddPOI la lo) (Just <<< pointMessageConv)
-view _ = HH.div
+       ⇒ Page -> State → H.ComponentHTML Action ChildSlots m
+view Login _ = HH.slot _login  unit Login.component  unit (Just <<< loginMessageConv)
+view MapAdmin s = HH.slot _mapadmin unit MapAdmin.component {coordinate:s.mapCoordinate, zoom:s.mapZoom} (Just <<< mapadminMessageConv)
+view UserProperty _ =  HH.slot _userprop unit UserProperty.component unit (Just <<< userpropMessageConv)
+view Home s =  HH.slot _mapnearby unit MapUser.component {coordinate:s.mapCoordinate, zoom:s.mapZoom} (Just <<< mapnearbyMessageConv)
+view (Point k true) _ =  HH.slot _point unit Point.component (Point.ViewPOI k) (Just <<< pointMessageConv)
+view (Point k false) _ = HH.slot _point unit Point.component (Point.UpdatePOI k) (Just <<< pointMessageConv)
+view (AddPoint la lo) _ = HH.slot _point unit Point.component (Point.AddPOI la lo) (Just <<< pointMessageConv)
+view _ _ = HH.div
              [css "container", style "margin-top:20px"]
              [HH.div
               [css "row"]
@@ -218,6 +226,7 @@ loginMessageConv (Login.Alert s) = Alert s
 mapadminMessageConv::MapAdmin.Output->Action
 mapadminMessageConv MapAdmin.AuthenticationError = AuthenticationError
 mapadminMessageConv (MapAdmin.Alert s) = Alert s
+mapadminMessageConv (MapAdmin.MapPosition coord zoom) = MapPosition  coord zoom
 
 -- |Converts mapamin messages to root actions
 userpropMessageConv::UserProperty.Output->Action
@@ -225,10 +234,11 @@ userpropMessageConv UserProperty.AuthenticationError = AuthenticationError
 userpropMessageConv UserProperty.Submitted = UserPropertySubmitted
 userpropMessageConv (UserProperty.Alert s) = Alert s
 
--- |Converts mapamin messages to root actions
+-- |Converts mapuser messages to root actions
 mapnearbyMessageConv::MapUser.Output->Action
 mapnearbyMessageConv MapUser.AuthenticationError = AuthenticationError
 mapnearbyMessageConv (MapUser.Alert s) = Alert s
+mapnearbyMessageConv (MapUser.MapPosition coord zoom) = MapPosition  coord zoom
 
 -- |Converts point messages to root actions
 pointMessageConv::Point.Output->Action
@@ -289,8 +299,14 @@ handleAction AuthenticationError = do
 handleAction PointSubmitted = do
   gotoPage MapAdmin
 
+-- A user property has been submitted or canceld from the user property page
 handleAction UserPropertySubmitted = do
   gotoPage Home
+
+-- A map position or zoom has changed, comes from a child component. This is used to remember the
+-- map position and zoom when revisiting the map
+handleAction (MapPosition c z) = do
+  H.modify_ $ _ { mapCoordinate = c, mapZoom = z}
 
 -- An alert has been issued from a sub component
 handleAction (Alert s) = do

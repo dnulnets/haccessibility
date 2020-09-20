@@ -10,7 +10,7 @@ import Prelude
 
 -- Data imports
 import Data.Array((!!), catMaybes, length)
-import Data.Maybe (Maybe(..), fromMaybe, isJust, maybe')
+import Data.Maybe (Maybe(..), fromMaybe, isJust, isNothing, maybe')
 import Data.Foldable (sequence_, for_)
 import Data.Traversable (sequence, traverse)
 import Data.Tuple (Tuple(..), fst, snd)
@@ -68,6 +68,7 @@ import OpenLayers.Collection as Collection
 import OpenLayers.Events.Condition as Condition
 import OpenLayers.Coordinate as Coordinate
 import OpenLayers.Style.RegularShape as RegularShape
+import OpenLayers.Render.Event as Event
 
 -- Our own imports
 import Accessibility.Data.Route (Page(..)) as ADR
@@ -75,10 +76,13 @@ import Accessibility.Component.HTML.Utils (css)
 import Accessibility.Utils.Result (evaluateResult)
 import Accessibility.Interface.Navigate (class ManageNavigation, gotoPage)
 import Accessibility.Interface.Item (class ManageItem, queryItems, deleteItem, Item)
-import Accessibility.Interface.Entity (class ManageEntity, Value, queryEntities, Entity(..))
+import Accessibility.Interface.Entity (class ManageEntity, Value, Entity(..))
 
 -- | Slot type for the component
 type Slot p = forall q . H.Slot q Output p
+
+-- Initial map location
+type Input = {coordinate::Maybe Coordinate.Coordinate, zoom::Maybe Number}
 
 -- | State for the component
 type State =  { subscription  ::Array H.SubscriptionId  -- ^ The map button subscriptions
@@ -88,20 +92,22 @@ type State =  { subscription  ::Array H.SubscriptionId  -- ^ The map button subs
                 , layer         ::Maybe VectorLayer.Vector  -- ^The vector layer for our own poi:s
                 , select        ::Maybe Select.Select     -- ^ The select interaction
                 , distance      ::Number                  -- ^ The max search distance
+                , initial       ::Input                       -- Initial map location
                 , crosshair     ::Maybe Coordinate.Coordinate -- ^ The coordinate of the crosshair
               }
 
 -- | Initial state is no logged in user
-initialState :: forall i. i -- ^ Initial input
+initialState :: Input -- ^ Initial input
   -> State                  -- ^ The state
-initialState _ =  { subscription  : []
+initialState ml =  { subscription  : []
                     , alert         : Nothing
                     , geo           : Nothing
                     , map           : Nothing
                     , select        : Nothing
                     , layer         : Nothing
                     , crosshair     : Nothing
-                    , distance : 1000.0 }
+                    , initial       : ml
+                    , distance : 10000.0 }
 
 -- | Internal form actions
 data Action = Initialize
@@ -120,18 +126,20 @@ data Action = Initialize
   | GPSAccuracy Geolocation.Geolocation Feature.Feature
   | GPSCenter Geolocation.Geolocation Map.Map VectorLayer.Vector
   | MAPPosition Feature.Feature MapBrowserEvent.MapBrowserEvent
+  | MAPRenderComplete Event.RenderEvent
 
 -- | The output from this component
 data Output = AuthenticationError
   | Alert (Maybe String)
+  | MapPosition (Maybe Coordinate.Coordinate) (Maybe Number)
 
 -- | The component definition
-component :: forall r q i m . MonadAff m
+component :: forall r q m . MonadAff m
           => ManageNavigation m
           => MonadAsk r m
           => ManageEntity m
           => ManageItem m
-          => H.Component HH.HTML q i Output m
+          => H.Component HH.HTML q Input Output m
 component = 
   H.mkComponent
     { initialState
@@ -195,6 +203,18 @@ handleAction AddItem = do
 -- | Finalize action, clean up the component
 handleAction Finalize = do
   state <- H.get
+
+  -- Send the map center and zoom level to the parent so it can be reused by parent if needed
+  e <- H.liftEffect $ do
+    view <- join <$> (sequence $ Map.getView <$> state.map)
+    c <- join <$> (sequence $ View.getCenter <$> view)
+    z <- join <$> (sequence $ View.getZoom <$> view)
+    log $ "Sending " <> (show c)
+    log $ "Sending " <> (show z)
+    pure $ MapPosition c z
+  H.raise e
+
+  -- Clean up
   sequence_ $ H.unsubscribe <$> state.subscription
   H.liftEffect $ do
     sequence_ $ (Geolocation.setTracking false) <$> state.geo
@@ -325,8 +345,45 @@ handleAction (GPSCenter geo map vl) = do
     mv <- Map.getView map
     sequence_ $ View.setCenter <$> pos <*> mv
 
-  -- Get the POI from our own backend
+  -- Create the POI source
+  createPOI vl pos
+
+  -- Set the alert
+  (Alert <$> H.gets _.alert) >>= H.raise    
+
+-- | Position the cursor/croasshair on the MAP
+handleAction (MAPPosition f mbe) = do
+  H.modify_ $ _ {crosshair = Just $ MapBrowserEvent.coordinate mbe}
+  H.liftEffect $ do
+    point <- Point.create' $ MapBrowserEvent.coordinate mbe
+    Feature.setGeometry point f
+
+-- | Finalize action, clean up the component
+handleAction (MAPRenderComplete e) = do
   state <- H.get
+
+  -- Send the map center and zoom level to the parent so it can be reused by parent if needed
+  event <- H.liftEffect $ do
+    view <- join <$> (sequence $ Map.getView <$> state.map)
+    c <- join <$> (sequence $ View.getCenter <$> view)
+    z <- join <$> (sequence $ View.getZoom <$> view)
+    log $ "Sending " <> (show c)
+    log $ "Sending " <> (show z)
+    pure $ MapPosition c z
+  H.raise event
+
+-- Creates the Point of interest for the map and layer
+createPOI :: forall m . MonadAff m
+          => ManageItem m
+          => VectorLayer.Vector
+          -> Maybe Coordinate.Coordinate
+          -> H.HalogenM State Action () Output m Unit
+createPOI vl pos = do
+
+  -- Get the state of the component
+  state <- H.get
+
+  -- Get the POI from our own backend
   when (isJust pos) do
 
     ditems <- queryItems {longitude : join $ (Coordinate.longitude <<< Proj.toLonLat') <$> pos
@@ -341,16 +398,6 @@ handleAction (GPSCenter geo map vl) = do
     -- Set the source to the POI-layer
     H.liftEffect $ VectorLayer.setSource vs vl
 
-  -- Set the alert
-  (Alert <$> H.gets _.alert) >>= H.raise    
-
--- | Position the cursor/croasshair on the MAP
-handleAction (MAPPosition f mbe) = do
-  H.modify_ $ _ {crosshair = Just $ MapBrowserEvent.coordinate mbe}
-  H.liftEffect $ do
-    point <- Point.create' $ MapBrowserEvent.coordinate mbe
-    Feature.setGeometry point f
-
 --
 -- Creates the map and attaches openstreetmap as a source
 --
@@ -358,6 +405,7 @@ createMap :: forall o m . MonadAff m
           => H.HalogenM State Action () o m Map.Map
 createMap = do
 
+  state <- H.get
   hamap <- H.liftEffect $ do
 
     -- Use OpenStreetMap as a source
@@ -365,9 +413,10 @@ createMap = do
     tile <- Tile.create {source: osm}
 
     -- Create the view around our world center (should get it from the GPS)
+    log $ "Got initial state as " <> (show state.initial)
     view <- View.create { projection: Proj.epsg_3857 
-                        , center: Proj.fromLonLat [0.0, 0.0] (Just Proj.epsg_3857)
-                        , zoom: 18.0 }
+                        , center: fromMaybe (Proj.fromLonLat [0.0, 0.0] (Just Proj.epsg_3857)) state.initial.coordinate
+                        , zoom: fromMaybe 18.0 state.initial.zoom}
 
     -- Extend the map with a set of buttons
     ctrl <- Ctrl.defaults'
@@ -497,11 +546,14 @@ createSelectHandler hamap poiLayer = do
 --
 -- Create the GPS and add all handlers
 --
-createGPS :: forall o m . MonadAff m
+createGPS :: forall m . MonadAff m
+          => ManageItem m
           => Map.Map
           -> VectorLayer.Vector
-          -> H.HalogenM State Action () o m Geolocation.Geolocation
+          -> H.HalogenM State Action () Output m Geolocation.Geolocation
 createGPS map vl = do
+
+  state <- H.get
 
   geo <- H.liftEffect $ Geolocation.create { trackingOptions: { enableHighAccuracy: true}
                                             , projection: Proj.epsg_3857 }
@@ -532,12 +584,17 @@ createGPS map vl = do
   -- Turn on the geo location device
   H.liftEffect $ Geolocation.setTracking true geo
 
-  -- Get the current position and position the map, one time
-  void $ H.subscribe' $ \_ -> (HQE.effectEventSource \emitter -> do
-    key <- Geolocation.onceChangePosition (\_ -> do
-      HQE.emit emitter (GPSCenter geo map vl)
-      pure true) geo
-    pure (HQE.Finalizer (Geolocation.unChangePosition key geo)))
+  -- Get the current position and position the map from the GPS, but only once
+  when (isNothing state.initial.coordinate) do
+    void $ H.subscribe' $ \_ -> (HQE.effectEventSource \emitter -> do
+      key <- Geolocation.onceChangePosition (\_ -> do
+        HQE.emit emitter (GPSCenter geo map vl)
+        pure true) geo
+      pure (HQE.Finalizer (Geolocation.unChangePosition key geo)))
+
+  -- Get the current position from the input to the component
+  when (isJust state.initial.coordinate) do
+    createPOI vl state.initial.coordinate
 
   pure geo
 
@@ -604,11 +661,20 @@ createLayers map = do
       pure true) map
     pure (HQE.Finalizer (Map.un "singleclick" key map))
 
+  -- Get a RenderComplete Event when the rendering is complete
+  void $ H.subscribe $ HQE.effectEventSource \emitter -> do
+    key <- Map.onRenderComplete (\e -> do
+      HQE.emit emitter (MAPRenderComplete e)
+      pure true) map
+    pure (HQE.Finalizer (Map.unRenderComplete key map))
+
   -- Get the weather data from the IoT Hub
-  dentities <- queryEntities "WeatherObserved" >>= evaluateResult AuthenticationError
-  ivs <- H.liftEffect $ maybe' (\_->VectorSource.create') (\i->do
-    ilist <- sequence $ fromEntity <$> i
-    VectorSource.create { features: VectorSource.features.asArray $ catMaybes ilist }) dentities
+  -- dentities <- queryEntities "WeatherObserved" >>= evaluateResult AuthenticationError
+  -- ivs <- H.liftEffect $ maybe' (\_->VectorSource.create') (\i->do
+  --   ilist <- sequence $ fromEntity <$> i
+  --   VectorSource.create { features: VectorSource.features.asArray $ catMaybes ilist }) dentities
+
+  ivs <- H.liftEffect $ VectorSource.create { features: VectorSource.features.asArray [] }
 
   -- We need the distance
   state <- H.get
