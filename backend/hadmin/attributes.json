@@ -1,25 +1,9 @@
 [
     {
-        "displayName": "Width",
-        "name": "doorWidth",
-        "group": "Entrance",
-        "description": "The width of the door",
-        "unit": "cm",
-        "typeof": "NumberType"
-    },
-    {
-        "displayName": "Height",
-        "name": "doorHeight",
-        "group": "Entrance",
-        "description": "The height of the door",
-        "unit": "cm",
-        "typeof": "NumberType"
-    },
-    {
-        "displayName": "Ramp",
-        "name": "doorRamp",
-        "group": "Entrance",
-        "description": "If there is a ramp",
+        "displayName": "Exist",
+        "name": "elevatorExist",
+        "group": "Elevator",
+        "description": "If an elevator exists",
         "unit": "Yes/No",
         "typeof": "BooleanType"
     },
@@ -30,5 +14,85 @@
         "description": "The width of the elevator",
         "unit": "cm",
         "typeof": "NumberType"
+    },
+    {
+        "displayName": "Running",
+        "name": "elevatorRunning",
+        "group": "Elevator",
+        "description": "The operational status of the elevator",
+        "unit": "Yes/No",
+        "typeof": "BooleanType"
+    },
+    {
+        "displayName": "Exist",
+        "name": "escalatorExist",
+        "group": "Escalator",
+        "description": "If an escalator exists",
+        "unit": "Yes/No",
+        "typeof": "BooleanType"
+    },
+    {
+        "displayName": "Width",
+        "name": "escalatorWidth",
+        "group": "Escalator",
+        "description": "The width of the escalator",
+        "unit": "cm",
+        "typeof": "NumberType"
+    },
+    {
+        "displayName": "Running",
+        "name": "escalatorRunning",
+        "group": "Escalator",
+        "description": "The operational status of the escalator",
+        "unit": "Yes/No",
+        "typeof": "BooleanType"
+    },
+    {
+        "displayName": "Tactile Path",
+        "name": "onsiteTactilePath",
+        "group": "Onsite",
+        "description": "The site has a tactile path",
+        "unit": "Yes/No",
+        "typeof": "BooleanType"
+    },
+    {
+        "displayName": "Braille signs",
+        "name": "onsiteBrailleSigns",
+        "group": "Onsite",
+        "description": "The site has braille signs",
+        "unit": "Yes/No",
+        "typeof": "BooleanType"
+    },
+    {
+        "displayName": "Exist",
+        "name": "rampExists",
+        "group": "Ramp",
+        "description": "The site has a ramp",
+        "unit": "Yes/No",
+        "typeof": "BooleanType"
+    },    
+    {
+        "displayName": "Width",
+        "name": "rampWidth",
+        "group": "Ramp",
+        "description": "The width of the ramp",
+        "unit": "cm",
+        "typeof": "NumberType"
+    },
+    {
+        "displayName": "Inclination",
+        "name": "rampInclination",
+        "group": "Ramp",
+        "description": "The inclination of the ramp",
+        "unit": "deg",
+        "typeof": "NumberType"
+    },
+    {
+        "displayName": "Location",
+        "name": "rampLocation",
+        "group": "Ramp",
+        "description": "The location of the ramp",
+        "unit": "Text",
+        "typeof": "TextType"
     }
 ]
