@@ -14,22 +14,33 @@ module Accessability.Handler.REST.Authenticate (postAuthenticateR, getAuthentica
 --
 -- External imports
 --
-import           Data.Text                             (Text)
 import           Data.Time.Clock.System                (SystemTime (..),
                                                         getSystemTime)
 
-import           Network.HTTP.Types.Status             (status200, status401)
+import           Network.HTTP.Types.Status             (status401)
 
-import           Database.Persist.Sql
+import Database.Persist.Sql
+    ( Entity(Entity), PersistStoreRead(get), PersistUniqueRead(getBy) )
 
-import           Yesod
+import Yesod
+    ( Value(Null),
+      ToJSON(toJSON),
+      MonadIO(liftIO),
+      getYesod,
+      lookupBearerAuth,
+      sendResponseStatus,
+      requireCheckJsonBody,
+      returnJson,
+      YesodPersist(runDB) )
 
 --
 -- Internal imports
 --
 import           Accessability.Foundation              (Handler, Server (..),
                                                         getAuthenticatedUser)
-import           Accessability.Model.Database
+import Accessability.Model.Database
+    ( Unique(UniqueUserUsername),
+      User(userEmail, userUsername, userPassword) )
 import           Accessability.Model.REST.Authenticate (Authenticate (..),
                                                         UserInfo (..))
 import           Accessability.Model.Transform         (keyToText, textToKey)

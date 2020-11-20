@@ -17,7 +17,6 @@ module Accessability.Handler.REST.User (getUserPropertiesR, putUserPropertiesR) 
 --
 -- Import standard libs
 --
-import           Data.Aeson                     (encode)
 import           Data.Maybe                     (fromMaybe)
 import           Data.Text                      (Text, pack, splitOn)
 import qualified UnliftIO.Exception             as UIOE
@@ -32,9 +31,7 @@ import           Yesod
 -- My own imports
 --
 import           Accessability.Data.Functor
-import           Accessability.Data.Geo
-import           Accessability.Foundation       (Handler, getAuthenticatedUser,
-                                                 requireAuthentication)
+import           Accessability.Foundation       (Handler, getAuthenticatedUser)
 import qualified Accessability.Handler.Database as DBF
 import qualified Accessability.Model.Database   as DB
 import           Accessability.Model.REST.User
@@ -73,9 +70,9 @@ putUserPropertiesR = do
     case mkey of
         Just key -> do
             queryBody <- requireCheckJsonBody :: Handler [PutUserProperty]
-            liftIO $ putStrLn $ show queryBody
+            liftIO $ print queryBody
             result    <- UIOE.catchAny
-                (DBF.dbUpdateUserProperties ((doit key) <$> queryBody))
+                (DBF.dbUpdateUserProperties (doit key <$> queryBody))
                 (pure . Left . show)
             case result of
                 Left e ->
@@ -97,7 +94,7 @@ putUserPropertiesR = do
                 { DB.userPropertyAttribute = textToKey $ fromMaybe
                                                    "0000000000000000"
                                                    (upattributeId pia)
-                , DB.userPropertyNegate = fromMaybe False $ upnegate pia
+                , DB.userPropertyNegate = Just True == upnegate pia
                 , DB.userPropertyValue = fromMaybe "" $ upvalue pia
                 , DB.userPropertyValue1 = upvalue1 pia
                 , DB.userPropertyOperation     = v

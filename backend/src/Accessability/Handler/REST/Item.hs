@@ -28,7 +28,6 @@ where
 --
 -- Import standard libs
 --
-import           Data.Aeson                     (encode)
 import           Data.Maybe                     (fromMaybe)
 import           Data.Text                      (Text, pack, splitOn)
 import qualified UnliftIO.Exception             as UIOE
@@ -47,7 +46,6 @@ import           Accessability.Data.Functor
 import           Accessability.Data.Geo
 import           Accessability.Data.Item        (Attribute (..), Item (..),
                                                  ItemValue (..))
-import qualified Accessability.Data.User        as U
 import           Accessability.Foundation       (Handler, getAuthenticatedUser,
                                                  requireAuthentication)
 import qualified Accessability.Handler.Database as DBF
@@ -172,7 +170,7 @@ postItemsR = do
             invalidArgs
                 $  ["Unable to find any items in the database"]
                 <> splitOn "\n" (pack e)
-        Right items -> do
+        Right items ->
             sendStatusJSON status200 items
 
 -- | The REST get handler for items, i.e. a list of items based on a body where the
@@ -191,13 +189,13 @@ postItemsAndValuesR = do
                 )
                 (pure . Left . show)
             case result of
-                Left e  -> pure []
+                Left _  -> pure []
                 Right a -> pure a
         Nothing -> pure []
 
     -- Get the items
     queryBody <- requireCheckJsonBody :: Handler PostItemsBody
-    items    <- (either (const []) id) <$> UIOE.catchAny
+    items    <- either (const []) id <$> UIOE.catchAny
         (fffmap
             toGenericItem
             (DBF.dbFetchItems
@@ -212,8 +210,8 @@ postItemsAndValuesR = do
         (pure . Left . show)
 
     -- Calculate the value of the POI in respect to the user properties
-    attrs <- sequence $ fetchItemAttributes <$> (toItemId items)
-    sendStatusJSON status200 $ zipWith mergeItem items $ (evaluatePOI props) <$> attrs
+    attrs <- sequence $ fetchItemAttributes <$> toItemId items
+    sendStatusJSON status200 $ zipWith mergeItem items $ evaluatePOI props <$> attrs
 
     where
 
@@ -232,7 +230,7 @@ postItemsAndValuesR = do
           (fffmap toGenericItemAttribute $ DBF.dbFetchItemAttributes $ textToKey key)
           (pure . Left . show)
         case result of
-            Left e  -> pure []
+            Left _  -> pure []
             Right a -> pure a
 
 
