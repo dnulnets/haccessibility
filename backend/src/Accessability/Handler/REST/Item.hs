@@ -44,14 +44,16 @@ import           Yesod
 import           Accessability.Data.Analysis    (evaluatePOI)
 import           Accessability.Data.Functor
 import           Accessability.Data.Geo
+import           Accessability.Data.User (Role(..))
 import           Accessability.Data.Item        (Attribute (..), Item (..),
                                                  ItemValue (..))
-import           Accessability.Foundation       (Handler, getAuthenticatedUser,
-                                                 requireAuthentication)
+import           Accessability.Foundation       (Handler, getAuthenticatedUserInfo,
+                                                 requireAuthentication, requireAuthenticationAndRole)
 import qualified Accessability.Handler.Database as DBF
 import qualified Accessability.Model.Database   as DB
 import           Accessability.Model.REST.Item
 import           Accessability.Model.Transform
+import           Accessability.Model.REST.Authenticate(TokenInfo(..))
 
 -- | The REST GET handler for an item, i.e. return with the data of an item based on the items
 -- key provided in the URL api/item/0000000000000001
@@ -76,7 +78,7 @@ getItemR key = do
 deleteItemR:: Text      -- ^ The item key
             -> Handler () -- ^ The item as a JSON response
 deleteItemR key = do
-    requireAuthentication
+    requireAuthenticationAndRole Administrator
     result <- UIOE.catchAny (DBF.dbDeleteItem $ textToKey key)
                             (pure . Left . show)
     case result of
@@ -92,7 +94,7 @@ putItemR
     :: Text      -- ^ The item key
     -> Handler Value -- ^ The item as a JSON response
 putItemR key = do
-    requireAuthentication
+    requireAuthenticationAndRole Administrator
     queryBody <- requireCheckJsonBody :: Handler PutItemBody
     result    <- UIOE.catchAny
         (  fffmap toGenericItem
@@ -121,7 +123,7 @@ putItemR key = do
 -- and return with the data as stored in the database.
 postCreateItemR :: Handler Value -- ^ The item as a JSON response
 postCreateItemR = do
-    requireAuthentication
+    requireAuthenticationAndRole Administrator
     body   <- requireCheckJsonBody :: Handler PostItemBody
     result <- UIOE.catchAny
         (fffmap toGenericItem DBF.dbCreateItem $ DB.Item
@@ -180,13 +182,11 @@ postItemsAndValuesR = do
     requireAuthentication
 
     -- Get the user properties
-    mkey <- getAuthenticatedUser
-    props <- case mkey of
-        Just key -> do
+    mui <- getAuthenticatedUserInfo
+    props <- case mui of
+        Just ui -> do
             result <- UIOE.catchAny
-                (fffmap toGenericUserProperty $ DBF.dbFetchUserProperties $ textToKey
-                    key
-                )
+                (fffmap toGenericUserProperty $ DBF.dbFetchUserProperties $ textToKey $ tiuserid ui)
                 (pure . Left . show)
             case result of
                 Left _  -> pure []
@@ -278,7 +278,7 @@ getItemAttributesR key = do
 -- If the record has no attributeValueID and no value it is ignored
 putItemAttributesR :: Text -> Handler Value
 putItemAttributesR key = do
-    requireAuthentication
+    requireAuthenticationAndRole Administrator
     queryBody <- requireCheckJsonBody :: Handler [PutItemAttributes]
     result    <- UIOE.catchAny
         (DBF.dbUpdateItemAttributes (doit <$> queryBody))

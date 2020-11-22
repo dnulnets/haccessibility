@@ -28,10 +28,14 @@ import Data.Argonaut
 -- Halogen imports
 import Halogen (HalogenM, lift)
 
+-- Import user types
+import Accessibility.Interface.User (Role)
+
 -- |The user information returned after an authenticate is successful
 newtype UserInfo = UserInfo { userid     :: String -- ^The user identity key
                            , token    :: String -- ^The token used for the API
                            , username :: String -- ^The user name
+                           , role     :: Role -- ^The role of the user
                            , email    :: String -- ^The email address of the user
                           }
 
@@ -50,8 +54,9 @@ instance decodeJsonUserInfo :: DecodeJson UserInfo where
     userid ← obj .: "userid"
     token ← obj .: "token"
     username ← obj .: "username"
+    role <- obj .: "role"
     email ← obj .: "email"
-    pure $ UserInfo { userid, token, username, email }
+    pure $ UserInfo { userid, token, username, role, email }
 
 -- |The authentication informaion needed to be able to authenticate the user and return a token
 data Authenticate = Authenticate  { username :: String    -- ^The username

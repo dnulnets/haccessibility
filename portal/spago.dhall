@@ -23,6 +23,7 @@ You can edit this file as you like.
   , "uuid"
   , "openlayers"
   , "newtype"
+  , "filterable"
   ]
 , packages = ./packages.dhall
 , sources = [ "src/**/*.purs", "test/**/*.purs" ]

@@ -24,9 +24,7 @@ module Main where
 --
 -- Standard libraries
 --
-import           Control.Monad                  ( forM_
-                                                , void
-                                                )
+import           Control.Monad                  (forM_)                                                
 import           Control.Monad.IO.Class         ( MonadIO
                                                 , liftIO
                                                 )
@@ -43,11 +41,8 @@ import           Data.Maybe                     ( catMaybes )
 import qualified Data.Text                     as DT
 import qualified Data.Text.Encoding            as DTE
 import           Data.Time.Clock                ( getCurrentTime )
-import           Data.HexString                 ( fromBinary
-                                                , hexString
-                                                , toBinary
-                                                , toText
-                                                )
+import           Data.HexString                 ( hexString
+                                                , toBinary)
 import           System.Environment             ( getArgs
                                                 , getEnv
                                                 )
@@ -56,14 +51,16 @@ import           System.Environment             ( getArgs
 -- Persistence libraries
 --
 import           Database.Persist
-import           Database.Persist.Postgresql
-import           Database.Persist.Sql
+import Database.Persist.Postgresql
+    ( SqlBackend, rawSql, runSqlPersistMPool, withPostgresqlPool )
+import Database.Persist.Sql ()
 
 --
 -- Get our own items
 --
 import           Accessability.Data.Geo
-import qualified Accessability.Data.Item       as ADI
+import qualified Accessability.Data.Item as ADI
+import qualified Accessability.Data.User as ADU
 import           Accessability.Model.Database
 import           Accessability.Model.REST.Item
 import           Accessability.Model.Transform
@@ -110,12 +107,13 @@ addUser
     :: (MonadIO m)
     => Integer -- ^ bcrypt cost
     -> String                    -- ^ Username
+    -> String                    -- ^ Role    
     -> String                    -- ^ Email
     -> String                    -- ^ Password
     -> ReaderT SqlBackend m ()   -- ^ A database effect
-addUser cost uname uemail upw = do
+addUser cost uname urole uemail upw = do
     pw   <- liftIO $ authHashPassword cost $ DT.pack upw
-    ukey <- insert $ User (DT.pack uname) (DTE.decodeUtf8 pw) (DT.pack uemail)
+    ukey <- insert $ User (DT.pack uname) (DTE.decodeUtf8 pw) (DT.pack uemail) (read urole)
     user <- get ukey
     case user of
         (Just u) ->
@@ -192,7 +190,7 @@ handleAddUser
     -> [String]          -- ^ The command line arguments
     -> IO ()             -- ^ The effect
 handleAddUser database cost args = case length args of
-    4 ->
+    5 ->
         runFileLoggingT "hadmin.log"
             $ withPostgresqlPool (DB.pack database) 5
             $ \pool -> liftIO $ flip runSqlPersistMPool pool $ addUser
@@ -200,7 +198,8 @@ handleAddUser database cost args = case length args of
                   (args !! 1)
                   (args !! 2)
                   (args !! 3)
-    _ -> putStrLn "Usage: hadmin adduser <username> <email> <password>"
+                  (args !! 4)
+    _ -> putStrLn "Usage: hadmin adduser <username> <role> <email> <password>"
 
 -- |Handles the chapw command
 handleChangePassword
@@ -524,7 +523,7 @@ usage = do
     putStrLn ""
     putStrLn "User commands:"
     putStrLn ""
-    putStrLn "adduser   <username> <email> <password>"
+    putStrLn "adduser   <username> <role> <email> <password>"
     putStrLn "deluser   <username>"
     putStrLn "chapw     <username> <new password>"
     putStrLn "lsusers"
@@ -549,6 +548,7 @@ usage = do
     tid <- getCurrentTime
     putStrLn $ "UTC Timestamp: " <> DT.unpack
         (DTE.decodeUtf8 $ B.toStrict $ encode tid)
+    putStrLn $ "Role:" <> show [ADU.Citizen, ADU.Administrator]
     putStrLn $ "Source: " <> show [ADI.Human, ADI.Machine]
     putStrLn $ "Modifier: " <> show [ADI.Static, ADI.Transient]
     putStrLn $ "Approval: " <> show [ADI.Waiting, ADI.Approved, ADI.Denied]

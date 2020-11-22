@@ -20,6 +20,36 @@ import Halogen (HalogenM, lift)
 import Accessibility.Interface.Endpoint (Data)
 import Accessibility.Interface.Item (AttributeType)
 
+-- | The enumeration for the role in the user
+data Role =   Citizen         -- Normal user
+            | Administrator   -- Administrator
+
+-- We need to be able to unwrap it to make nice looking code ;-)
+derive instance eqRole :: Eq Role
+
+roleToString::  Role
+                -> String
+roleToString Citizen = "Citizen"
+roleToString Administrator = "Administrator"
+
+instance showRole :: Show Role where
+  show = roleToString
+
+instance encodeJsonRole :: EncodeJson Role where
+  encodeJson is = encodeJson $ roleToString is
+
+instance decodeJsonRole :: DecodeJson Role where
+  decodeJson json = do
+    string <- decodeJson json
+    let
+      decodeError = "Could not decode Role from " <> string
+    note decodeError (fromString string)
+    where
+    fromString = case _ of
+      "Citizen" -> Just Citizen
+      "Administrator" -> Just Administrator
+      _ -> Nothing
+
 -- | The enumeration for the operation in the user property.
 data Operation = OEQ   -- Equal to
                 | OLT  -- Less than

@@ -31,28 +31,28 @@ import           Yesod
 -- My own imports
 --
 import           Accessability.Data.Functor
-import           Accessability.Foundation       (Handler, getAuthenticatedUser)
+import           Accessability.Foundation       (Handler, getAuthenticatedUserInfo)
 import qualified Accessability.Handler.Database as DBF
 import qualified Accessability.Model.Database   as DB
 import           Accessability.Model.REST.User
 import           Accessability.Model.Transform
+import Accessability.Model.REST.Authenticate
+    ( TokenInfo(tiuserid) )
 
 -- | The REST GET handler for an item, i.e. return with the data of an item based on the items
 -- key provided in the URL api/item/0000000000000001
 getUserPropertiesR :: Handler Value -- ^ The list of possible attributes and their values, if any
 getUserPropertiesR = do
-    mkey <- getAuthenticatedUser
-    case mkey of
-        Just key -> do
+    mui <- getAuthenticatedUserInfo
+    case mui of
+        Just ui -> do
             result <- UIOE.catchAny
-                (fffmap toGenericUserProperty $ DBF.dbFetchUserProperties $ textToKey
-                    key
-                )
+                (fffmap toGenericUserProperty $ DBF.dbFetchUserProperties $ textToKey $ tiuserid ui)
                 (pure . Left . show)
             case result of
                 Left e ->
                     invalidArgs
-                        $  ["Unable to get the item from the database", key]
+                        $  ["Unable to get the item from the database", tiuserid ui]
                         <> splitOn "\n" (pack e)
                 Right a -> sendStatusJSON status200 a
         Nothing ->
@@ -66,18 +66,18 @@ getUserPropertiesR = do
 -- If the record has no attributeValueID and no operation it is ignored
 putUserPropertiesR :: Handler Value
 putUserPropertiesR = do
-    mkey <- getAuthenticatedUser
-    case mkey of
-        Just key -> do
+    mui <- getAuthenticatedUserInfo
+    case mui of
+        Just ui -> do
             queryBody <- requireCheckJsonBody :: Handler [PutUserProperty]
             liftIO $ print queryBody
             result    <- UIOE.catchAny
-                (DBF.dbUpdateUserProperties (doit key <$> queryBody))
+                (DBF.dbUpdateUserProperties (doit (tiuserid ui) <$> queryBody))
                 (pure . Left . show)
             case result of
                 Left e ->
                     invalidArgs
-                        $  ["Unable to update the items parameters ", key]
+                        $  ["Unable to update the items parameters ", tiuserid ui]
                         <> splitOn "\n" (pack e)
                 Right _ -> sendResponseStatus status200 Null
         Nothing ->

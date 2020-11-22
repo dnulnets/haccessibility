@@ -167,6 +167,7 @@ toGenericUser (k, u) = G.User { G.userId       = Just $ keyToText k
                               , G.userUsername = DB.userUsername u
                               , G.userPassword = DB.userPassword u
                               , G.userEmail    = DB.userEmail u
+                              , G.userRole     = DB.userRole u
                               }
 
 -- | Converts a database attribute to a generic attribute

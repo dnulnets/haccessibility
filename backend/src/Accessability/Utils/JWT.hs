@@ -39,14 +39,14 @@ jsonToToken
   :: Text  -- ^ The secret used for signing
   -> NominalDiffTime -- ^ The time when the token was created from the epoch
   -> Integer -- ^ Number of sceonds the token is validity from creation time
-  -> Value -- ^ The JSON value to use as an unregistered claim, the userid in this case
+  -> Value -- ^ The JSON value to use as an unregistered claim, the userid and role in this case
   -> Text  -- ^ The token
-jsonToToken jwtSecret ndt len userId = encodeSigned
+jsonToToken jwtSecret ndt len info = encodeSigned
   (JWT.hmacSecret jwtSecret)
   mempty { typ = Just "JWT", alg = Just HS256 }
   mempty { JWT.iat                = numericDate ndt
          , JWT.exp                = numericDate (ndt + fromIntegral len)
-         , JWT.unregisteredClaims = ClaimsMap $ Map.fromList [(key, userId)]
+         , JWT.unregisteredClaims = ClaimsMap $ Map.fromList [(key, info)]
          }
 
 -- | Extract a JSON 'Value' out of a token

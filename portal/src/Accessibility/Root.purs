@@ -1,7 +1,7 @@
 -- |
 -- | The Root container module
 -- |
--- | Written by Tomas Stenlund, Sundsvall, Sweden (c) 2019
+-- | Written by Tomas Stenlund, Sundsvall, Sweden (c) 2020
 -- |
 module Accessibility.Root (component, Input, Query (..)) where
 
@@ -10,7 +10,9 @@ import Prelude
 
 -- Data imports
 import Data.Maybe (Maybe(..), maybe)
+import Data.Filterable (maybeBool)
 import Data.Symbol (SProxy(..))
+import Data.Newtype (unwrap)
 
 -- Monad imports
 import Control.Monad.Reader.Trans (class MonadAsk)
@@ -46,7 +48,7 @@ import Accessibility.Interface.Navigate (class ManageNavigation, gotoPage)
 import Accessibility.Interface.Authenticate (class ManageAuthentication
   , UserInfo (..)
   , logout)
-import Accessibility.Interface.User (class ManageUser)
+import Accessibility.Interface.User (class ManageUser, Role(..))
 import Accessibility.Interface.Item (class ManageItem)
 import Accessibility.Interface.Entity (class ManageEntity)
 
@@ -140,17 +142,15 @@ navbarLeftAdmin p = maybe [] (const [
   HH.li [css "nav-item dropdown"] [
     HH.a [css "nav-link dropdown-toggle active", prop "data-toggle" "dropdown"] [HH.text "Admin"],
     HH.div [css "dropdown-menu dropdown-primary"] [
-      HH.a [css "dropdown-item", href MapAdmin] [HH.text "POI:s"],
-      HH.a [css "dropdown-item", href Home] [HH.text "Users"]
+      HH.a [css "dropdown-item", href MapAdmin] [HH.text "Manage POI:s"]
     ]
-  ]]) p.userInfo
+  ]]) $ join ((unwrap >>> _.role >>> maybeBool ((==) Administrator)) <$> p.userInfo)
 
 navbarLeftUser∷forall p . State -> Array(HH.HTML p Action)
 navbarLeftUser p = maybe [] (const [
   HH.li [css "nav-item dropdown"] [
     HH.a [css "nav-link dropdown-toggle active", prop "data-toggle" "dropdown"] [HH.text "User"],
     HH.div [css "dropdown-menu dropdown-primary"] [
-      HH.a [css "dropdown-item", href Home] [HH.text "Settings"],
       HH.a [css "dropdown-item", href UserProperty] [HH.text "Properties"]
     ]
   ]]) p.userInfo
@@ -171,7 +171,7 @@ navbarLeft state = HH.div [css "collapse navbar-collapse", HP.id_ "navbarCollaps
 -- |The right navigation bar
 navbarRight∷forall p . State -> HH.HTML p Action
 navbarRight state = HH.a [css "navbar-text", HE.onClick \_ -> Just Logout]
-                      [HH.text $ maybe "Not logged in" (\(UserInfo v)->"Logout " <> v.username) state.userInfo]
+                      [HH.text $ maybe "Not logged in" (\(UserInfo v)->"Logout " <> v.username <> " (" <> show v.role <> ")") state.userInfo]
 
 render ∷ ∀ r m . MonadAff m
   => ManageAuthentication m
@@ -256,17 +256,26 @@ handleQuery = case _ of
   GotoPageRequest newpage a → do
     state ← H.get
     H.liftEffect $ log $ "GotoPageRequest to " <> show newpage
-    decided <- pure $ maybe Login (const newpage) state.userInfo
+    
+    -- Check authorization for the pages and redirect to Home if not authorized
+    decided <- pure case state.userInfo of
+      Nothing -> Login
+      Just (UserInfo ui) -> case ui.role of
+        Administrator -> newpage
+        Citizen -> case newpage of
+          MapAdmin -> Home
+          UserAdmin -> Home
+          Point _ _ -> Home
+          AddPoint _ _ -> Home
+          _ -> newpage
+
     H.liftEffect $ log $ "GotoPageRequest was decided to be " <> show decided
-    if decided /= newpage
+
+    if decided /= Login
       then do
-        gotoPage Login
+        H.put $ state { page = decided }
       else do
-        if decided /= Login
-          then do
-            H.put $ state { page = decided }
-          else do
-            H.put $ state { page = decided, userInfo = Nothing }
+        H.put $ state { page = decided, userInfo = Nothing }
 
     pure (Just a)
 

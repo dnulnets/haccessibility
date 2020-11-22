@@ -37,12 +37,13 @@ import Yesod
 -- Internal imports
 --
 import           Accessability.Foundation              (Handler, Server (..),
-                                                        getAuthenticatedUser)
+                                                        getAuthenticatedUserInfo)
 import Accessability.Model.Database
     ( Unique(UniqueUserUsername),
-      User(userEmail, userUsername, userPassword) )
+      User(userEmail, userUsername, userPassword, userRole) )
 import           Accessability.Model.REST.Authenticate (Authenticate (..),
-                                                        UserInfo (..))
+                                                        UserInfo (..),
+                                                        TokenInfo(..))
 import           Accessability.Model.Transform         (keyToText, textToKey)
 import           Accessability.Settings                (AppSettings (..))
 import           Accessability.Utils.JWT               (jsonToToken)
@@ -60,26 +61,26 @@ postAuthenticateR = do
       len = tokenExpiration appset
     in case dbuser of
          Just (Entity userId user) | authValidatePassword (userPassword user) (password auth) -> do
-                                       let token = jsonToToken secret seconds len $ toJSON $ keyToText userId
-                                       returnJson $ UserInfo (keyToText userId) token (userUsername user) (userEmail user)
+                                       let token = jsonToToken secret seconds len $ toJSON $ TokenInfo (keyToText userId) (userRole user)
+                                       returnJson $ UserInfo (keyToText userId) token (userUsername user) (userRole user) (userEmail user)
          _ -> sendResponseStatus status401 Null
 
 -- |Get the authentication bearer so we can extract the userid out of it and search for the
 -- user and return with it if it exists
 getAuthenticateR :: Handler Value
 getAuthenticateR = do
-  key <- getAuthenticatedUser
-  case key of
+  mui <- getAuthenticatedUserInfo
+  case mui of
     Nothing ->
       sendResponseStatus status401 Null
-    Just uid -> do
+    Just ui -> do
       token <- lookupBearerAuth
       case token of
         Just k -> do
-          dbuser <- runDB $ get $ textToKey uid
+          dbuser <- runDB $ get $ textToKey $ tiuserid ui
           case dbuser of
             Just user ->
-              returnJson $ UserInfo uid k (userUsername user) (userEmail user)
+              returnJson $ UserInfo (tiuserid ui) k (userUsername user) (userRole user) (userEmail user)
             _ ->
               sendResponseStatus status401 Null
         _ ->

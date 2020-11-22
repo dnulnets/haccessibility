@@ -17,6 +17,7 @@
 --
 module Accessability.Data.User
     ( User(..)
+    , Role(..)
     , Operation(..)
     , UserProperty(..)
     )
@@ -53,23 +54,32 @@ customOptions = defaultOptions
 --
 -- User
 --
+data Role = Citizen         -- ^ Ordinary user, no administratpor rights
+          | Administrator   -- ^ Administrator, can do anything on the site
+          deriving (Generic, Show, Read, Eq)
+
+derivePersistField "Role"
+
+instance ToJSON Role where
+  toJSON     = genericToJSON customOptions
+  toEncoding = genericToEncoding customOptions
+
+instance FromJSON Role where
+  parseJSON = genericParseJSON customOptions
 
 -- | Definition of the user
 data User = User {
     userId            :: Maybe Text -- ^ User key
-    , userUsername        :: Text       -- ^ The username used when looging in
+    , userUsername    :: Text       -- ^ The username used when looging in
     , userPassword    :: Text       -- ^ The password, bcrypted
     , userEmail       :: Text       -- ^ The user email address
+    , userRole        :: Role       -- ^ The role of the user
     } deriving (Generic)
 
 -- |Automatically derive JSON but we do not want the first charatcer in the field to go out
 $(deriveJSON defaultOptions {
     fieldLabelModifier = firstLower . drop 4 -- Get rid of the 'user' in the field names
   } ''User)
-
---
--- User Property
---
 
 -- |The property operation todetermine if they are accessible
 data Operation = GT -- ^ Greater than value

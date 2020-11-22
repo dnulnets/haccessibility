@@ -35,7 +35,8 @@ import           Database.Persist.TH
 -- Our own types
 --
 import           Accessability.Data.Geo         ( GeospatialPosition(..) )
-import           Accessability.Data.User        ( Operation(..))
+import           Accessability.Data.User        ( Operation(..)
+                                                , Role(..))
 import           Accessability.Data.Item        ( ItemApproval(..)
                                                 , ItemModifier(..)
                                                 , ItemSource(..)
@@ -84,6 +85,7 @@ User
     username Text       -- ^ The user name
     password Text       -- ^ The password, bcrypted
     email Text          -- ^ The users email
+    role Role           -- ^ The users role
     UniqueUserUsername username -- ^ The username is unique
     deriving Show Generic
 

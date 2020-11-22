@@ -25,8 +25,9 @@ module Accessability.Foundation (
     Handler,
     Route (..),
     resourcesServer,
-    getAuthenticatedUser,
-    requireAuthentication) where
+    getAuthenticatedUserInfo,
+    requireAuthentication,
+    requireAuthenticationAndRole) where
 
 --
 -- Standard libraries
@@ -50,6 +51,8 @@ import Network.HTTP.Types (status403)
 --
 import           Accessability.Settings      (AppSettings (..))
 import           Accessability.Utils.JWT     (tokenToJson)
+import           Accessability.Model.REST.Authenticate (TokenInfo(..))
+import           Accessability.Data.User (Role)
 
 --
 -- The HTTP server and network libraries
@@ -119,15 +122,24 @@ instance YesodPersist Server where
 -- return with a Permission Denied to the REST caller.
 requireAuthentication :: Handler () -- ^ The Handler
 requireAuthentication = do
-  userId <- getAuthenticatedUser
-  case userId of
+  userInfo <- getAuthenticatedUserInfo
+  case userInfo of
     Nothing -> sendStatusJSON status403 ()
     Just _  -> pure ()
 
+-- | Requires that the user is authenticated. if not it will short circuit the Handler and
+-- return with a Permission Denied to the REST caller.
+requireAuthenticationAndRole :: Role->Handler () -- ^ The Handler
+requireAuthenticationAndRole r = do
+  mti <- getAuthenticatedUserInfo
+  case mti of
+    Nothing -> sendStatusJSON status403 ()
+    Just (TokenInfo uid role)  -> if role == r then pure () else sendStatusJSON status403 ()
+
 -- | Checks to see if the caller is authenticated, if so it returns with the user identity
 -- that was part of the JWT the caller sent with the request.
-getAuthenticatedUser ::Handler (Maybe Text) -- ^ The user identity
-getAuthenticatedUser = do
+getAuthenticatedUserInfo ::Handler (Maybe TokenInfo) -- ^ The user identity
+getAuthenticatedUserInfo = do
   bearer <- lookupBearerAuth
   seconds <- liftIO $ fromIntegral . systemSeconds <$> getSystemTime
   secret <- tokenSecret . appSettings <$> getYesod
@@ -139,4 +151,4 @@ getAuthenticatedUser = do
         Just info ->
           case fromJSON info of
             Error _     -> Nothing
-            Success uid -> Just uid
+            Success ui -> Just ui
