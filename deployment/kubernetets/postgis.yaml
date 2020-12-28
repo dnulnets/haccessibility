@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgis-statefulset
+  labels:
+    app: postgis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgis
+  template:
+    metadata:
+      labels:
+        app: postgis
+    spec:
+      containers:
+      - name: postgis
+        image: localhost:32000/postgis:latest
+        envFrom:
+        - configMapRef:
+            name: postgis-configuration
+        ports:
+        - containerPort: 5432
+          name: postgisdb
+        volumeMounts:
+        - name: pv-data
+          mountPath: /var/lib/postgresql/data          
+      volumes:
+      - name: pv-data
+        persistentVolumeClaim:
+          claimName: postgis-pv-claim
