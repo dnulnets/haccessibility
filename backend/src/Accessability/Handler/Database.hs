@@ -58,7 +58,7 @@ import           Accessability.Model.Database
 -- | A postgresql backendfilter for ILIKE
 ilike:: (  EntityField Item Text-> Text-> Filter Item) -- ^ The generated filter
 ilike field val =
-   Filter field (Left val) (BackendSpecificFilter (pack "ILIKE"))
+   Filter field (FilterValue val) (BackendSpecificFilter (pack "ILIKE"))
 
 -- | Create a filter and return it as an array so it can be combined
 -- easier with other filters
