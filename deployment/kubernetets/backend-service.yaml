@@ -5,12 +5,9 @@ metadata:
   labels:
     app: acc
 spec:
-  type: NodePort
   ports:
-  - port: 3443
+  - port: 3000
     protocol: TCP
-    targetPort: 3000
-    nodePort: 30443
     name: https  
   selector:
     app: acc
