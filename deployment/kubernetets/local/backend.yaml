@@ -24,11 +24,11 @@ spec:
         - containerPort: 3000
           name: "acc"
         volumeMounts:
-        - name: iothub
+        - name: stenlund
           mountPath: "/mnt/cert"
           readOnly: true
       volumes:
-      - name: iothub
+      - name: stenlund
         secret:
-          secretName: iothub-secret
+          secretName: stenlund-secret
 
