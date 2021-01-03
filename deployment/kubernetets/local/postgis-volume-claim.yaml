@@ -1,16 +1,15 @@
-kind: PersistentVolume
+kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
-  name: postgis-pv
+  name: postgis-pv-claim
   labels:
     app: postgis
-    type: local
 spec:
   storageClassName: microk8s-hostpath
   capacity:
-    storage: 5Gi
   accessModes:
     - ReadWriteOnce
-  hostPath:
-    path: "/var/data"
+  resources:
+    requests:
+      storage: 5Gi
 
