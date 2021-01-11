@@ -43,5 +43,8 @@ image-haskell-build-env:
 image-build-server:	
 	docker build -t haccsvc:1 -t haccsvc:1.0 -t haccsvc:latest -f deployment/Dockerfile.build-server .
 
+image-build-server-local:	
+	docker build -t haccsvc:1 -t haccsvc:1.0 -t haccsvc:latest -f deployment/Dockerfile.build-server-local .
+
 test:
 	docker build -t test:1 -t test:1.0 -t test:latest -f deployment/Dockerfile.test .

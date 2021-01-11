@@ -288,6 +288,7 @@ handleAction ∷ ∀ r o m . MonadAff m
 
 -- Sets the logged in user
 handleAction (SetUser ui) = do
+  H.liftEffect $ log "ROOT: SetUser"
   H.modify_ $ _ {userInfo = ui}
 
 -- Logs out the current user and move to the login page, clear the current

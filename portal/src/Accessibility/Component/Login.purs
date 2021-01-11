@@ -127,9 +127,11 @@ handleAction (Submit event) = do
       H.put state {alert = Just "Wrong credentials!"}
       H.raise (SetUser Nothing)
     Just ui@(UserInfo val) -> do
-      H.liftEffect $ log $ "Logged in user " <> val.username
+      H.liftEffect $ log $ "FORM: Logged in user " <> val.username
       H.raise (SetUser $ Just ui)
+      H.liftEffect $ log $ "FORM: Raised stuser"
       gotoPage Home
+      H.liftEffect $ log $ "FORM: Goto Page Home"
 
   -- Raise any alerts    
   (Alert <$> H.gets _.alert) >>= H.raise
