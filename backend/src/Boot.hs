@@ -96,10 +96,10 @@ mkMigrate "migrateAll" entityDefs
 serverMain :: IO ()
 serverMain = do
     gen <- newStdGen
-    let jwtSecret = take 10 $ randomRs ('a', 'z') gen
     database <- getEnv "HAPI_DATABASE"
     pem      <- getEnv "HAPI_CERTIFICATE"
     key      <- getEnv "HAPI_KEY"
+    jwtSecret <- getEnv "HAPI_JWT_SECRET"
     cost     <- read <$> getEnv "HAPI_PASSWORD_COST"
     time     <- read <$> getEnv "HAPI_JWT_SESSION_LENGTH"
     runStderrLoggingT $ withPostgresqlPool (DB.pack database) 5 $ \pool ->

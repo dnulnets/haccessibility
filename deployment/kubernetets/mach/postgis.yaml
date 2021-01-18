@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgis-statefulset
+  namespace: iothub
+  labels:
+    app: postgis
+spec:
+  replicas: 1
+  serviceName: postgis
+  selector:
+    matchLabels:
+      app: postgis
+  template:
+    metadata:
+      labels:
+        app: postgis
+    spec:
+      containers:
+      - name: postgis
+        image: mach1:32000/postgis:latest
+        envFrom:
+        - configMapRef:
+            name: postgis-configuration
+        ports:
+        - containerPort: 5432
+          name: postgisdb
+        volumeMounts:
+        - name: postgis-volume
+          mountPath: /var/lib/postgresql/data          
+      volumes:
+      - name: postgis-volume
+        persistentVolumeClaim:
+          claimName: data-pv-claim

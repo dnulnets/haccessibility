@@ -129,7 +129,7 @@ handleAction (Submit event) = do
     Just ui@(UserInfo val) -> do
       H.liftEffect $ log $ "FORM: Logged in user " <> val.username
       H.raise (SetUser $ Just ui)
-      H.liftEffect $ log $ "FORM: Raised stuser"
+      H.liftEffect $ log $ "FORM: Raised setuser"
       gotoPage Home
       H.liftEffect $ log $ "FORM: Goto Page Home"
 
