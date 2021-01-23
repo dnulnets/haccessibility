@@ -111,9 +111,11 @@ instance manageNavigationApplicationM ∷ ManageNavigation ApplicationM where
   -- |Navigates the app using hash based routing
   gotoPage newPage = do
     H.liftEffect $ log "APPLICATION: gotoPage"
-    oldHash <- H.liftEffect $ getHash    
+    oldHash <- H.liftEffect $ getHash
+    H.liftEffect $ log $ "APPLICATION: newPage" <> show newPage
+    H.liftEffect $ log $ "APPLICATION: oldPage" <> show (page oldHash)
     when (newPage /= page oldHash) do
-        H.liftEffect $ setHash $ newHash
+      H.liftEffect $ setHash $ newHash    
 
     where
       newHash :: String
