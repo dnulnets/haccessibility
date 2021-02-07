@@ -4,5 +4,4 @@ WORKDIR /opt/build/backend
 RUN	apt-get update \
 	&& apt-get -y install libpq-dev
 RUN	mkdir static \
-	&& stack build --system-ghc \
-	&& rm -fR /opt/build
+	&& stack build --system-ghc

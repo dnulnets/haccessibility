@@ -1,7 +1,7 @@
 FROM paccbuild:latest as portal
 WORKDIR /
-RUN	git clone https://github.com/dnulnets/haccessibility.git
 WORKDIR /haccessibility/portal
+RUN	git pull
 RUN	   npm install \
 	&& ./generate.sh \
 	&& cat ./src/Version.purs \
@@ -10,8 +10,8 @@ RUN	   npm install \
 	&& parcel build index.html
 	
 FROM haccbuild:latest as build
-WORKDIR /
-RUN	git clone https://github.com/dnulnets/haccessibility.git /opt/build
+WORKDIR /opt/build
+RUN	git pull
 WORKDIR /opt/build/backend
 RUN 	   rm -fR static \
 	&& mkdir static

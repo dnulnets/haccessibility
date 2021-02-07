@@ -13,5 +13,3 @@ ENV PATH /haccessibility/portal/node_modules/.bin:$PATH
 RUN	   ./generate.sh \
 	&& cat ./src/Version.purs \
 	&& spago build
-WORKDIR /
-RUN 	   rm -fR /haccessibility
