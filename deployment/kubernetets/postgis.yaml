@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgis-statefulset
+  namespace: iothub
+  labels:
+    app: postgis
+spec:
+  replicas: 1
+  serviceName: postgis
+  selector:
+    matchLabels:
+      app: postgis
+  template:
+    metadata:
+      labels:
+        app: postgis
+    spec:
+      containers:
+      - name: postgis
+        image: mach1:32000/postgis:latest
+        envFrom:
+        - configMapRef:
+            name: postgis-configuration
+        ports:
+        - containerPort: 5432
+          name: postgisdb
+          
+        livenessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - exec pg_isready
+          failureThreshold: 6
+          initialDelaySeconds: 60
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 5
+
+        readinessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - exec pg_isready
+          failureThreshold: 3
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          successThreshold: 1
+          timeoutSeconds: 3          
+          
+        volumeMounts:
+        - name: postgis-volume
+          mountPath: /var/lib/postgresql/data          
+      volumes:
+      - name: postgis-volume
+        persistentVolumeClaim:
+          claimName: data-pv-claim

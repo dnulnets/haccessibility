@@ -77,7 +77,7 @@ default::Ref (Maybe UserInfo) -> Environment
 default ui = { baseURL : BaseURL "https://127.0.0.1"          -- ^Defuault backend, needs to changed
   , iothubURL : BaseURL "https://iotsundsvall.se/ngsi-ld/v1"  -- ^Fixed backend for the Swedish IoT Hub
   , timeoutIothub : Milliseconds 2000.0                       -- ^The timeout for the Swedish IoT Hub, it is slow
-  , timeoutBackend : Milliseconds 500.0                       -- ^The timeout for our own haskell backend
+  , timeoutBackend : Milliseconds 1000.0                       -- ^The timeout for our own haskell backend
   , userInfo : ui
   }
 
