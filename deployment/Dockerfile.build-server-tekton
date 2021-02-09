@@ -1,4 +1,4 @@
-FROM paccbuild:local as portal
+FROM neptune:32000/paccbuild:latest as portal
 WORKDIR /
 RUN mkdir -p /haccessibility
 COPY ./portal /haccessibility/portal
@@ -14,7 +14,7 @@ RUN	npm install \
 	&& spago bundle-app \
 	&& parcel build index.html
 	
-FROM haccbuild:local as build
+FROM neptune:32000/haccbuild:latest as build
 WORKDIR /
 RUN mkdir -p /opt/build/backend
 COPY ./backend /opt/build/backend
@@ -26,7 +26,7 @@ RUN        stack clean \
 	&& stack build --system-ghc \
 	&& stack install
 
-FROM ubuntu-focal:local
+FROM ubuntu:focal
 RUN mkdir -p /opt/accessibility
 WORKDIR /opt/accessibility
 RUN        apt-get update \
