@@ -24,8 +24,9 @@ RUN 	   rm -fR static \
 COPY --from=portal /haccessibility/portal/dist/* ./static/
 RUN        stack clean \
 	&& stack build --system-ghc \
-	&& stack install \
-	&& make build-certificate
+	&& stack install
+WORKDIR /opt/build
+RUN make build-certificate
 
 FROM ubuntu:focal
 RUN mkdir -p /opt/accessibility
