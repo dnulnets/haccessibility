@@ -16,7 +16,8 @@ WORKDIR /opt/build/backend
 RUN 	   rm -fR static \
 	&& mkdir static
 COPY --from=portal /haccessibility/portal/dist/* ./static/
-RUN        stack clean \
+RUN     export LANG=en_US.UTF-8 \
+	&& stack clean \
 	&& stack build --system-ghc \
 	&& stack install
 

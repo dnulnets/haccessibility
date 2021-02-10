@@ -1,7 +1,12 @@
-FROM fpco/stack-build:lts-16.31
-RUN	git clone https://github.com/dnulnets/haccessibility.git /opt/build
-WORKDIR /opt/build/backend
+FROM ubuntu:20.04
 RUN	apt-get update \
-	&& apt-get -y install libpq-dev
+	&& apt-get -y install locales \
+	&& apt-get -y install libpq-dev curl git libtinfo-dev
+RUN	git clone https://github.com/dnulnets/haccessibility.git /opt/build	
+WORKDIR /opt/build/backend
 RUN	mkdir static \
+	&& curl -sSL https://get.haskellstack.org/ | sh \
+	&& locale-gen "en_US.UTF-8" \
+	&& export LANG=en_US.UTF-8 \
 	&& stack build --system-ghc
+
