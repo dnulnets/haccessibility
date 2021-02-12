@@ -69,20 +69,20 @@ data Server = Server {
 }
 
 -- | Our static files
-staticFiles "static"
+publicFiles "static"
 
 -- | The routes in our server
 mkYesodData "Server" [parseRoutes|
-/gql GQLR POST
-/api/item CreateItemR POST
-/api/item/#Text ItemR GET DELETE PUT
-/api/item/#Text/attributes ItemAttributesR GET PUT
-/api/items ItemsR POST
-/api/itemsandvalues ItemsAndValuesR POST
-/api/user/properties UserPropertiesR GET PUT
-/api/authenticate AuthenticateR POST GET
-/api/attributes AttributesR GET
-!/ StaticR Static getStatic
+/iothub/gql GQLR POST
+/iothub/api/item CreateItemR POST
+/iothub/api/item/#Text ItemR GET DELETE PUT
+/iothub/api/item/#Text/attributes ItemAttributesR GET PUT
+/iothub/api/items ItemsR POST
+/iothub/api/itemsandvalues ItemsAndValuesR POST
+/iothub/api/user/properties UserPropertiesR GET PUT
+/iothub/api/authenticate AuthenticateR POST GET
+/iothub/api/attributes AttributesR GET
+!/iothub/ StaticR Static getStatic
 |]
 
 -- | Our server is a yesod instance, no session handling needed since
