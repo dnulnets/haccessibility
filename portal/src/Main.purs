@@ -137,7 +137,7 @@ main = do
     -- Run the root component
     let
       env ∷ Environment
-      env = (default cui) { baseURL = BaseURL $ loc <> "/iothub" }
+      env = (default cui) { baseURL = BaseURL $ loc }
     io <- runUI (rootComponent env) ui body
 
     -- Our router, based on what is typed in the browser navigational feed
