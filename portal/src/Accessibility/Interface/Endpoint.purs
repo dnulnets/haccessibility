@@ -68,11 +68,11 @@ backend UserProperties = asks _.baseURL
 -- |The endpoint codec
 endpointCodec :: RouteDuplex' Endpoint
 endpointCodec = root $ sum
-  { "Authenticate": "api" / "authenticate" / noArgs
-  , "Items": "api" / "items" / noArgs
-  , "ItemsAndValues": "api" / "itemsandvalues" / noArgs
-  , "Attributes": "api" / "attributes" /noArgs
-  , "UserProperties": "api" / "user" / "properties" /noArgs
-  , "Attribute": "api" / "item" / string segment / "attributes"
-  , "Item": "api" / "item" / (optional (string segment)) 
+  { "Authenticate": "iothub" / "api" / "authenticate" / noArgs
+  , "Items": "iothub" / "api" / "items" / noArgs
+  , "ItemsAndValues": "iothub" / "api" / "itemsandvalues" / noArgs
+  , "Attributes": "iothub" / "api" / "attributes" /noArgs
+  , "UserProperties": "iothub" / "api" / "user" / "properties" /noArgs
+  , "Attribute": "iothub" / "api" / "item" / string segment / "attributes"
+  , "Item": "iothub" / "api" / "item" / (optional (string segment)) 
   , "Entities": "entities" ? { type : string, attrs : optional <<< string} }
