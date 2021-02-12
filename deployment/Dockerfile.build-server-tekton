@@ -12,7 +12,7 @@ RUN	npm install \
 	&& cat ./src/Version.purs \
 	&& spago build \
 	&& spago bundle-app \
-	&& parcel build index.html
+	&& parcel build --public-url /iothub/ index.html
 	
 FROM neptune:32000/haccbuild:latest as build
 WORKDIR /

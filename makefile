@@ -4,7 +4,7 @@ build-all:
 	cd portal;spago build
 	cd portal;spago bundle-app
 	-rm -fR backend/static
-	cd portal;parcel build -d ../backend/static index.html	
+	cd portal;parcel build --public-url /iothub/ -d ../backend/static index.html	
 	cd backend;stack build --force-dirty
 	cd backend;stack install
 
@@ -14,7 +14,7 @@ build-portal:
 	cd portal;spago build
 	cd portal;spago bundle-app
 	-rm -fR backend/static
-	cd portal;parcel build -d ../backend/static index.html
+	cd portal;parcel build --public-url /iothub/ -d ../backend/static index.html
 	
 build-backend:
 	cd backend;stack build
