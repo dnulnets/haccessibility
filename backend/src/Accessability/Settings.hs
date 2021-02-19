@@ -34,7 +34,7 @@ data AppSettings = AppSettings {
 
 -- |A default setting for our application
 defaultSettings :: AppSettings
-defaultSettings = AppSettings { tokenSecret     = "69fhh)d#%fih"
+defaultSettings = AppSettings { tokenSecret     = "69fhh)d#%fih" -- Overridden by required configuration
                               , tokenExpiration = 60 * 60 * 24
                               , passwordCost    = 10
                               }

@@ -37,7 +37,6 @@ import           Database.Persist.Postgresql
 -- The HTTP server and network libraries
 --
 import qualified Network.Wai.Handler.Warp                as WAI
-import qualified Network.Wai.Handler.WarpTLS             as WAIT
 import           WaiAppStatic.Storage.Filesystem         (defaultWebAppSettings)
 import           WaiAppStatic.Types                      (StaticSettings (..))
 
@@ -97,8 +96,6 @@ serverMain :: IO ()
 serverMain = do
     gen <- newStdGen
     database <- getEnv "HAPI_DATABASE"
-    pem      <- getEnv "HAPI_CERTIFICATE"
-    key      <- getEnv "HAPI_KEY"
     jwtSecret <- getEnv "HAPI_JWT_SECRET"
     cost     <- read <$> getEnv "HAPI_PASSWORD_COST"
     time     <- read <$> getEnv "HAPI_JWT_SESSION_LENGTH"
@@ -116,8 +113,7 @@ serverMain = do
                                     }
                 , serverConnectionPool = pool
                 }
-            WAIT.runTLS
-                    (WAIT.tlsSettings pem key)
+            WAI.runSettings
                     (WAI.setServerName
                         "Accessibility Server - IoTHub Sweden"
                         (WAI.setHost "*" WAI.defaultSettings)

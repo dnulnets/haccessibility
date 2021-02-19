@@ -25,8 +25,6 @@ COPY --from=portal /haccessibility/portal/dist/* ./static/
 RUN        stack clean \
 	&& stack build --system-ghc \
 	&& stack install
-WORKDIR /opt/build
-RUN make build-certificate
 
 FROM ubuntu:focal
 RUN mkdir -p /opt/accessibility
@@ -35,7 +33,6 @@ RUN        apt-get update \
 	&& apt-get install -y libpq-dev \
 	&& mkdir static
 COPY --from=build /root/.local/bin .
-COPY --from=build /opt/build/deployment/tls.* ./
 COPY --from=build /opt/build/backend/static/* ./static/
 COPY --from=build /opt/build/backend/hadmin/*.json ./
 CMD ["/opt/accessibility/accessibility-server"]
