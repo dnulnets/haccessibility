@@ -20,7 +20,7 @@ The backend is developed in Haskell and uses the Persistence, Yesod webframework
 
 The portal is developed in Purescript and uses the declarative type-safe UI library Halogen.
 
-The plan is to be able to build docker images for the database and backend server to allow for easy deployment and production.
+The entire solution is run on a kubernetes cluster and has two docker images.
 
 Please see README.md files in the subdirectories for more information.
 
