@@ -16,11 +16,15 @@ The github location of the Swedish IoT Hub Source code for the accesibility serv
 The project is based on Agenda 2030 and the goal of sustainable cities and communities and to provide universal access to safe, inclusive and accessible green spaces and public places, especially for women and children, the elderly and people with disabilities. The purpose is to provide information that promotes mobility and accessibility to public spaces. The project thus aims to achieve its goal of contributing to increased social interactions, increased quality of life and increased mental well-being for the project´s target groups.
 
 ## Technology stack
-The backend is developed in Haskell and uses the Persistence, Yesod webframework and Morpheus graphQL library. The database is PostreSQL.
+The backend is developed in Haskell and uses Persistence, Yesod webframework and Morpheus graphQL library. The database is PostreSQL.
 
 The portal is developed in Purescript and uses the declarative type-safe UI library Halogen.
 
+<<<<<<< HEAD
 It builds docker images and provides kubernetes deployment files.
+=======
+The entire solution is run on a kubernetes cluster and has two docker images.
+>>>>>>> dc8f01d1214b279202e94c450d526e75d284d798
 
 Please see README.md files in the subdirectories for more information.
 
