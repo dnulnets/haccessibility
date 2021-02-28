@@ -89,8 +89,8 @@ main ∷ Effect Unit -- ^ Default return value
 main = do
   cui <- liftEffect $ Ref.new Nothing
   loc <- window >>= location >>= origin
-  log $ "Origin: " <> loc
-  log $ "Build: " <> build
+  log $ "Location of origin: " <> loc
+  log $ "Version of build: " <> build
 
   HA.runHalogenAff do
     body <- HA.awaitBody
