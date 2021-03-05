@@ -76,6 +76,7 @@ mkYesodData "Server" [parseRoutes|
 /iothub/gql GQLR POST
 /iothub/api/item CreateItemR POST
 /iothub/api/item/#Text ItemR GET DELETE PUT
+/iothub/api/itemandvalues/#Text ItemAndValuesR GET
 /iothub/api/item/#Text/attributes ItemAttributesR GET PUT
 /iothub/api/items ItemsR POST
 /iothub/api/itemsandvalues ItemsAndValuesR POST

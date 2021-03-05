@@ -142,6 +142,9 @@ toGenericItem (key, item, d) = G.Item
     , G.itemPositive    = Nothing
     , G.itemNegative    = Nothing
     , G.itemUnknown     = Nothing
+    , G.itemPositiveAttributes = Nothing
+    , G.itemNegativeAttributes = Nothing
+    , G.itemUnknownAttributes = Nothing
     }
 
 -- | Converts a GQL item to a database item

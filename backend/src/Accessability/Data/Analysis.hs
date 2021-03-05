@@ -45,10 +45,10 @@ evaluatePOI aup aav = mconcat (evaluateUserProperty (toAttributeValueMap aav) <$
 
     evaluateUserProperty::Map.Map Text Attribute -> U.UserProperty -> ItemValue
     evaluateUserProperty msa up = case join $ Map.lookup <$> Just (U.propertyAttributeId up) <*> Just msa of
-                      Nothing -> ItemValue {positive = 0, negative = 0, unknown = 1}
+                      Nothing -> ItemValue {positive = 0, negative = 0, unknown = 1, positiveAttributes = [], negativeAttributes = [], unknownAttributes = [U.propertyDisplayName up]}
                       Just a -> if evaluate up a
-                                  then ItemValue {positive = 1, negative = 0, unknown = 0}
-                                  else ItemValue {positive = 0, negative = 1, unknown = 0}
+                                  then ItemValue {positive = 1, negative = 0, unknown = 0, positiveAttributes = [attributeDisplayName a], negativeAttributes = [], unknownAttributes = []}
+                                  else ItemValue {positive = 0, negative = 1, unknown = 0, positiveAttributes = [], negativeAttributes = [attributeDisplayName a], unknownAttributes = []}
 
     evaluate::U.UserProperty->Attribute->Bool
     evaluate up av = Just True == (notit <$> Just (U.propertyNegate up)

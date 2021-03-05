@@ -90,6 +90,10 @@ data Item = Item {
     , itemPositive    :: Maybe Integer      -- ^ Number of positive user properties
     , itemNegative    :: Maybe Integer      -- ^ Number of negative user properties
     , itemUnknown     :: Maybe Integer      -- ^ Number of unknown user properties
+    , itemPositiveAttributes :: Maybe [Text] -- ^ List of attributes that are fulfilled for the user
+    , itemNegativeAttributes :: Maybe [Text] -- ^ List of attributes that are not fulfilled for the user
+    , itemUnknownAttributes :: Maybe [Text]  -- ^ List of attributes that are not present at the item
+
     } deriving (Generic, Show)
 
 -- | Definition of the attribute and it doubles as the value for an attribute and item
@@ -111,15 +115,21 @@ data ItemValue = ItemValue {
       positive    :: Integer
       , negative  :: Integer
       , unknown   :: Integer
+      , positiveAttributes :: [Text]
+      , negativeAttributes :: [Text]
+      , unknownAttributes :: [Text]
     } deriving (Show)
 
 instance Monoid ItemValue where
-  mempty = ItemValue { positive = 0, negative = 0, unknown = 0}
+  mempty = ItemValue { positive = 0, negative = 0, unknown = 0, positiveAttributes = [], negativeAttributes = [], unknownAttributes = []}
 
 instance Semigroup ItemValue where
   (<>) i1 i2 = ItemValue {positive = positive i1 + positive i2,
                           negative = negative i1 + negative i2,
-                          unknown = unknown i1 + unknown i2}
+                          unknown = unknown i1 + unknown i2,
+                          positiveAttributes = positiveAttributes i1 <> positiveAttributes i2,
+                          negativeAttributes = negativeAttributes i1 <> negativeAttributes i2,
+                          unknownAttributes = unknownAttributes i1 <> unknownAttributes i2}
 
 --
 -- Persistence

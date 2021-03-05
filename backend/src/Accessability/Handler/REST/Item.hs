@@ -14,6 +14,7 @@
 --
 module Accessability.Handler.REST.Item
     ( getItemR
+    , getItemAndValuesR
     , putItemR
     , deleteItemR
     , postCreateItemR
@@ -72,6 +73,66 @@ getItemR key = do
                 <> splitOn "\n" (pack e)
         Right Nothing  -> sendResponseNoContent
         Right (Just i) -> sendStatusJSON status200 i
+
+-- | The REST GET handler for an item, i.e. return with the data of an item based on the items
+-- key provided in the URL api/item/0000000000000001
+--
+getItemAndValuesR:: Text      -- ^ The item key
+  -> Handler Value -- ^ The item as a JSON response
+getItemAndValuesR key = do
+    requireAuthentication
+
+    -- Get the user properties
+    mui <- getAuthenticatedUserInfo    
+    props <- case mui of
+        Just ui -> do
+            result <- UIOE.catchAny
+                (fffmap toGenericUserProperty $ DBF.dbFetchUserProperties $ textToKey $ tiuserid ui)
+                (pure . Left . show)
+            case result of
+                Left _  -> pure []
+                Right a -> pure a
+        Nothing -> pure []
+
+    result <- UIOE.catchAny
+        (fffmap toGenericItem $ DBF.dbFetchItem $ textToKey key)
+        (pure . Left . show)
+    case result of
+        Left e ->
+            invalidArgs
+                $  ["Unable to get the item from the database", key]
+                <> splitOn "\n" (pack e)
+        Right Nothing  -> sendResponseNoContent
+        Right (Just i) -> do
+
+            -- Calculate the value of the POI in respect to the user properties
+            attrs <- fetchItemAttributes $ toItemId i
+
+            -- Send it back
+            sendStatusJSON status200 $ mergeItem i $ evaluatePOI props attrs
+
+    where
+
+      toItemId::Item->Maybe Text
+      toItemId ai = itemId ai
+
+      mergeItem::Item->ItemValue->Item
+      mergeItem item iv = item {itemPositive = Just $ positive iv
+                                , itemNegative = Just $ negative iv
+                                , itemUnknown = Just $ unknown iv
+                                , itemPositiveAttributes = Just $ positiveAttributes iv
+                                , itemNegativeAttributes = Just $ negativeAttributes iv
+                                , itemUnknownAttributes = Just $ unknownAttributes iv}
+
+      fetchItemAttributes::Maybe Text->Handler [Attribute]
+      fetchItemAttributes Nothing = pure []
+      fetchItemAttributes (Just key) = do
+        result <- UIOE.catchAny
+          (fffmap toGenericItemAttribute $ DBF.dbFetchItemAttributes $ textToKey key)
+          (pure . Left . show)
+        case result of
+            Left _  -> pure []
+            Right a -> pure a
 
 -- | The REST delete handler, i.e. return with the data of an item based on the items
 -- key and delete the item.
