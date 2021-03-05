@@ -12,7 +12,6 @@ The readme for the portal is [here](https://github.com/dnulnets/haccessibility/b
 The github location of the Swedish IoT Hub Source code for the accesibility server is [here](https://github.com/orgs/iot-for-tillgenglighet/dashboard).
 
 ## Purpose and goal
-
 The project is based on Agenda 2030 and the goal of sustainable cities and communities and to provide universal access to safe, inclusive and accessible green spaces and public places, especially for women and children, the elderly and people with disabilities. The purpose is to provide information that promotes mobility and accessibility to public spaces. The project thus aims to achieve its goal of contributing to increased social interactions, increased quality of life and increased mental well-being for the project´s target groups.
 
 ## Technology stack
