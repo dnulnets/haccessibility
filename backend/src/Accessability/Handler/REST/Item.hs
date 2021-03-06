@@ -106,33 +106,32 @@ getItemAndValuesR key = do
         Right (Just i) -> do
 
             -- Calculate the value of the POI in respect to the user properties
-            attrs <- fetchItemAttributes $ toItemId i
+            attrs <- fetchItemAttributes $ itemId i
 
             -- Send it back
             sendStatusJSON status200 $ mergeItem i $ evaluatePOI props attrs
 
-    where
+-- | Merge an item with its values
+mergeItem:: Item        -- ^ The item
+         -> ItemValue   -- ^ The items accessibility values
+         ->Item
+mergeItem item iv = item {itemPositive = Just $ positive iv
+                        , itemNegative = Just $ negative iv
+                        , itemUnknown = Just $ unknown iv
+                        , itemPositiveAttributes = Just $ positiveAttributes iv
+                        , itemNegativeAttributes = Just $ negativeAttributes iv
+                        , itemUnknownAttributes = Just $ unknownAttributes iv}
 
-      toItemId::Item->Maybe Text
-      toItemId ai = itemId ai
-
-      mergeItem::Item->ItemValue->Item
-      mergeItem item iv = item {itemPositive = Just $ positive iv
-                                , itemNegative = Just $ negative iv
-                                , itemUnknown = Just $ unknown iv
-                                , itemPositiveAttributes = Just $ positiveAttributes iv
-                                , itemNegativeAttributes = Just $ negativeAttributes iv
-                                , itemUnknownAttributes = Just $ unknownAttributes iv}
-
-      fetchItemAttributes::Maybe Text->Handler [Attribute]
-      fetchItemAttributes Nothing = pure []
-      fetchItemAttributes (Just key) = do
-        result <- UIOE.catchAny
-          (fffmap toGenericItemAttribute $ DBF.dbFetchItemAttributes $ textToKey key)
-          (pure . Left . show)
-        case result of
-            Left _  -> pure []
-            Right a -> pure a
+-- | Fetch all attributes for an item
+fetchItemAttributes::Maybe Text->Handler [Attribute]
+fetchItemAttributes Nothing = pure []
+fetchItemAttributes (Just key) = do
+    result <- UIOE.catchAny
+        (fffmap toGenericItemAttribute $ DBF.dbFetchItemAttributes $ textToKey key)
+        (pure . Left . show)
+    case result of
+        Left _  -> pure []
+        Right a -> pure a
 
 -- | The REST delete handler, i.e. return with the data of an item based on the items
 -- key and delete the item.
@@ -271,30 +270,8 @@ postItemsAndValuesR = do
         (pure . Left . show)
 
     -- Calculate the value of the POI in respect to the user properties
-    attrs <- sequence $ fetchItemAttributes <$> toItemId items
+    attrs <- sequence $ fetchItemAttributes <$> (itemId <$> items)
     sendStatusJSON status200 $ zipWith mergeItem items $ evaluatePOI props <$> attrs
-
-    where
-
-      toItemId::[Item]->[Maybe Text]
-      toItemId ai = itemId <$> ai
-
-      mergeItem::Item->ItemValue->Item
-      mergeItem item iv = item {itemPositive = Just $ positive iv
-                                , itemNegative = Just $ negative iv
-                                , itemUnknown = Just $ unknown iv}
-
-      fetchItemAttributes::Maybe Text->Handler [Attribute]
-      fetchItemAttributes Nothing = pure []
-      fetchItemAttributes (Just key) = do
-        result <- UIOE.catchAny
-          (fffmap toGenericItemAttribute $ DBF.dbFetchItemAttributes $ textToKey key)
-          (pure . Left . show)
-        case result of
-            Left _  -> pure []
-            Right a -> pure a
-
-
 
 -- | The REST get handler for attributes, i.e. a list of attributes that an item can
 -- have.
