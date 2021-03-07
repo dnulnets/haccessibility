@@ -269,7 +269,7 @@ handleAction (FeatureSelect e) = do
         Nothing ->
           H.liftEffect $ sequence_ $ WDN.setTextContent "No information" <$> WDE.toNode <$> state.content
         Just v ->
-          H.liftEffect $ sequence_ $ WDN.setTextContent (v.positive <> "," <> v.negative <> "," <> v.unknown) <$> WDE.toNode <$> state.content
+          H.liftEffect $ sequence_ $ WDN.setTextContent (v.positive <> "\n" <> v.negative <> "<br>" <> v.unknown) <$> WDE.toNode <$> state.content
       coord <- H.liftEffect $ MapBrowserEvent.coordinate <$> Select.getMapBrowserEvent e
       H.liftEffect $ sequence_ $ Overlay.setPosition (Just coord) <$> state.overlay
 
@@ -731,5 +731,8 @@ fromItem i = do
                                       , ha_pos: fromMaybe 0 i.positive
                                       , ha_neg: fromMaybe 0 i.negative
                                       , ha_unk: fromMaybe 0 i.unknown
+                                      , ha_lpos: fromMaybe [] i.positiveAttributes
+                                      , ha_lneg: fromMaybe [] i.negativeAttributes
+                                      , la_lunk: fromMaybe [] i.unknownAttributes
                                       , type: 1
                                       , geometry: point }

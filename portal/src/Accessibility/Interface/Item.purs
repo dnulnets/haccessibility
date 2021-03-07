@@ -124,6 +124,9 @@ type Item = { id            :: Maybe String -- ^ Item key
               , positive    :: Maybe Int    -- ^ The positive values of the POI
               , negative    :: Maybe Int    -- ^ The negative values of the POI
               , unknown     :: Maybe Int    -- ^ The unknown values of the POI
+              , positiveAttributes :: Maybe (Array String) -- ^ The list of positive user properties
+              , negativeAttributes :: Maybe (Array String) -- ^ The list of negative user properties
+              , unknownAttributes :: Maybe (Array String)  -- ^ The list of unknown user properties
             }
 
 --
@@ -186,16 +189,6 @@ type QueryItems = { longitude   :: Maybe Number -- ^ The longitude of search cir
                     , text      :: Maybe String -- ^ The text that must be present in name or description
                   }
 
---
---instance encodeJsonQueryItems :: EncodeJson QueryItems where
---  encodeJson b
---    = "longitude" := b.queryItemsLongitude
---    ~> "latitude" := b.queryItemsLatitude
---    ~> "distance" := b.queryItemsDistance
---    ~> "limit" := b.queryItemsLimit
---    ~> "String" := b.queryItemsText
---    ~> jsonEmptyObject
---
 -- |The class for Items management
 class Monad m <= ManageItem m where
 

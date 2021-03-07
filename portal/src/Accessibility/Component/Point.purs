@@ -199,6 +199,9 @@ updateState = do
                     , positive    : Nothing
                     , negative    : Nothing
                     , unknown     : Nothing
+                    , positiveAttributes    : Nothing
+                    , negativeAttributes    : Nothing
+                    , unknownAttributes     : Nothing
                   }
 
 -- |Creates a HTML element for an input box of a text type
