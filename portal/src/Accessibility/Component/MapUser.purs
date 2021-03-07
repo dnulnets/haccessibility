@@ -20,7 +20,7 @@ import Accessibility.Utils.DOM (setInnerHTML)
 import Control.Alt ((<|>))
 import Control.Monad.Reader.Trans (class MonadAsk)
 
-import Data.Array ((!!), catMaybes, length, head)
+import Data.Array ((!!), catMaybes, length, head, foldl)
 import Data.Foldable (sequence_)
 import Data.Maybe (Maybe(..), fromMaybe, isJust, isNothing, maybe')
 import Data.Traversable (sequence)
@@ -272,21 +272,25 @@ handleAction (FeatureSelect e) = do
           H.liftEffect $ sequence_ $ flip setInnerHTML "<p>No information</p>" <$> state.content
         Just v ->
           -- H.liftEffect $ sequence_ $ WDN.setTextContent (v.positive <> "\n" <> v.negative <> "<br>" <> v.unknown) <$> WDE.toNode <$> state.content
-          H.liftEffect $ sequence_ $ flip setInnerHTML (v.positive <> "<br>" <> v.negative <> "<br>" <> v.unknown) <$> state.content
+          H.liftEffect $ sequence_ $ flip setInnerHTML ("<b>Accessibility</b><br>" <> v.score <> "<br>" <> v.lpos <> 
+            "<br>" <> v.lneg <> "<br>" <> v.lunk) <$> state.content
       coord <- H.liftEffect $ MapBrowserEvent.coordinate <$> Select.getMapBrowserEvent e
       H.liftEffect $ sequence_ $ Overlay.setPosition (Just coord) <$> state.overlay
 
   where
 
-    value::Feature.Feature -> Maybe {positive::String, negative::String, unknown::String}
-    value f = value1 <$> (Feature.get "ha_pos" f) <*> (Feature.get "ha_neg" f) <*> (Feature.get "ha_unk" f)
+    value::Feature.Feature -> Maybe {score::String, lpos::String, lneg::String, lunk::String}
+    value f = value1 <$> (Feature.get "ha_pos" f) <*> (Feature.get "ha_neg" f) <*> (Feature.get "ha_unk" f) <*> 
+                         (Feature.get "ha_lpos" f) <*> (Feature.get "ha_lneg" f) <*> (Feature.get "ha_lunk" f)
 
-    value1::Int->Int->Int-> {positive:: String, negative::String, unknown::String}
-    value1 p n u = {
-        positive: "P:" <> (show p)
-        , negative: "N:" <> (show n)
-        , unknown: "U:" <> (show u)
-      }
+      where
+        value1::Int->Int->Int->Array String->Array String->Array String->{score::String, lpos::String, lneg::String, lunk::String}
+        value1 p n u lp ln lu = {
+            score: "Score:" <> (show $ p*100/(p+n+u)) <> "/" <> (show $ n*100/(p+n+u)) <> "/" <> (show $ u*100/(p+n+u))
+            , lpos: foldl (\a la->la <> "<br>" <> a ) "<b>Present:</b>" lp
+            , lneg: foldl (\a la->la <> "<br>" <> a ) "<b>Missing:</b>" ln
+            , lunk: foldl (\a la->la <> "<br>" <> a ) "<b>Unknown:</b>" lu
+          }
 
 -- | GPS Error - Error in the geolocation device
 handleAction GPSError = H.liftEffect $ do
