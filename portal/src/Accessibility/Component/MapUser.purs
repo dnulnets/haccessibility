@@ -266,6 +266,9 @@ handleAction (FeatureSelect e) = do
     Nothing -> do
       H.liftEffect $ log "No selected POI"
     Just f -> do
+      H.liftEffect $ log $ (show (fromMaybe ["<Nothing>"] (Feature.get "ha_lpos" f)))
+      H.liftEffect $ log $ (show (fromMaybe ["<Nothing>"] (Feature.get "ha_lneg" f)))
+      H.liftEffect $ log $ (show (fromMaybe ["<Nothing>"] (Feature.get "ha_lunk" f)))
       case value f of
         Nothing ->
           -- H.liftEffect $ sequence_ $ WDN.setTextContent "No information" <$> WDE.toNode <$> state.content
@@ -740,6 +743,6 @@ fromItem i = do
                                       , ha_unk: fromMaybe 0 i.unknown
                                       , ha_lpos: fromMaybe [] i.positiveAttributes
                                       , ha_lneg: fromMaybe [] i.negativeAttributes
-                                      , la_lunk: fromMaybe [] i.unknownAttributes
+                                      , ha_lunk: fromMaybe [] i.unknownAttributes
                                       , type: 1
                                       , geometry: point }
