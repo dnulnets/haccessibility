@@ -15,6 +15,7 @@ import Accessibility.Interface.Item (class ManageItem, Item, queryItemsAndValues
 import Accessibility.Interface.Navigate (class ManageNavigation)
 import Accessibility.Interface.User (class ManageUser, UserProperty, queryUserProperties)
 import Accessibility.Utils.Result (evaluateResult)
+import Accessibility.Utils.DOM (setInnerHTML)
 
 import Control.Alt ((<|>))
 import Control.Monad.Reader.Trans (class MonadAsk)
@@ -267,9 +268,11 @@ handleAction (FeatureSelect e) = do
     Just f -> do
       case value f of
         Nothing ->
-          H.liftEffect $ sequence_ $ WDN.setTextContent "No information" <$> WDE.toNode <$> state.content
+          -- H.liftEffect $ sequence_ $ WDN.setTextContent "No information" <$> WDE.toNode <$> state.content
+          H.liftEffect $ sequence_ $ flip setInnerHTML "<p>No information</p>" <$> state.content
         Just v ->
-          H.liftEffect $ sequence_ $ WDN.setTextContent (v.positive <> "\n" <> v.negative <> "<br>" <> v.unknown) <$> WDE.toNode <$> state.content
+          -- H.liftEffect $ sequence_ $ WDN.setTextContent (v.positive <> "\n" <> v.negative <> "<br>" <> v.unknown) <$> WDE.toNode <$> state.content
+          H.liftEffect $ sequence_ $ flip setInnerHTML (v.positive <> "<br>" <> v.negative <> "<br>" <> v.unknown) <$> state.content
       coord <- H.liftEffect $ MapBrowserEvent.coordinate <$> Select.getMapBrowserEvent e
       H.liftEffect $ sequence_ $ Overlay.setPosition (Just coord) <$> state.overlay
 
