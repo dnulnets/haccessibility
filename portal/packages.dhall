@@ -126,7 +126,6 @@ let upstream =
 let upstream =
       https://github.com/purescript/package-sets/releases/download/psc-0.13.8-20200615/packages.dhall sha256:5d0cfad9408c84db0a3fdcea2d708f9ed8f64297e164dc57a7cf6328706df93a
 -}
-
 let upstream =
       https://github.com/purescript/package-sets/releases/download/psc-0.13.8-20200708/packages.dhall sha256:df5b0f1ae92d4401404344f4fb2a7a3089612c9f30066dcddf9eaea4fe780e29
 
@@ -134,16 +133,23 @@ let overrides = {=}
 
 let additions =
       { datetime-iso =
-          { dependencies = [ "newtype", "parsing", "argonaut-codecs", "datetime" ]
-          , repo = "https://github.com/jmackie/purescript-datetime-iso.git"
-          , version = "v4.0.0"
-          }
-          , openlayers =
-          { dependencies =[ "console", "effect", "foreign", "functions", "maybe", "nullable", "psci-support"]
-          , repo = "https://github.com/dnulnets/purescript-openlayers.git"
-          , version = "v0.1.10"          
-          }
-      	{- , openlayers = ../../purescript-openlayers/spago.dhall as Location -}
+        { dependencies = [ "newtype", "parsing", "argonaut-codecs", "datetime" ]
+        , repo = "https://github.com/jmackie/purescript-datetime-iso.git"
+        , version = "v4.0.0"
+        }
+      , openlayers =
+        { dependencies =
+          [ "console"
+          , "effect"
+          , "foreign"
+          , "functions"
+          , "maybe"
+          , "nullable"
+          , "psci-support"
+          ]
+        , repo = "https://github.com/dnulnets/purescript-openlayers.git"
+        , version = "v0.1.10"
+        }
       }
 
 in  upstream // overrides // additions

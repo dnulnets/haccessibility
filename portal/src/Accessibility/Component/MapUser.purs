@@ -276,7 +276,7 @@ handleAction (FeatureSelect e) = do
         Just v ->
           -- H.liftEffect $ sequence_ $ WDN.setTextContent (v.positive <> "\n" <> v.negative <> "<br>" <> v.unknown) <$> WDE.toNode <$> state.content
           H.liftEffect $ sequence_ $ flip setInnerHTML (v.score <> "<br>" <> v.lpos <> 
-            "<br>" <> v.lneg <> "<br>" <> v.lunk) <$> state.content
+            "<br>" <> v.lunk <> "<br>" <> v.lneg) <$> state.content
       coord <- H.liftEffect $ MapBrowserEvent.coordinate <$> Select.getMapBrowserEvent e
       H.liftEffect $ sequence_ $ Overlay.setPosition (Just coord) <$> state.overlay
 
@@ -289,10 +289,10 @@ handleAction (FeatureSelect e) = do
       where
         value1::Int->Int->Int->Array String->Array String->Array String->{score::String, lpos::String, lneg::String, lunk::String}
         value1 p n u lp ln lu = {
-            score: "<b>Score:" <> (show $ p*100/(p+n+u)) <> "/" <> (show $ n*100/(p+n+u)) <> "/" <> (show $ u*100/(p+n+u)) <> "</b>"
+            score: "<b>Score (+/?/-):" <> (show $ p*100/(p+n+u)) <> "/" <> (show $ u*100/(p+n+u)) <> "/" <> (show $ n*100/(p+n+u)) <> "</b>"
             , lpos: foldr (\a la->la <> "<br>" <> a ) "<b>Present:</b>" lp
-            , lneg: foldr (\a la->la <> "<br>" <> a ) "<b>Missing:</b>" ln
             , lunk: foldr (\a la->la <> "<br>" <> a ) "<b>Unknown:</b>" lu
+            , lneg: foldr (\a la->la <> "<br>" <> a ) "<b>Missing:</b>" ln
           }
 
 -- | GPS Error - Error in the geolocation device

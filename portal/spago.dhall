@@ -2,7 +2,6 @@
 Welcome to a Spago project!
 You can edit this file as you like.
 -}
-
 { name = "accessibility"
 , dependencies =
   [ "aff-coroutines"
@@ -13,17 +12,17 @@ You can edit this file as you like.
   , "coroutines"
   , "datetime-iso"
   , "effect"
+  , "filterable"
   , "generics-rep"
   , "halogen"
   , "http-methods"
+  , "newtype"
   , "numbers"
+  , "openlayers"
   , "psci-support"
   , "routing"
   , "routing-duplex"
   , "uuid"
-  , "openlayers"
-  , "newtype"
-  , "filterable"
   ]
 , packages = ./packages.dhall
 , sources = [ "src/**/*.purs", "test/**/*.purs" ]
