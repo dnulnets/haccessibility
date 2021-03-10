@@ -51,7 +51,7 @@ evaluatePOI aup aav = mconcat (evaluateUserProperty (toAttributeValueMap aav) <$
                                   else ItemValue {positive = 0, negative = 1, unknown = 0, positiveAttributes = [], negativeAttributes = [description a], unknownAttributes = []}
 
     description::Attribute->Text
-    description a = attributeGroup a <> " " <> attributeDisplayName a <> " " <> fromMaybe "?" (attributeValue a) <> " " <> attributeUnit a
+    description a = attributeGroup a <> " " <> attributeDisplayName a <> "=" <> fromMaybe "?" (attributeValue a) <> " [" <> attributeUnit a <> "]"
 
     descriptionU::U.UserProperty->Text
     descriptionU up = U.propertyGroup up <> " " <> U.propertyDisplayName up
