@@ -45,7 +45,7 @@ evaluatePOI aup aav = mconcat (evaluateUserProperty (toAttributeValueMap aav) <$
 
     evaluateUserProperty::Map.Map Text Attribute -> U.UserProperty -> ItemValue
     evaluateUserProperty msa up = case join $ Map.lookup <$> Just (U.propertyAttributeId up) <*> Just msa of
-                      Nothing -> ItemValue {positive = 0, negative = 0, unknown = 1, positiveAttributes = [], negativeAttributes = [], unknownAttributes = [descriptionU up]}
+                      Nothing -> ItemValue {positive = 0, negative = 0, unknown = 1, positiveAttributes = [], negativeAttributes = [], unknownAttributes = [descriptionUserProperty up]}
                       Just a -> if evaluate up a
                                   then ItemValue {positive = 1, negative = 0, unknown = 0, positiveAttributes = [description a ], negativeAttributes = [], unknownAttributes = []}
                                   else ItemValue {positive = 0, negative = 1, unknown = 0, positiveAttributes = [], negativeAttributes = [description a], unknownAttributes = []}
@@ -53,8 +53,8 @@ evaluatePOI aup aav = mconcat (evaluateUserProperty (toAttributeValueMap aav) <$
     description::Attribute->Text
     description a = attributeGroup a <> " " <> attributeDisplayName a <> "=" <> fromMaybe "?" (attributeValue a) <> " [" <> attributeUnit a <> "]"
 
-    descriptionU::U.UserProperty->Text
-    descriptionU up = U.propertyGroup up <> " " <> U.propertyDisplayName up
+    descriptionUserProperty::U.UserProperty->Text
+    descriptionUserProperty up = U.propertyGroup up <> " " <> U.propertyDisplayName up
 
     evaluate::U.UserProperty->Attribute->Bool
     evaluate up av = Just True == (notit <$> Just (U.propertyNegate up)
