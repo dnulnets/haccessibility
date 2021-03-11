@@ -266,9 +266,6 @@ handleAction (FeatureSelect e) = do
     Nothing -> do
       H.liftEffect $ log "No selected POI"
     Just f -> do
-      H.liftEffect $ log $ (show (fromMaybe ["<Nothing>"] (Feature.get "ha_lpos" f)))
-      H.liftEffect $ log $ (show (fromMaybe ["<Nothing>"] (Feature.get "ha_lneg" f)))
-      H.liftEffect $ log $ (show (fromMaybe ["<Nothing>"] (Feature.get "ha_lunk" f)))
       case value f of
         Nothing ->
           -- H.liftEffect $ sequence_ $ WDN.setTextContent "No information" <$> WDE.toNode <$> state.content
@@ -282,17 +279,18 @@ handleAction (FeatureSelect e) = do
 
   where
 
-    value::Feature.Feature -> Maybe {score::String, lpos::String, lneg::String, lunk::String}
+    value::Feature.Feature -> Maybe {score::String, lpos::String, lneg::String, lunk::String, desc::String}
     value f = value1 <$> (Feature.get "ha_pos" f) <*> (Feature.get "ha_neg" f) <*> (Feature.get "ha_unk" f) <*> 
-                         (Feature.get "ha_lpos" f) <*> (Feature.get "ha_lneg" f) <*> (Feature.get "ha_lunk" f)
+                         (Feature.get "ha_lpos" f) <*> (Feature.get "ha_lneg" f) <*> (Feature.get "ha_lunk" f) <*> (Feature.get "ha_desc" f)
 
       where
-        value1::Int->Int->Int->Array String->Array String->Array String->{score::String, lpos::String, lneg::String, lunk::String}
-        value1 p n u lp ln lu = {
+        value1::Int->Int->Int->Array String->Array String->Array String->String->{score::String, lpos::String, lneg::String, lunk::String, desc::String}
+        value1 p n u lp ln lu d = {
             score: "<b>Score (+/?/-):" <> (show $ p*100/(p+n+u)) <> "/" <> (show $ u*100/(p+n+u)) <> "/" <> (show $ n*100/(p+n+u)) <> "</b>"
             , lpos: foldr (\a la->la <> "<br>" <> a ) "<b>Present:</b>" lp
             , lunk: foldr (\a la->la <> "<br>" <> a ) "<b>Unknown:</b>" lu
             , lneg: foldr (\a la->la <> "<br>" <> a ) "<b>Missing:</b>" ln
+            , desc: d
           }
 
 -- | GPS Error - Error in the geolocation device
@@ -744,5 +742,6 @@ fromItem i = do
                                       , ha_lpos: fromMaybe [] i.positiveAttributes
                                       , ha_lneg: fromMaybe [] i.negativeAttributes
                                       , ha_lunk: fromMaybe [] i.unknownAttributes
+                                      , ha_desc: i.description
                                       , type: 1
                                       , geometry: point }
