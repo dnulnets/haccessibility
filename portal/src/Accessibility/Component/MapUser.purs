@@ -272,7 +272,7 @@ handleAction (FeatureSelect e) = do
           H.liftEffect $ sequence_ $ flip setInnerHTML "<p>No information</p>" <$> state.content
         Just v ->
           -- H.liftEffect $ sequence_ $ WDN.setTextContent (v.positive <> "\n" <> v.negative <> "<br>" <> v.unknown) <$> WDE.toNode <$> state.content
-          H.liftEffect $ sequence_ $ flip setInnerHTML (v.score <> "<br>" <> v.lpos <> 
+          H.liftEffect $ sequence_ $ flip setInnerHTML ("Description: " <> v.desc <> "<br>" <> v.score <> "<br>" <> v.lpos <> 
             "<br>" <> v.lunk <> "<br>" <> v.lneg) <$> state.content
       coord <- H.liftEffect $ MapBrowserEvent.coordinate <$> Select.getMapBrowserEvent e
       H.liftEffect $ sequence_ $ Overlay.setPosition (Just coord) <$> state.overlay
