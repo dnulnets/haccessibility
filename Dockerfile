@@ -1,4 +1,4 @@
-FROM neptune:32000/paccbuild:latest as portal
+FROM neptune:32000/paccbuild:14 as portal
 WORKDIR /
 RUN mkdir -p /haccessibility
 COPY ./portal /haccessibility/portal
