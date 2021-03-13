@@ -70,7 +70,7 @@ component :: forall r q i m . MonadAff m
           => ManageAuthentication m
           => ManageNavigation m
           => MonadAsk r m
-          => H.Component HH.HTML q i Output m
+          => H.Component q i Output m
 component =
   H.mkComponent
     { initialState
@@ -86,21 +86,21 @@ render state = HH.div
                [css "ha-login"]
                [              
                    HH.form
-                   [css "ha-form-login", HE.onSubmit (Just <<< Submit)]
+                   [css "ha-form-login", HE.onSubmit Submit]
                    [HH.h1 [css "mt-3"] [HH.text "Login"],
                    HH.div
                     [css "form-group"]
                     [HH.label [HP.for "username"] [HH.text "Username"],
-                     HH.input [css "form-control", HP.value $ fromMaybe "" state.username, HP.id_ "username", HP.type_ HP.InputText,
+                     HH.input [css "form-control", HP.value $ fromMaybe "" state.username, HP.id "username", HP.type_ HP.InputText,
                                HPA.label "username", HP.placeholder "Your username",
-                               HE.onValueChange \v -> Just $ Input (\st -> st { username = Just v})]
+                               HE.onValueChange \v -> Input (\st -> st { username = Just v})]
                     ],
                     HH.div
                     [css "form-group"]
                     [HH.label [HP.for "password"] [HH.text "Password"], 
-                     HH.input [css "form-control", HP.value $ fromMaybe "" state.password, HP.id_ "password", HP.type_ HP.InputPassword,
+                     HH.input [css "form-control", HP.value $ fromMaybe "" state.password, HP.id "password", HP.type_ HP.InputPassword,
                                HPA.label "password", HP.placeholder "Your password",
-                               HE.onValueChange \v -> Just $ Input (\st  -> st { password = Just v })]
+                               HE.onValueChange \v -> Input (\st  -> st { password = Just v })]
                     ],
                    HH.button [css "btn btn-lg btn-block btn-warning", HP.type_ HP.ButtonSubmit] [HH.text "Login"]
                    ]

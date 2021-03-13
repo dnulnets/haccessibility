@@ -27,17 +27,14 @@ run:
 	cd backend;./run.sh
 	
 image-purescript-build-env:	
-	docker build -t paccbuild:1.0 -t paccbuild:latest -f deployment/Dockerfile.purescript-build-env .
-
-image-build-db:	
-	docker build -t haccdb:1.0 -t haccdb:latest -f deployment/Dockerfile.build-db .
+	docker build -t paccbuild:14 -f deployment/Dockerfile.purescript-build-env .
 
 image-haskell-build-env:	
-	docker build -t haccbuild:1.0 -t haccbuild:latest -f deployment/Dockerfile.haskell-build-env .
+	docker build -t haccbuild:16.31 -f deployment/Dockerfile.haskell-build-env .
 
 image-build-server:	
-	docker build -t haccsvc:1.0 -t haccsvc:latest -f deployment/Dockerfile.build-server .
+	docker build -t haccsvc:latest -f deployment/Dockerfile.build-server .
 
 image-build-server-local:	
-	docker build -t haccsvc:1.0 -t haccsvc:latest -f deployment/Dockerfile.build-server-local .
+	docker build -t haccsvc:latest -f deployment/Dockerfile.build-server-local .
 

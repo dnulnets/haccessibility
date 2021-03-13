@@ -1,7 +1,7 @@
 FROM node:erbium
 WORKDIR /
 RUN 	   apt-get install git \
-	&& git clone https://github.com/dnulnets/haccessibility.git
+	&& git clone -b purs https://github.com/dnulnets/haccessibility.git
 WORKDIR /haccessibility/portal
 RUN	   rm -fR output \
 	&& rm -fR dist \

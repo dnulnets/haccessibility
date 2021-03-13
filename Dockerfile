@@ -1,4 +1,4 @@
-FROM neptune:32000/paccbuild:latest as portal
+FROM neptune:32000/paccbuild:14 as portal
 WORKDIR /
 RUN mkdir -p /haccessibility
 COPY ./portal /haccessibility/portal
@@ -10,7 +10,7 @@ RUN	rm -fr .cahce \
 RUN	npm install \
 	&& ./generate.sh \
 	&& cat ./src/Version.purs \
-	&& spago build \
+	&& spago --no-color build\
 	&& spago bundle-app \
 	&& parcel build --public-url /iothub/ index.html
 	

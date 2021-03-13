@@ -20,7 +20,8 @@ import Data.Argonaut (
   , class DecodeJson
   , decodeJson
   , class EncodeJson
-  , encodeJson)
+  , encodeJson
+  , printJsonDecodeError)
 
 -- Effects
 import Effect.Aff (Aff)
@@ -68,6 +69,7 @@ defaultRequest (BaseURL baseUrl) ep reqm auth =
   , content: AXRB.json <$> encodeJson <$> body
   , username: Nothing
   , password: Nothing
+  , timeout: Nothing
   , withCredentials: false
   , responseFormat: AXRF.json
   }
@@ -90,7 +92,9 @@ mkAuthRequest burl ep tok rm = do
   response <- AX.request $ defaultRequest burl ep rm $ Bearer <$> tok
   pure case response of
     Left err -> Left $ AX.printError err -- Make a string out of affjax errors
-    Right val -> (Tuple val.status) <$> (decodeJson val.body)
+    Right val -> case decodeJson val.body of
+      Right v -> Right $ Tuple val.status v
+      Left e -> Left $ printJsonDecodeError e
 
 -- |Makes a request to the backend and return with status and ignore result
 mkAuthRequest_  :: forall a . EncodeJson a

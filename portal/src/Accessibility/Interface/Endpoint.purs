@@ -12,7 +12,7 @@ import Prelude (class Show, ($), (<<<), (<>))
 import Data.Maybe (Maybe)
 import Data.Either (Either)
 import Data.Generic.Rep (class Generic)
-import Data.Generic.Rep.Show (genericShow)
+import Data.Show.Generic (genericShow)
 
 -- Monad imports
 import Control.Monad.Reader (asks)

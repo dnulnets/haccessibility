@@ -12,9 +12,8 @@ import Prelude
 import Data.Either (Either(..))
 import Data.Array (catMaybes, deleteBy, length)
 import Data.Foldable (foldr)
+import Data.Unfoldable (replicateA)
 import Data.Maybe (Maybe(..), fromMaybe)
-import Data.DateTime.ISO (ISO(..))
-import Data.UUID (genUUID, toString)
 import Data.Tuple (Tuple(..))
 import Data.Traversable (sequence)
 import Data.Map as Map
@@ -27,6 +26,7 @@ import Control.Monad.Reader.Trans (class MonadAsk)
 import Effect.Now (nowDateTime)
 import Effect.Aff.Class (class MonadAff)
 import Effect.Console (log)
+import Effect.Random (randomInt)
 
 -- Halogen imports
 import Halogen as H
@@ -43,6 +43,7 @@ import Web.Event.Event as Event
 import OpenLayers.Coordinate as Coordinate
 
 -- Our own imports
+import Accessibility.Utils.ISO (ISO(..))
 import Accessibility.Utils.Result (evaluateResult)
 import Accessibility.Component.HTML.Utils (css, prop, enableTooltips)
 import Accessibility.Interface.Entity (class ManageEntity)
@@ -118,7 +119,7 @@ component :: forall r q m. MonadAff m
           => MonadAsk r m
           => ManageEntity m
           => ManageItem m
-          => H.Component HH.HTML q Operation Output m
+          => H.Component q Operation Output m
 component =
   H.mkComponent
     { initialState
@@ -184,10 +185,10 @@ updateState = do
     _queryItem (ViewPOI k) = queryItem k
     _queryItem (AddPOI la lo) = do
       now <- H.liftEffect $ nowDateTime
-      uuid <- H.liftEffect $ genUUID
+      uuid::Array Int <- H.liftEffect $ replicateA 16 (randomInt 0 9)
       pure $ Right { id        : Nothing
                     , name        : ""
-                    , guid        : toString uuid
+                    , guid        : show uuid
                     , created     : ISO now
                     , description : ""
                     , source      : Human
@@ -215,7 +216,7 @@ displayLocation c =
           , HP.title "The POI Coordinate"
           , prop "data-toggle" "tooltip"
           , prop "data-placement" "top"
-          , HP.id_ "Latitude"
+          , HP.id "Latitude"
           , HP.type_ HP.InputText
           , HPA.label "Coordinate"
           , HP.placeholder "Coordinate"
@@ -235,11 +236,11 @@ inputName v =
           , HP.title "A name for the point of interest"
           , prop "data-toggle" "tooltip"
           , prop "data-placement" "top"
-          , HP.id_ "Name"
+          , HP.id "Name"
           , HP.type_ HP.InputText
           , HPA.label "Name"
           , HP.placeholder "Name"
-          , HE.onValueChange \i -> Just $ Input (change i)] <> catMaybes [HP.value <$> v])
+          , HE.onValueChange \i -> Input (change i)] <> catMaybes [HP.value <$> v])
         ]
   ]
   where
@@ -257,11 +258,11 @@ inputDescription val =
         , HP.title "A description of the point of interest"
         , prop "data-toggle" "tooltip"
         , prop "data-placement" "top"
-        , HP.id_ "Description"
+        , HP.id "Description"
         , HP.rows 5
         , HPA.label "Description"
         , HP.placeholder "Description"
-        , HE.onValueChange \v -> Just $ Input (change v)
+        , HE.onValueChange \v -> Input (change v)
         ] <> catMaybes [HP.value <$> val])
     ]
 
@@ -303,12 +304,12 @@ attributeInput iav =
       BooleanType ->
         HH.select
           ([ css "form-control"
-          , HP.id_ av.name
+          , HP.id av.name
           , HP.title av.description
           , prop "data-toggle" "tooltip"
           , prop "data-placement" "top"
           , HPA.label av.name
-          , HE.onValueChange \i -> Just $ Input (change i av)
+          , HE.onValueChange \i -> Input (change i av)
           ] <> catMaybes [HP.value <$> av.value])
           [ HH.option [] [ HH.text "" ]
           , HH.option [] [ HH.text "Yes" ]
@@ -317,25 +318,25 @@ attributeInput iav =
       NumberType ->
         HH.div [css "input-group"] [
           HH.input ([ css "form-control"
-            , HP.id_ av.name
+            , HP.id av.name
             , HP.type_ HP.InputNumber
             , HP.title av.description
             , prop "data-toggle" "tooltip"
             , prop "data-placement" "top"
             , HPA.label av.name
             , HP.placeholder av.displayName
-            , HE.onValueChange \i -> Just $ Input (change i av)] <> catMaybes [HP.value <$> av.value])
+            , HE.onValueChange \i -> Input (change i av)] <> catMaybes [HP.value <$> av.value])
           , HH.div [css "input-group-append"] [HH.span [css "input-group-text"] [HH.text av.unit]]]
       TextType ->
         HH.input ([ css "form-control"
           , HP.title av.description
           , prop "data-toggle" "tooltip"
           , prop "data-placement" "top"
-          , HP.id_ av.name
+          , HP.id av.name
           , HP.type_ HP.InputText
           , HPA.label av.name
           , HP.placeholder av.displayName
-          , HE.onValueChange \i -> Just $ Input (change i av)] <> catMaybes [HP.value <$> av.value])
+          , HE.onValueChange \i -> Input (change i av)] <> catMaybes [HP.value <$> av.value])
 
     -- Adds a change order for an attribute whenever it has changed
     change::String->AttributeValue->State->State
@@ -351,7 +352,7 @@ render  :: forall m . MonadAff m
 render state =
   HH.div
     [ css "container-fluid ha-point" ]
-    [ HH.form [ css "ha-form-point", HE.onSubmit (Just <<< Submit) ]
+    [ HH.form [ css "ha-form-point", HE.onSubmit Submit ]
         ([ HH.h1 [ css "mt-3" ] [ HH.text "POI Information" ]
         , inputName $ _.name <$> state.item
         , displayLocation $ validate $ catMaybes $ [(_.latitude <$> state.item), (_.longitude <$> state.item)]
@@ -367,7 +368,7 @@ render state =
               AddPOI _ _ -> "Create"
               UpdatePOI _ -> "Update") ]
           , HH.button [css "btn btn-lg btn-block btn-warning", HP.type_ HP.ButtonButton
-            , HE.onClick \_->Just Cancel  ] [ HH.text "Cancel"]
+            , HE.onClick \_-> Cancel  ] [ HH.text "Cancel"]
         ])
     ]
   where

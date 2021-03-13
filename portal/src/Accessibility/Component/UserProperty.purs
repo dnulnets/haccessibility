@@ -87,7 +87,7 @@ component :: forall r q m i. MonadAff m
           => ManageEntity m
           => ManageItem m
           => ManageUser m
-          => H.Component HH.HTML q i Output m
+          => H.Component q i Output m
 component =
   H.mkComponent
     { initialState
@@ -167,7 +167,7 @@ displayEmail me =
           , HP.title "The users email"
           , prop "data-toggle" "tooltip"
           , prop "data-placement" "top"
-          , HP.id_ "Email"
+          , HP.id "Email"
           , HP.type_ HP.InputText
           , HPA.label "Email"
           , HP.placeholder "Email"
@@ -188,7 +188,7 @@ displayUsername mv =
           , HP.title "The username"
           , prop "data-toggle" "tooltip"
           , prop "data-placement" "top"
-          , HP.id_ "Username"
+          , HP.id "Username"
           , HP.type_ HP.InputText
           , HPA.label "Username"
           , HP.placeholder "Username"
@@ -232,23 +232,23 @@ propertyInput state iav =
             HH.label [HP.for ("operation-" <> av.name)] [HH.text "Operation:"]
             , HH.select
               ([ css "form-control ml-1"
-              , HP.id_ ("operation-" <> av.name)
+              , HP.id ("operation-" <> av.name)
               , HP.title ("The operation for " <> av.description)
               , prop "data-toggle" "tooltip"
               , prop "data-placement" "top"
               , HPA.label ("operation" <> av.name)
-              , HE.onValueChange \i -> Just $ Input (changeOperation i av)
+              , HE.onValueChange \i -> Input (changeOperation i av)
               ] <> catMaybes [(HP.value <<< operationToDisplay) <$> av.operation])
               (operationChoices av.typeof)
             , HH.div [css "form-group form-check"] [
                 HH.input ([ css "form-check-input ml-1"
-                  , HP.id_ ("negate-" <> av.name)
+                  , HP.id ("negate-" <> av.name)
                   , HP.type_ HP.InputCheckbox
                   , HP.title ("Negation of the operation " <> av.description)
                   , prop "data-toggle" "tooltip"
                   , prop "data-placement" "top"
                   , HPA.label ("negation " <> av.name)
-                  , HE.onChecked \i -> Just $ Input (changeNegate i av)] <> catMaybes [HP.checked <$> av.negate])
+                  , HE.onChecked \i -> Input (changeNegate i av)] <> catMaybes [HP.checked <$> av.negate])
               , HH.label [css "form-check-label", HP.for ("negate-" <> av.name)] [HH.text "Negate"]
             ]
           ]
@@ -263,12 +263,12 @@ propertyInput state iav =
       BooleanType ->
         [ HH.select
           ([ css "form-control"
-          , HP.id_ up.name
+          , HP.id up.name
           , HP.title up.description
           , prop "data-toggle" "tooltip"
           , prop "data-placement" "top"
           , HPA.label up.name
-          , HE.onValueChange \i -> Just $ Input (changeValue i up)
+          , HE.onValueChange \i -> Input (changeValue i up)
           ] <> catMaybes [HP.value <$> up.value])
           [ HH.option [] [ HH.text "<no value>" ]
           , HH.option [] [ HH.text "Yes" ]
@@ -280,28 +280,28 @@ propertyInput state iav =
       NumberType ->
         ([ HH.div [css "input-group"] [
             HH.input ([ css "form-control"
-              , HP.id_ up.name
+              , HP.id up.name
               , HP.type_ HP.InputNumber
               , HP.title up.description
               , prop "data-toggle" "tooltip"
               , prop "data-placement" "top"
               , HPA.label up.name
               , HP.placeholder up.displayName
-              , HE.onValueChange \i -> Just $ Input (changeValue i up)] <> catMaybes [HP.value <$> up.value])
+              , HE.onValueChange \i -> Input (changeValue i up)] <> catMaybes [HP.value <$> up.value])
             , HH.div [css "input-group-append"] [HH.span [css "input-group-text"] [HH.text up.unit]]
           ]
         ]) <> (maybe [] (\o -> case o of
           OIN ->
             [ HH.div [css "input-group"] [
               HH.input ([ css "form-control mt-1"
-                , HP.id_ (up.name <> "1")
+                , HP.id (up.name <> "1")
                 , HP.type_ HP.InputNumber
                 , HP.title up.description
                 , prop "data-toggle" "tooltip"
                 , prop "data-placement" "top"
                 , HPA.label up.name
                 , HP.placeholder up.displayName
-                , HE.onValueChange \i -> Just $ Input (changeValue1 i up)] <> catMaybes [HP.value <$> up.value1])
+                , HE.onValueChange \i -> Input (changeValue1 i up)] <> catMaybes [HP.value <$> up.value1])
               , HH.div [css "input-group-append mt-1"] [HH.span [css "input-group-text"] [HH.text up.unit]]]]
           _ -> []
         ) (realOperation st up))
@@ -371,7 +371,7 @@ render  :: forall m . MonadAff m
 render state =
   HH.div
     [ css "container-fluid ha-point" ]
-    [ HH.form [ css "ha-form-point", HE.onSubmit (Just <<< Submit) ]
+    [ HH.form [ css "ha-form-point", HE.onSubmit Submit ]
         ([ HH.h1 [ css "mt-3" ] [ HH.text "User properties" ]
         , displayUsername $ Just "tomas"
         , displayEmail $ Just "tomas.stenlund@telia.com"
@@ -383,7 +383,7 @@ render state =
           HH.button [ css "btn btn-lg btn-block btn-warning", HP.type_ HP.ButtonSubmit ] [ HH.text 
             "Update" ]
           , HH.button [css "btn btn-lg btn-block btn-warning", HP.type_ HP.ButtonButton
-            , HE.onClick \_->Just Cancel  ] [ HH.text "Cancel"]
+            , HE.onClick \_-> Cancel  ] [ HH.text "Cancel"]
         ])
     ]
 

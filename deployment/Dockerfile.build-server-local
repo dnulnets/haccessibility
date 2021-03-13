@@ -1,4 +1,4 @@
-FROM paccbuild:latest as portal
+FROM paccbuild:14 as portal
 WORKDIR /
 RUN mkdir -p /haccessibility
 COPY ./portal /haccessibility/portal
