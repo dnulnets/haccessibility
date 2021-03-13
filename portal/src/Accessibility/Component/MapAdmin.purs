@@ -10,7 +10,7 @@ import Prelude
 
 -- Data imports
 import Data.Array((!!), catMaybes, length)
-import Data.Maybe (Maybe(..), fromMaybe, isJust, isNothing, maybe')
+import Data.Maybe (Maybe(..), fromMaybe, isJust, isNothing, maybe', maybe)
 import Data.Foldable (sequence_, for_)
 import Data.Traversable (sequence, traverse)
 import Data.Tuple (Tuple(..), fst, snd)
@@ -29,7 +29,8 @@ import Effect.Console (log)
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Properties as HP
-import Halogen.Query.EventSource as HQE
+import Halogen.Query.Event as HQE
+import Halogen.Subscription as HS
 
 -- DOM and HTML imports
 import Web.Event.Event as WEE
@@ -139,7 +140,7 @@ component :: forall r q m . MonadAff m
           => MonadAsk r m
           => ManageEntity m
           => ManageItem m
-          => H.Component HH.HTML q Input Output m
+          => H.Component q Input Output m
 component = 
   H.mkComponent
     { initialState
@@ -157,7 +158,7 @@ render  :: forall m . MonadAff m
 render state = HH.div
                [css "d-flex flex-column ha-nearby"]
                [HH.div [css "row"] [HH.div[css "col-xs-12 col-md-12"][HH.h2 [][HH.text "POI Administration"]]],
-                HH.div [css "row flex-grow-1 ha-nearby-map"] [HH.div[css "col-xs-12 col-md-12"][HH.div [HP.id_ "ha-map"][]]]
+                HH.div [css "row flex-grow-1 ha-nearby-map"] [HH.div[css "col-xs-12 col-md-12"][HH.div [HP.id "ha-map"][]]]
                 ]
 
 -- |Handles all actions for the login component
@@ -175,22 +176,22 @@ handleAction Initialize = do
 
   -- Create the map, layers and handlers
   hamap <- createMap
-  poiLayer <- createLayers hamap
-  gps <- createGPS hamap poiLayer
+  lay <- createLayers hamap
+  gps <- createGPS hamap lay.vl
 
   -- Create the handlers
   ba <- createButtonHandlers
-  s <- createSelectHandler hamap poiLayer
+  sh <- createSelectHandler hamap lay.vl
 
   -- Set the alert if any
   (Alert <$> H.gets _.alert) >>= H.raise
 
   -- Update the stat
-  H.modify_ (_ { subscription = ba
-                , select = Just s
+  H.modify_ (_ { subscription = ba <> [sh.subscription] <> gps.subscriptions <> lay.subscriptions
+                , select = Just sh.feature
                 , map = Just hamap
-                , geo = Just gps
-                , layer = Just poiLayer})
+                , geo = Just gps.geo
+                , layer = Just lay.vl})
 
 -- | Add an item to the database based on the current position
 handleAction AddItem = do
@@ -367,8 +368,6 @@ handleAction (MAPRenderComplete e) = do
     view <- join <$> (sequence $ Map.getView <$> state.map)
     c <- join <$> (sequence $ View.getCenter <$> view)
     z <- join <$> (sequence $ View.getZoom <$> view)
-    log $ "Sending " <> (show c)
-    log $ "Sending " <> (show z)
     pure $ MapPosition c z
   H.raise event
 
@@ -518,7 +517,7 @@ createButtonHandlers = do
 
     -- Subscribe to a click event for a button
     subscribeOnClick a e = H.subscribe do
-      HQE.eventListenerEventSource
+      HQE.eventListener
         (WEE.EventType "click")
         (WDE.toEventTarget e)
         (const (Just a))
@@ -529,19 +528,22 @@ createButtonHandlers = do
 createSelectHandler :: forall o m . MonadAff m
                     => Map.Map
                     -> VectorLayer.Vector
-                    -> H.HalogenM State Action () o m Select.Select
+                    -> H.HalogenM State Action () o m { subscription::H.SubscriptionId, feature::Select.Select }
 createSelectHandler hamap poiLayer = do
   -- Subscribe for feature selects on the map
   fs <- H.liftEffect $ Select.create   { multi: false
                                         , layers: Select.layers.asArray [poiLayer]                                            
                                         , toggleCondition: Condition.never }
-  sfeat <- H.subscribe $ HQE.effectEventSource \emitter -> do
-        key <- Select.onSelect (\e -> do
-          HQE.emit emitter (FeatureSelect e)
-          pure true) fs
-        pure (HQE.Finalizer (Select.unSelect key fs))
+
+  { emitter, listener } <- H.liftEffect HS.create
+  sfeat <- H.subscribe emitter
+
+  key <- H.liftEffect $ Select.onSelect (\e -> do
+    HS.notify listener (FeatureSelect e)
+    pure true) fs
+
   H.liftEffect $ Map.addInteraction fs hamap
-  pure fs
+  pure { subscription: sfeat, feature:fs }
 
 --
 -- Create the GPS and add all handlers
@@ -550,7 +552,7 @@ createGPS :: forall m . MonadAff m
           => ManageItem m
           => Map.Map
           -> VectorLayer.Vector
-          -> H.HalogenM State Action () Output m Geolocation.Geolocation
+          -> H.HalogenM State Action () Output m { subscriptions:: Array H.SubscriptionId, geo::Geolocation.Geolocation }
 createGPS map vl = do
 
   state <- H.get
@@ -577,52 +579,67 @@ createGPS map vl = do
       pure $ Tuple pfeat pafeat
 
   -- Event handlers for the GPS Position
-  setupGPSErrorHandler geo
-  setupGPSPositionHandler geo $ fst mfeat
-  setupGPSAccuracyHandler geo $ snd mfeat
+  sidE <- setupGPSErrorHandler geo
+  sidPH <- setupGPSPositionHandler geo $ fst mfeat
+  sidA <- setupGPSAccuracyHandler geo $ snd mfeat
 
   -- Turn on the geo location device
   H.liftEffect $ Geolocation.setTracking true geo
 
   -- Get the current position and position the map from the GPS, but only once
-  when (isNothing state.initial.coordinate) do
-    void $ H.subscribe' $ \_ -> (HQE.effectEventSource \emitter -> do
-      key <- Geolocation.onceChangePosition (\_ -> do
-        HQE.emit emitter (GPSCenter geo map vl)
-        pure true) geo
-      pure (HQE.Finalizer (Geolocation.unChangePosition key geo)))
+  sidO <- if (isNothing state.initial.coordinate)
+    then do
+      ocp <- H.liftEffect HS.create
+      sidO <- H.subscribe ocp.emitter
+
+      void $ H.liftEffect $ Geolocation.onceChangePosition (\_ -> do
+          HS.notify ocp.listener (GPSCenter geo map vl)
+          pure true) geo
+
+      pure $ Just sidO
+    else
+      pure Nothing
 
   -- Get the current position from the input to the component
   when (isJust state.initial.coordinate) do
     createPOI vl state.initial.coordinate
 
-  pure geo
+  pure { subscriptions: [sidE, sidPH, sidA] <> (maybe [] pure sidO), geo:geo }
 
   where
 
     setupGPSPositionHandler geo feat = do    
       -- Change of Position
-      void $ H.subscribe $ HQE.effectEventSource \emitter -> do
-        key <- Geolocation.onChangePosition (\_ -> do
-          HQE.emit emitter (GPSPosition geo feat)
+      cp <- H.liftEffect HS.create
+      sid <- H.subscribe cp.emitter
+
+      key <- H.liftEffect $ Geolocation.onChangePosition (\_ -> do
+          HS.notify cp.listener (GPSPosition geo feat)
           pure true) geo
-        pure (HQE.Finalizer (Geolocation.unChangePosition key geo))
+
+      pure sid
 
     setupGPSAccuracyHandler geo feat = do
       -- Change of Accuracy
-      void $ H.subscribe $ HQE.effectEventSource \emitter -> do
-        key <- Geolocation.onChangeAccuracyGeometry (\_ -> do
-          HQE.emit emitter (GPSAccuracy geo feat)
+      ca <- H.liftEffect HS.create
+      sid <- H.subscribe ca.emitter
+
+      key <- H.liftEffect $ Geolocation.onChangeAccuracyGeometry (\_ -> do
+          HS.notify ca.listener (GPSAccuracy geo feat)
           pure true) geo
-        pure (HQE.Finalizer (Geolocation.unChangeAccuracyGeometry key geo))
+
+      pure sid
 
     setupGPSErrorHandler geo = do
     -- Create the GPS Error handler
-      void $ H.subscribe $ HQE.effectEventSource \emitter -> do
-        key <- Geolocation.onError (\_ -> do
-          HQE.emit emitter GPSError
+      e <- H.liftEffect HS.create
+      sid <- H.subscribe e.emitter
+
+      key <- H.liftEffect $ Geolocation.onError (\_ -> do
+          HS.notify e.listener GPSError
           pure true) geo
-        pure (HQE.Finalizer (Geolocation.unError key geo))
+
+      pure sid
 
 --
 -- Create the layer and add our POI and data  from the IoTHub
@@ -630,7 +647,7 @@ createGPS map vl = do
 createLayers:: forall m . MonadAff m
             => ManageEntity m
             => Map.Map
-            -> H.HalogenM State Action () Output m VectorLayer.Vector
+            -> H.HalogenM State Action () Output m { subscriptions::Array H.SubscriptionId, vl::VectorLayer.Vector }
 createLayers map = do
   
   -- Create Crosshair/Cursor Layer
@@ -655,24 +672,20 @@ createLayers map = do
     pure pfeat
     
   -- Get a MapBrowser Event for singleclick
-  void $ H.subscribe $ HQE.effectEventSource \emitter -> do
-    key <- Map.on "singleclick" (\e -> do
-      HQE.emit emitter (MAPPosition fcursor e)
-      pure true) map
-    pure (HQE.Finalizer (Map.un "singleclick" key map))
+  sc <- H.liftEffect HS.create
+  sidC <- H.subscribe sc.emitter
+
+  key <- H.liftEffect $ Map.on "singleclick" (\e -> do
+    HS.notify sc.listener (MAPPosition fcursor e)
+    pure true) map
 
   -- Get a RenderComplete Event when the rendering is complete
-  void $ H.subscribe $ HQE.effectEventSource \emitter -> do
-    key <- Map.onRenderComplete (\e -> do
-      HQE.emit emitter (MAPRenderComplete e)
-      pure true) map
-    pure (HQE.Finalizer (Map.unRenderComplete key map))
+  r <- H.liftEffect HS.create
+  sidR <- H.subscribe r.emitter
 
-  -- Get the weather data from the IoT Hub
-  -- dentities <- queryEntities "WeatherObserved" >>= evaluateResult AuthenticationError
-  -- ivs <- H.liftEffect $ maybe' (\_->VectorSource.create') (\i->do
-  --   ilist <- sequence $ fromEntity <$> i
-  --   VectorSource.create { features: VectorSource.features.asArray $ catMaybes ilist }) dentities
+  keyR <- H.liftEffect $ Map.onRenderComplete (\e -> do
+    HS.notify r.listener (MAPRenderComplete e)
+    pure true) map
 
   ivs <- H.liftEffect $ VectorSource.create { features: VectorSource.features.asArray [] }
 
@@ -704,7 +717,7 @@ createLayers map = do
     Map.addLayer ivl map
 
     -- Return with the POI layer
-    pure vl
+    pure { subscriptions: [sidC, sidR], vl: vl }
 
   where
 

@@ -10,10 +10,8 @@ You can edit this file as you like.
   , "bigints"
   , "console"
   , "coroutines"
-  , "datetime-iso"
   , "effect"
   , "filterable"
-  , "generics-rep"
   , "halogen"
   , "http-methods"
   , "newtype"
@@ -22,7 +20,8 @@ You can edit this file as you like.
   , "psci-support"
   , "routing"
   , "routing-duplex"
-  , "uuid"
+  , "random"
+  , "parsing"
   ]
 , packages = ./packages.dhall
 , sources = [ "src/**/*.purs", "test/**/*.purs" ]

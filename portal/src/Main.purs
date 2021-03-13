@@ -28,7 +28,6 @@ import Affjax.StatusCode as AXS
 
 -- Halogen imports
 import Halogen as H
-import Halogen.HTML as HH
 import Halogen.Aff as HA
 import Halogen.VDom.Driver (runUI)
 
@@ -76,12 +75,12 @@ hashChangeConsumer query = CR.consumer \event -> do
         Left _ -> Home
         Right page -> page
   liftEffect $ log $ "New URL = '" <> hash <> "'," <> show result
-  void $ query $ H.tell $ Root.GotoPageRequest newPage
+  void $ query $ H.mkTell $ Root.GotoPageRequest newPage
   pure Nothing
 
 -- | Hoist in our Application monad
 rootComponent ∷ Environment →                -- ^ The Environment
-                H.Component HH.HTML Root.Query Root.Input Void Aff    -- ^ The Application root component
+                H.Component Root.Query Root.Input Void Aff    -- ^ The Application root component
 rootComponent env = H.hoist (runApplication env) Root.component
 
 -- | The main entry point for our application
@@ -143,4 +142,4 @@ main = do
     -- Our router, based on what is typed in the browser navigational feed
     void $ liftEffect $ matchesWith (parse routeCodec) \old new -> do
       when (old /= Just new) do
-        launchAff_ $ io.query $ H.tell $ Root.GotoPageRequest new
+        launchAff_ $ io.query $ H.mkTell $ Root.GotoPageRequest new

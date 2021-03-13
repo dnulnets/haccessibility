@@ -16,7 +16,7 @@ import Data.Either (Either(..))
 import Data.Maybe (maybe)
 import Data.Number (fromString) as Number
 import Data.Generic.Rep (class Generic)
-import Data.Generic.Rep.Show (genericShow)
+import Data.Show.Generic (genericShow)
 
 -- Routing specifics
 import Routing.Match (Match, lit)

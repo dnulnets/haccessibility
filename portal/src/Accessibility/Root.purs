@@ -11,7 +11,7 @@ import Prelude
 -- Data imports
 import Data.Maybe (Maybe(..), maybe)
 import Data.Filterable (maybeBool)
-import Data.Symbol (SProxy(..))
+import Type.Proxy (Proxy(..))
 import Data.Newtype (unwrap)
 
 -- Monad imports
@@ -84,11 +84,11 @@ type ChildSlots = ( login ∷ Login.Slot Unit,
                     point :: Point.Slot Unit,
                     userprop :: UserProperty.Slot Unit )
 
-_login = SProxy::SProxy "login"
-_mapadmin = SProxy::SProxy "mapadmin"
-_point = SProxy::SProxy "point"
-_mapnearby = SProxy::SProxy "mapnearby"
-_userprop = SProxy::SProxy "userprop"
+_login = Proxy::Proxy "login"
+_mapadmin = Proxy::Proxy "mapadmin"
+_point = Proxy::Proxy "point"
+_mapnearby = Proxy::Proxy "mapnearby"
+_userprop = Proxy::Proxy "userprop"
 
 component ∷ ∀ r o m. MonadAff m
   => ManageAuthentication m
@@ -97,7 +97,7 @@ component ∷ ∀ r o m. MonadAff m
   => ManageEntity m
   => ManageUser m
   => MonadAsk r m
-  => H.Component HH.HTML Query Input o m
+  => H.Component Query Input o m
 component =
   H.mkComponent
     { initialState
@@ -161,7 +161,7 @@ navbarLeftDefault p = maybe [] (const [HH.li [css "nav-item active"] [
 
 -- |The left navigation bar
 navbarLeft∷forall p . State -> HH.HTML p Action
-navbarLeft state = HH.div [css "collapse navbar-collapse", HP.id_ "navbarCollapse"]
+navbarLeft state = HH.div [css "collapse navbar-collapse", HP.id "navbarCollapse"]
                     [HH.ul [css "navbar-nav mr-auto"] ([] <>
                       (navbarLeftDefault state)
                       <> (navbarLeftUser state)
@@ -170,7 +170,7 @@ navbarLeft state = HH.div [css "collapse navbar-collapse", HP.id_ "navbarCollaps
 
 -- |The right navigation bar
 navbarRight∷forall p . State -> HH.HTML p Action
-navbarRight state = HH.a [css "navbar-text", HE.onClick \_ -> Just Logout]
+navbarRight state = HH.a [css "navbar-text", HE.onClick \_ -> Logout]
                       [HH.text $ maybe "Not logged in" (\(UserInfo v)->"Logout " <> v.username <> " (" <> show v.role <> ")") state.userInfo]
 
 render ∷ ∀ r m . MonadAff m
@@ -194,13 +194,13 @@ view ∷ ∀ r m. MonadAff m
        => ManageUser m
        ⇒ MonadAsk r m
        ⇒ Page -> State → H.ComponentHTML Action ChildSlots m
-view Login _ = HH.slot _login  unit Login.component  unit (Just <<< loginMessageConv)
-view MapAdmin s = HH.slot _mapadmin unit MapAdmin.component {coordinate:s.mapCoordinate, zoom:s.mapZoom} (Just <<< mapadminMessageConv)
-view UserProperty _ =  HH.slot _userprop unit UserProperty.component unit (Just <<< userpropMessageConv)
-view Home s =  HH.slot _mapnearby unit MapUser.component {coordinate:s.mapCoordinate, zoom:s.mapZoom} (Just <<< mapnearbyMessageConv)
-view (Point k true) _ =  HH.slot _point unit Point.component (Point.ViewPOI k) (Just <<< pointMessageConv)
-view (Point k false) _ = HH.slot _point unit Point.component (Point.UpdatePOI k) (Just <<< pointMessageConv)
-view (AddPoint la lo) _ = HH.slot _point unit Point.component (Point.AddPOI la lo) (Just <<< pointMessageConv)
+view Login _ = HH.slot _login  unit Login.component  unit loginMessageConv
+view MapAdmin s = HH.slot _mapadmin unit MapAdmin.component {coordinate:s.mapCoordinate, zoom:s.mapZoom} mapadminMessageConv
+view UserProperty _ =  HH.slot _userprop unit UserProperty.component unit userpropMessageConv
+view Home s =  HH.slot _mapnearby unit MapUser.component {coordinate:s.mapCoordinate, zoom:s.mapZoom} mapnearbyMessageConv
+view (Point k true) _ =  HH.slot _point unit Point.component (Point.ViewPOI k) pointMessageConv
+view (Point k false) _ = HH.slot _point unit Point.component (Point.UpdatePOI k) pointMessageConv
+view (AddPoint la lo) _ = HH.slot _point unit Point.component (Point.AddPOI la lo) pointMessageConv
 view _ _ = HH.div
              [css "container", style "margin-top:20px"]
              [HH.div

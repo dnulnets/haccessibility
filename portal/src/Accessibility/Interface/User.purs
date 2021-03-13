@@ -11,7 +11,7 @@ import Prelude
 -- Data imports
 import Data.Maybe (Maybe(..))
 import Data.Either (note)
-import Data.Argonaut (class DecodeJson, class EncodeJson, decodeJson, encodeJson)
+import Data.Argonaut (class DecodeJson, class EncodeJson, decodeJson, encodeJson, JsonDecodeError(..))
 
 -- Halogen imports
 import Halogen (HalogenM, lift)
@@ -42,7 +42,7 @@ instance decodeJsonRole :: DecodeJson Role where
   decodeJson json = do
     string <- decodeJson json
     let
-      decodeError = "Could not decode Role from " <> string
+      decodeError = UnexpectedValue json
     note decodeError (fromString string)
     where
     fromString = case _ of
@@ -96,7 +96,7 @@ instance decodeJsonOperation :: DecodeJson Operation where
   decodeJson json = do
     string <- decodeJson json
     let
-      decodeError = "Could not decode Operation from " <> string
+      decodeError = UnexpectedValue json
     note decodeError (fromString string)
     where
     fromString = case _ of

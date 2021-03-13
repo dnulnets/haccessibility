@@ -11,11 +11,12 @@ import Prelude
 
 import Accessibility.Interface.Item (AttributeType(..), AttributeValue)
 import Accessibility.Interface.User (Operation(..), UserProperty)
+import Data.Ord (lessThan, lessThanOrEq, greaterThan, greaterThanOrEq)
 import Data.Map as Map
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Tuple (Tuple(..))
 import Data.Foldable (foldr)
-import Global (readFloat)
+import Data.Number (fromString)
 
 -- |The items value from a users perspective
 newtype ItemValue = ItemValue { positive   :: Int -- Number of positive properties
@@ -91,20 +92,21 @@ evaluatePOI aup aav = foldr append mempty ((evaluateUserProperty $ toAttributeVa
     operate::Operation->String->String->Maybe String->AttributeType->Boolean
     operate OEQ v1 v2 _ TextType = v1 == v2
     operate OEQ v1 v2 _ BooleanType = v1 == v2
-    operate OEQ v1 v2 _ NumberType = (readFloat v1) == (readFloat v2)
+    operate OEQ v1 v2 _ NumberType = fromMaybe false (eq <$> (fromString v1) <*> (fromString v2))
     operate OLT v1 v2 _ TextType = v1 < v2
     operate OLT v1 v2 _ BooleanType = false
-    operate OLT v1 v2 _ NumberType = (readFloat v1) < (readFloat v2)
+    operate OLT v1 v2 _ NumberType = fromMaybe false (lessThan <$> (fromString v1) <*> (fromString v2))
     operate OLTE v1 v2 _ TextType = v1 <= v2
     operate OLTE v1 v2 _ BooleanType = false
-    operate OLTE v1 v2 _ NumberType = (readFloat v1) <= (readFloat v2)
+    operate OLTE v1 v2 _ NumberType = fromMaybe false (lessThanOrEq <$> (fromString v1) <*> (fromString v2))
     operate OGT v1 v2 _ TextType = v1 > v2
     operate OGT v1 v2 _ BooleanType = false
-    operate OGT v1 v2 _ NumberType = (readFloat v1) > (readFloat v2)
+    operate OGT v1 v2 _ NumberType = fromMaybe false (greaterThan <$> (fromString v1) <*> (fromString v2))
     operate OGTE v1 v2 _ TextType = v1 >= v2
     operate OGTE v1 v2 _ BooleanType = false
-    operate OGTE v1 v2 _ NumberType = (readFloat v1) >= (readFloat v2)
+    operate OGTE v1 v2 _ NumberType = fromMaybe false (greaterThanOrEq <$> (fromString v1) <*> (fromString v2))
     operate OIN v1 v21 (Just v22) TextType = v1 >= v21 && v1 <= v22
     operate OIN v1 v21 (Just v22) BooleanType = false
-    operate OIN v1 v21 (Just v22) NumberType = (readFloat v1) > (readFloat v21) && (readFloat v1) < (readFloat v22)
+    operate OIN v1 v21 (Just v22) NumberType = (fromMaybe false (greaterThan <$> (fromString v1) <*> (fromString v21))) &&
+      (fromMaybe false (lessThan <$> (fromString v1) <*> (fromString v22)))
     operate OIN _ _ Nothing _ = false

@@ -9,15 +9,16 @@ module Accessibility.Interface.Item where
 import Prelude
 
 -- Data imports
-import Data.DateTime.ISO (ISO)
+import Data.DateTime (DateTime)
 import Data.Maybe (Maybe(..))
 import Data.Either (note)
-import Data.Argonaut (class DecodeJson, class EncodeJson, decodeJson, encodeJson)
+import Data.Argonaut (class DecodeJson, class EncodeJson, decodeJson, encodeJson, JsonDecodeError(..))
 
 -- Halogen imports
 import Halogen (HalogenM, lift)
 
 -- Our own imports
+import Accessibility.Utils.ISO (ISO)
 import Accessibility.Interface.Endpoint (Data)
 
 -- | The enmueration for the source of the item
@@ -40,7 +41,7 @@ instance decodeJsonItemSource :: DecodeJson ItemSource where
   decodeJson json = do
     string <- decodeJson json
     let
-      decodeError = "Could not decode ItemSource from " <> string
+      decodeError = UnexpectedValue json
     note decodeError (fromString string)
     where
     fromString = case _ of
@@ -67,7 +68,7 @@ instance decodeJsonItemModifier :: DecodeJson ItemModifier where
   decodeJson json = do
     string <- decodeJson json
     let
-      decodeError = "Could not decode ItemModifier from " <> string
+      decodeError = UnexpectedValue json
     note decodeError (fromString string)
     where
     fromString = case _ of
@@ -97,9 +98,9 @@ instance decodeJsonItemApproval :: DecodeJson ItemApproval where
   decodeJson json = do
     string <- decodeJson json
     let
-      decodeError = "Could not decode ItemApproval from " <> string
+      decodeError = UnexpectedValue json
     note decodeError (fromString string)
-    where
+   where
     fromString = case _ of
       "Waiting" -> Just Waiting
       "Approved" -> Just Approved
@@ -153,7 +154,7 @@ instance decodeJsonAttributeType :: DecodeJson AttributeType where
   decodeJson json = do
     string <- decodeJson json
     let
-      decodeError = "Could not decode AttributeType from " <> string
+      decodeError = UnexpectedValue json
     note decodeError (fromString string)
     where
     fromString = case _ of
