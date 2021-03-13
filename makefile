@@ -27,7 +27,7 @@ run:
 	cd backend;./run.sh
 	
 image-purescript-build-env:	
-	docker build -t paccbuild:1.0 -t paccbuild:latest -f deployment/Dockerfile.purescript-build-env .
+	docker build -t paccbuild:14 -f deployment/Dockerfile.purescript-build-env .
 
 image-build-db:	
 	docker build -t haccdb:1.0 -t haccdb:latest -f deployment/Dockerfile.build-db .
