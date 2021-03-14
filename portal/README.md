@@ -1,5 +1,5 @@
 # Accessibility Portal
-An accessibility portal for mobile and PC browsers that allows you to enter accessibility information on geographical positions. This is a prototype for the Swedish IoT Hub for Accessibility.
+An accessibility portal for mobile and PC browsers that allows you to enter accessibility information on geographical positions. This is a prototype for the Swedish IoT Hub for Accessibility - Case 3.
 
 It is written in Purescript and the declarative, type-safe UI library Halogen. It uses the backend to store and retrieve information through its REST-interface. The backend also serves as the provider of the single page application to the browser.
 
@@ -7,11 +7,11 @@ It is written in Purescript and the declarative, type-safe UI library Halogen. I
 To be able to build the portal you need the following (version is just indicative):
 
 1. node.js 12.18.3
-2. npm 6.14.6
-3. purs 0.13.8
-4. spago 0.16.0
+2. npm 7.6.1
+3. purs 0.14.0
+4. spago 0.19.1
 5. parcel 1.12.4
-6. ol 6.4.3
+6. ol 6.5
 
 Install node.js according to its [Homepage](https://nodejs.org/en/) and set up npm to use a local global store and install purescript, spago and parcel. Note that purescript requires libtinfo5 to be installed.
 
@@ -40,3 +40,4 @@ spage bundle-app
 rm -fR ../backend/static
 parcel build index.html -d ../backend/static index.html
 ```
+

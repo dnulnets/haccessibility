@@ -18,7 +18,7 @@ spec:
     spec:
       containers:
       - name: postgis
-        image: mach1:32000/postgis:latest
+        image: registry.digitalocean.com/stenlund/postgis:latest
         envFrom:
         - configMapRef:
             name: postgis-configuration
@@ -31,7 +31,7 @@ spec:
             command:
             - sh
             - -c
-            - exec pg_isready
+            - exec pg_isready -U heatserver -d heat
           failureThreshold: 6
           initialDelaySeconds: 60
           periodSeconds: 10
@@ -43,7 +43,7 @@ spec:
             command:
             - sh
             - -c
-            - exec pg_isready
+            - exec pg_isready -U heatserver -d heat
           failureThreshold: 3
           initialDelaySeconds: 5
           periodSeconds: 5
@@ -53,7 +53,10 @@ spec:
         volumeMounts:
         - name: postgis-volume
           mountPath: /var/lib/postgresql/data          
+      imagePullSecrets:
+      - name: stenlund-registry-secret
       volumes:
       - name: postgis-volume
         persistentVolumeClaim:
-          claimName: data-pv-claim
+          claimName: postgis-claim
+          

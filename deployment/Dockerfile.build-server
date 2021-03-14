@@ -5,11 +5,11 @@ RUN	git pull
 RUN	   npm install \
 	&& ./generate.sh \
 	&& cat ./src/Version.purs \
-	&& spago build \
+	&& spago --no-color build \
 	&& spago bundle-app \
 	&& parcel build --public-url /iothub/ index.html
 	
-FROM haccbuild:latest as build
+FROM haccbuild:16.31 as build
 WORKDIR /opt/build
 RUN	git pull
 WORKDIR /opt/build/backend

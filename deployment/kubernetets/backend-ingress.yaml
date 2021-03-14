@@ -2,15 +2,20 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: acc-ingress
+  namespace: iothub
   annotations:
     nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
     nginx.ingress.kubernetes.io/ssl-redirect: "true"    
-    nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
 spec:
+  tls:
+  - hosts:
+    - www.stenlund.eu
+    secretName: stenlund-www-secret
   rules:
-  - http:
+  - host: www.stenlund.eu
+    http:
       paths:
-      - path: /
+      - path: /iothub
         pathType: Prefix
         backend:
           service:

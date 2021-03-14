@@ -1,7 +1,8 @@
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
-  name: data-pv-claim
+  name: postgis-claim
+  namespace: iothub
   labels:
     app: postgis
 spec:
@@ -9,6 +10,6 @@ spec:
     - ReadWriteOnce
   resources:
     requests:
-      storage: 10Gi
-  storageClassName: do-block-storage
+      storage: 5Gi
+  storageClassName: longhorn
 

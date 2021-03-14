@@ -10,11 +10,11 @@ RUN	rm -fr .cahce \
 RUN	npm install \
 	&& ./generate.sh \
 	&& cat ./src/Version.purs \
-	&& spago build \
+	&& spago --no-color build \
 	&& spago bundle-app \
 	&& parcel build index.html
 	
-FROM haccbuild:latest as build
+FROM haccbuild:16.31 as build
 WORKDIR /
 RUN mkdir -p /opt/build/backend
 COPY ./backend /opt/build/backend

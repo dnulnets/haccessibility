@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: acc-deployment
+  namespace: iothub
+  labels:
+    app: acc
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: acc
+  template:
+    metadata:
+      labels:
+        app: acc
+    spec:
+      containers:
+        - name: acc
+          image: registry.digitalocean.com/stenlund/haccessibility-master:v0.3.0
+          livenessProbe:
+            httpGet:
+              path: /iothub/index.html
+              port: 3000
+              scheme: HTTP
+            initialDelaySeconds: 60
+            periodSeconds: 60
+          envFrom:
+            - configMapRef:
+                name: backend-configuration
+          ports:
+            - containerPort: 3000
+              name: "acc"
+      imagePullSecrets:
+        - name: stenlund-registry-secret
