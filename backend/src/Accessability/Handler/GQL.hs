@@ -36,6 +36,8 @@ import           Data.Morpheus.Types            ( GQLRequest(..)
                                                 , ID(..)
                                                 , MutRes
                                                 , Res
+                                                , ResolverM
+                                                , ResolverQ
                                                 , Undefined(..)
                                                 , liftEither
                                                 )
@@ -75,7 +77,7 @@ rootResolver = GQLRootResolver { queryResolver        = resolveQuery
                                }
 
 -- | The mutation resolver
-resolveMutation :: Mutation (MutRes () Handler)
+--resolveMutation :: Mutation (ResolverM () Handler)
 resolveMutation = Mutation { createItem = resolveCreateItem
                            , deleteItem = resolveDeleteItem
                            , updateItem = resolveUpdateItem
@@ -84,7 +86,7 @@ resolveMutation = Mutation { createItem = resolveCreateItem
 -- | The mutation create item resolver
 resolveUpdateItem
    :: MutationUpdateItemArgs          -- ^ The arguments for the query
-   -> MutRes e Handler (Maybe Item)   -- ^ The result of the query
+   -> ResolverM e Handler (Maybe Item)   -- ^ The result of the query
 resolveUpdateItem arg =
    fffmap toGQLItem liftEither
       $  DBF.dbUpdateItem (idToKey $ updateItemId arg)
@@ -100,7 +102,7 @@ resolveUpdateItem arg =
 -- | The mutation create item resolver
 resolveDeleteItem
    :: MutationDeleteItemArgs   -- ^ The arguments for the query
-   -> MutRes e Handler (Maybe Item)    -- ^ The result of the query
+   -> ResolverM e Handler (Maybe Item)    -- ^ The result of the query
 resolveDeleteItem arg = do
    _ <-
       lift
@@ -115,7 +117,7 @@ resolveDeleteItem arg = do
 -- | The mutation create item resolver
 resolveCreateItem
    :: MutationCreateItemArgs   -- ^ The arguments for the query
-   -> MutRes e Handler Item    -- ^ The result of the query
+   -> ResolverM e Handler Item    -- ^ The result of the query
 resolveCreateItem arg = ffmap toGQLItem liftEither $ DBF.dbCreateItem $ DB.Item
    { DB.itemName        = createItemName arg
    , DB.itemGuid        = createItemGuid arg
@@ -130,20 +132,20 @@ resolveCreateItem arg = ffmap toGQLItem liftEither $ DBF.dbCreateItem $ DB.Item
    }
 
 -- | The query resolver
-resolveQuery :: Query (Res () Handler)
+--resolveQuery :: Query (ResolverQ () Handler)
 resolveQuery = Query { queryItem = resolveItem, queryItems = resolveItems }
 
 -- | The query item resolver
 resolveItem
    :: QueryItemArgs          -- ^ The arguments for the query
-   -> Res e Handler (Maybe Item)    -- ^ The result of the query
+   -> ResolverQ e Handler (Maybe Item)    -- ^ The result of the query
 resolveItem args =
    fffmap toGQLItem liftEither $ DBF.dbFetchItem (idToKey $ queryItemId args)
 
 -- | The query item resolver
 resolveItems
    :: QueryItemsArgs          -- ^ The arguments for the query
-   -> Res e Handler [Item]    -- ^ The result of the query
+   -> ResolverQ e Handler [Item]    -- ^ The result of the query
 resolveItems args = fffmap toGQLItem liftEither $ DBF.dbFetchItems
    (queryItemsText args)
    (maybePosition (realToFrac <$> queryItemsLongitude args)

@@ -44,7 +44,7 @@ packages:
 #  - morpheus-graphql-0.7.1
 #
 extra-deps:
- - morpheus-graphql-0.10.0
+ - morpheus-graphql-0.12.0
  - wkt-geom-0.0.10
 
 # Override default flag values for local packages and extra-deps
