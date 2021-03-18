@@ -14,7 +14,7 @@ RUN	npm install \
 	&& spago bundle-app \
 	&& parcel build --public-url /iothub/ index.html
 	
-FROM neptune:32000/haccbuild:latest as build
+FROM neptune:32000/haccbuild:16.31 as build
 WORKDIR /
 RUN mkdir -p /opt/build/backend
 COPY ./backend /opt/build/backend
