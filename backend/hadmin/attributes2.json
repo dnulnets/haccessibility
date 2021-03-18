@@ -1,0 +1,35 @@
+[
+    {
+        "displayName": "Width",
+        "name": "entranceWidth",
+        "group": "Entrance",
+        "description": "The width of the entrance",
+        "unit": "cm",
+        "typeof": "NumberType"
+    },
+    {
+        "displayName": "Automatic",
+        "name": "entranceAutomatic ",
+        "group": "Entrance",
+        "description": "If it is automatic doors",
+        "unit": "Yes/No",
+        "typeof": "BooleanType"
+    },
+    {
+        "displayName": "Operational",
+        "name": "entranceRunning",
+        "group": "Entrance",
+        "description": "If the automatic door is operational",
+        "unit": "Yes/No",
+        "typeof": "BooleanType"
+    },
+    {
+        "displayName": "Operational",
+        "name": "escalatorRunning",
+        "group": "Escalator",
+        "description": "If the escalator is operational",
+        "unit": "Yes/No",
+        "typeof": "BooleanType"
+    }
+]
+
