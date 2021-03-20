@@ -22,14 +22,6 @@
         "description": "If the automatic door is operational",
         "unit": "Yes/No",
         "typeof": "BooleanType"
-    },
-    {
-        "displayName": "Operational",
-        "name": "escalatorRunning",
-        "group": "Escalator",
-        "description": "If the escalator is operational",
-        "unit": "Yes/No",
-        "typeof": "BooleanType"
     }
 ]
 
