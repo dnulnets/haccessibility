@@ -91,8 +91,8 @@ type State =  { subscription  ::Array H.SubscriptionId  -- ^ The map button subs
                 , geo           ::Maybe Geolocation.Geolocation     -- ^ The GPS device
                 , map           ::Maybe Map.Map                     -- ^ The Map on the page
                 , layer         ::Maybe VectorLayer.Vector  -- ^The vector layer for our own poi:s
-                , select        ::Maybe Select.Select     -- ^ The select interaction
-                , distance      ::Number                  -- ^ The max search distance
+                , select        ::Maybe Select.Select       -- ^ The select interaction
+                , distance      ::Number                    -- ^ The max search distance
                 , initial       ::Input                       -- Initial map location
                 , crosshair     ::Maybe Coordinate.Coordinate -- ^ The coordinate of the crosshair
               }
