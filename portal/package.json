@@ -14,7 +14,7 @@
   "devDependencies": {
     "cssnano": "^4.1.10",
     "lodash": "^4.17.21",
-    "minimist": "^1.2.5",
+    "minimist": "^1.2.6",
     "parcel": "^1.12.4",
     "purescript": "^0.14.0",
     "spago": "^0.19.1"
