@@ -15,7 +15,7 @@
     "cssnano": "^4.1.10",
     "lodash": "^4.17.21",
     "minimist": "^1.2.5",
-    "parcel": "^1.12.4",
+    "parcel": "^2.8.2",
     "purescript": "^0.14.0",
     "spago": "^0.19.1"
   }
